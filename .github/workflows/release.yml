@@ -33,6 +33,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Build
+        shell: bash
         env:
           OAuthClientId: ${{ secrets.YTPT_CLIENT_ID }}
           OAuthClientSecret: ${{ secrets.YTPT_CLIENT_SECRET }}
