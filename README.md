@@ -17,7 +17,7 @@ YouTube doesn't notify you when videos are removed from your playlists. One day 
 │            │   Cooking      │ 2  │ Song B        │ ArtistY │ Active │
 │            │                │ 3  │ Old Song      │ ArtistZ │ ✗ Gone │
 ├────────────┴────────────────┴────┴───────────────┴─────────┴────────┤
-│ F1:Add  F2:Track  F5:Sync  F6:All  F8:Removed  F9:Settings  F10:Quit│
+│ h/l:pane  j/k:nav  Enter:detail  /:search  o:sort  ?:help  q:quit   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -132,7 +132,7 @@ See [docs/architecture.md](docs/architecture.md) for details.
 
 ```bash
 dotnet build                    # Build all
-dotnet test                     # Run all 23 tests
+dotnet test                     # Run all 29 tests
 dotnet test --filter "SyncService"  # Run specific tests
 ```
 
