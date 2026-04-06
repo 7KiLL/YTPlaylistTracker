@@ -1,0 +1,30 @@
+[
+  {
+    "VideoId": "test_vid_000",
+    "Title": "Test Video 1",
+    "ChannelTitle": "TestChannel1",
+    "Position": 0,
+    "AddedAt": "2012-05-05T09:49:07Z"
+  },
+  {
+    "VideoId": "test_vid_001",
+    "Title": "Test Video 2",
+    "ChannelTitle": "TestChannel2",
+    "Position": 3,
+    "AddedAt": "2017-09-12T21:36:30Z"
+  },
+  {
+    "VideoId": "test_vid_002",
+    "Title": "Test Video 3",
+    "ChannelTitle": "TestChannel3",
+    "Position": 4,
+    "AddedAt": "2017-11-10T16:02:50Z"
+  },
+  {
+    "VideoId": "test_vid_003",
+    "Title": "Test Video 4",
+    "ChannelTitle": "TestChannel4",
+    "Position": 5,
+    "AddedAt": "2018-12-22T21:15:41Z"
+  }
+]

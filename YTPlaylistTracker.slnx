@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/YTPlaylistTracker.Application/YTPlaylistTracker.Application.csproj" />
+    <Project Path="src/YTPlaylistTracker.Domain/YTPlaylistTracker.Domain.csproj" />
+    <Project Path="src/YTPlaylistTracker.Infrastructure/YTPlaylistTracker.Infrastructure.csproj" />
+    <Project Path="src/YTPlaylistTracker.UI/YTPlaylistTracker.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/YTPlaylistTracker.IntegrationTests/YTPlaylistTracker.IntegrationTests.csproj" />
+    <Project Path="tests/YTPlaylistTracker.UnitTests/YTPlaylistTracker.UnitTests.csproj" />
+  </Folder>
+</Solution>

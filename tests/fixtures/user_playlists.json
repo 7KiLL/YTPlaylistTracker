@@ -1,0 +1,17 @@
+[
+  {
+    "PlaylistId": "PLtest_playlist_000",
+    "Title": "Test Playlist 0",
+    "ChannelTitle": "TestUser"
+  },
+  {
+    "PlaylistId": "PLtest_playlist_001",
+    "Title": "Test Playlist 1",
+    "ChannelTitle": "TestUser"
+  },
+  {
+    "PlaylistId": "PLtest_playlist_002",
+    "Title": "Test Playlist 2",
+    "ChannelTitle": "TestUser"
+  }
+]

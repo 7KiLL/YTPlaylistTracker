@@ -1,0 +1,26 @@
+bin/
+obj/
+*.user
+*.DotSettings.user
+.vs/
+*.nupkg
+publish/
+
+# IDE
+.idea/
+.vs/
+*.sln.DotSettings
+
+# Claude Code local settings
+.claude/
+
+# Internal planning docs (not for public)
+docs/superpowers/
+
+# Sensitive files
+client_secrets.json
+oauth-tokens/
+appsettings.json
+.env
+*.db
+logs/

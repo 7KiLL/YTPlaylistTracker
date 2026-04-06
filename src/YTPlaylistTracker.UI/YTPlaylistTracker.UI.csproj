@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\YTPlaylistTracker.Domain\YTPlaylistTracker.Domain.csproj" />
+    <ProjectReference Include="..\YTPlaylistTracker.Application\YTPlaylistTracker.Application.csproj" />
+    <ProjectReference Include="..\YTPlaylistTracker.Infrastructure\YTPlaylistTracker.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.5" />
+    <PackageReference Include="Terminal.Gui" Version="1.19.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- OAuth credentials injected at build time: dotnet build -p:OAuthClientId=xxx -p:OAuthClientSecret=yyy -->
+    <OAuthClientId Condition="'$(OAuthClientId)' == ''"></OAuthClientId>
+    <OAuthClientSecret Condition="'$(OAuthClientSecret)' == ''"></OAuthClientSecret>
+
+    <!-- Global .NET Tool -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>ytpt</ToolCommandName>
+    <PackageId>ytpt</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>YTPlaylistTracker</Authors>
+    <Description>Track YouTube playlists and detect removed videos. TUI app with SQLite storage.</Description>
+  </PropertyGroup>
+
+  <!-- Generate BuildConstants.cs with OAuth credentials at build time -->
+  <Target Name="GenerateBuildConstants" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <BuildConstantsFile>$(IntermediateOutputPath)BuildConstants.cs</BuildConstantsFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(BuildConstantsFile)" Overwrite="true" Lines="&#xA;namespace YTPlaylistTracker.UI%3B&#xA;internal static class BuildConstants&#xA;{&#xA;    public const string OAuthClientId = &quot;$(OAuthClientId)&quot;%3B&#xA;    public const string OAuthClientSecret = &quot;$(OAuthClientSecret)&quot;%3B&#xA;}&#xA;" />
+    <ItemGroup>
+      <Compile Include="$(BuildConstantsFile)" />
+    </ItemGroup>
+  </Target>
+
+</Project>
