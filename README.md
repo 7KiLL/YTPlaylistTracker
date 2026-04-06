@@ -21,14 +21,37 @@ YouTube doesn't notify you when videos are removed from your playlists. One day 
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+## Install
 
-### Prerequisites
+### Linux / macOS (one-liner)
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- A Google account (for YouTube access)
+```bash
+curl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash
+```
 
-### Run from source
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.ps1 | iex
+```
+
+### Install a specific version
+
+```bash
+YTPT_VERSION=v0.2.0 curl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash
+```
+
+### Supported platforms
+
+| Platform | Architecture |
+|----------|-------------|
+| Linux | x64, arm64 |
+| macOS | x64 (Intel), arm64 (Apple Silicon) |
+| Windows | x64 |
+
+### Alternative: run from source
+
+Requires [.NET 10 SDK](https://dotnet.microsoft.com/download):
 
 ```bash
 git clone https://github.com/7KiLL/YTPlaylistTracker.git
@@ -37,7 +60,7 @@ dotnet build
 dotnet run --project src/YTPlaylistTracker.UI
 ```
 
-### Install as global tool
+### Alternative: install as .NET global tool
 
 ```bash
 dotnet pack src/YTPlaylistTracker.UI -c Release
@@ -132,7 +155,7 @@ See [docs/architecture.md](docs/architecture.md) for details.
 
 ```bash
 dotnet build                    # Build all
-dotnet test                     # Run all 29 tests
+dotnet test                     # Run all 32 tests
 dotnet test --filter "SyncService"  # Run specific tests
 ```
 

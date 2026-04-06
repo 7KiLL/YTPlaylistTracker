@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **ytpt** (YouTube Playlist Tracker) is a .NET 10 TUI application that tracks YouTube playlists and detects when videos are removed, deleted, or made private — preserving their titles and metadata.
 
+**Target platforms**: Linux (x64, arm64), macOS (x64, arm64), Windows (x64).
+
 ## Build & Run Commands
 
 ```bash
@@ -62,6 +64,25 @@ Domain (no deps) ← Application (Domain) ← Infrastructure (Domain+App) ← UI
   - Configuration: AppSettings, build-time constants
 - **UI** (`src/YTPlaylistTracker.UI/`): Terminal.Gui TUI (MainWindow, dialogs), System.CommandLine CLI
 
+## Versioning & Releases
+
+- **Auto-versioning**: MinVer reads git tags. Tag `v0.3.0` → version `0.3.0`. No manual .csproj edits needed.
+- **Release**: Push a `v*` tag → GitHub Actions builds 5 platform binaries, creates GitHub Release with install scripts.
+- **Build matrix**: linux-x64, linux-arm64, osx-arm64, osx-x64, win-x64.
+
+## Database Migrations
+
+Uses EF Core Migrations (not `EnsureCreated`). To add a new migration after schema changes:
+
+```bash
+dotnet ef migrations add <MigrationName> \
+  --project src/YTPlaylistTracker.Infrastructure \
+  --startup-project src/YTPlaylistTracker.UI \
+  --output-dir Data/Migrations
+```
+
+Legacy v0.1.0 databases (created with `EnsureCreated`) are auto-detected and upgraded on first run.
+
 ## Key Patterns
 
 - **Soft-delete**: Videos have nullable `DeletedAt` + `RemovalReason` enum. No separate removal history table.
@@ -74,12 +95,13 @@ Domain (no deps) ← Application (Domain) ← Infrastructure (Domain+App) ← UI
 - **YouTube auth**: Embedded OAuth2 (build-time injected client ID/secret) is primary. `YOUTUBE_API_KEY` env var as fallback for public playlists only. `YTPT_CLIENT_ID`/`YTPT_CLIENT_SECRET` env vars override embedded credentials.
 - **Lazy YouTube API**: LazyYouTubeApiProxy defers service initialization until first use, avoiding startup hang when not authenticated.
 - **Build-time secrets**: OAuth client ID/secret injected via `-p:OAuthClientId=xxx` MSBuild properties, compiled into `BuildConstants.cs` — never in source code.
+- **Shared build config**: `src/Directory.Build.props` (TargetFramework, MinVer), `tests/Directory.Build.props` (shared test packages).
 - **File permissions**: All data dirs set to `700`, DB file to `600` on Linux/macOS.
 - **Cross-platform browser opening**: IBrowserLauncher.Open() handles Windows (cmd /c start), macOS (open), Linux (xdg-open).
 
 ## Tests
 
-- **Unit tests** (`tests/YTPlaylistTracker.UnitTests/`): NSubstitute mocks, tests SyncService diff logic and URL parsing
+- **Unit tests** (`tests/YTPlaylistTracker.UnitTests/`): NSubstitute mocks, tests SyncService diff logic, error scenarios, and URL parsing
 - **Integration tests** (`tests/YTPlaylistTracker.IntegrationTests/`): Real in-memory SQLite, tests repository CRUD and end-to-end sync flow
 
 ## Docs

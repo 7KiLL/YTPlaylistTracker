@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace YTPlaylistTracker.Infrastructure.Configuration;
@@ -69,7 +70,11 @@ public class AppSettings
                     return;
                 }
             }
-            catch { /* fall through to build-time constants */ }
+            catch (Exception ex)
+            {
+                // Malformed credentials.json — fall through to build-time constants
+                Debug.WriteLine($"Failed to parse {CredentialsPath}: {ex.Message}");
+            }
         }
 
         // 3. Build-time constants already set via Program.cs → BuildConstants

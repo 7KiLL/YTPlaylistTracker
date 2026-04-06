@@ -31,6 +31,9 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
+ServiceProvider sp = null!;
+try
+{
 // DI — no GenericHost
 var services = new ServiceCollection();
 services.AddLogging(lb => lb.ClearProviders().AddSerilog());
@@ -58,12 +61,46 @@ services.AddSingleton<Lazy<IYouTubeApiService>>(sp =>
 services.AddSingleton<IYouTubeApiService>(sp =>
     new LazyYouTubeApiProxy(sp.GetRequiredService<Lazy<IYouTubeApiService>>()));
 
-var sp = services.BuildServiceProvider();
+sp = services.BuildServiceProvider();
 
 using (var scope = sp.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.EnsureCreatedAsync();
+
+    // Handle upgrade from v0.1.0 (EnsureCreated) to migrations
+    var conn = db.Database.GetDbConnection();
+    await conn.OpenAsync();
+    await using (var cmd = conn.CreateCommand())
+    {
+        cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
+        var hasMigrationHistory = await cmd.ExecuteScalarAsync() != null;
+
+        if (!hasMigrationHistory)
+        {
+            cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='Profiles'";
+            var hasExistingTables = await cmd.ExecuteScalarAsync() != null;
+
+            if (hasExistingTables)
+            {
+                // Legacy DB from v0.1.0 — stamp InitialCreate as already applied
+                var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
+                var initialMigration = pendingMigrations.FirstOrDefault(m => m.EndsWith("_InitialCreate"));
+                if (initialMigration != null)
+                {
+                    await db.Database.ExecuteSqlRawAsync(
+                        "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (\"MigrationId\" TEXT NOT NULL, \"ProductVersion\" TEXT NOT NULL, PRIMARY KEY(\"MigrationId\"))");
+
+                    var efVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "10.0.5";
+                    await db.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1})",
+                        initialMigration, efVersion);
+                    Log.Information("Upgraded legacy database: stamped {Migration}", initialMigration);
+                }
+            }
+        }
+    }
+
+    await db.Database.MigrateAsync();
     AppSettings.SecureDbFile();
 }
 
@@ -131,9 +168,20 @@ root.Add(resetCmd);
 // Default: launch TUI
 root.SetAction(async (_, _) => await RunUi());
 
-var exitCode = await root.Parse(args).InvokeAsync();
-Log.CloseAndFlush();
-return exitCode;
+return await root.Parse(args).InvokeAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Unhandled exception");
+    Console.Error.WriteLine("ytpt encountered an unexpected error.");
+    Console.Error.WriteLine($"Details: {ex.Message}");
+    Console.Error.WriteLine($"Logs: {Path.Combine(AppSettings.LogDir, "ytpt-*.log")}");
+    return 1;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // --- Implementations ---
 

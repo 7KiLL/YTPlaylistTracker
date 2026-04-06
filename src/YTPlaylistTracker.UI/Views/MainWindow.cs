@@ -1,4 +1,6 @@
 using System.Data;
+using System.Net.Http;
+using Google;
 using Terminal.Gui;
 using YTPlaylistTracker.Application.Helpers;
 using YTPlaylistTracker.Domain.Entities;
@@ -485,6 +487,10 @@ public class MainWindow : Window
                 global::Terminal.Gui.Application.MainLoop.Invoke(async () => await RefreshPlaylistsAsync());
             }
         }
+        catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            _logger.LogWarning("YouTube API quota/auth issue during background fetch — skipping");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch playlists from YouTube");
@@ -537,6 +543,16 @@ public class MainWindow : Window
             await _playlistRepo.AddAsync(playlist);
             await RefreshPlaylistsAsync();
             MessageBox.Query("Success", "Added playlist: " + (playlist.Title ?? playlistId), "OK");
+        }
+        catch (GoogleApiException ex)
+        {
+            _logger.LogError(ex, "YouTube API error adding playlist");
+            MessageBox.Query("YouTube Error", "Could not fetch playlist: " + ex.Message, "OK");
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error adding playlist");
+            MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
         }
         catch (Exception ex)
         {
@@ -600,6 +616,24 @@ public class MainWindow : Window
             MessageBox.Query("Sync Complete",
                 "+" + result.Added + " added, -" + result.Removed + " removed, ~" + result.Updated + " updated", "OK");
         }
+        catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            HideSpinner();
+            _logger.LogError(ex, "YouTube API quota or auth error during sync");
+            MessageBox.Query("YouTube Error", "API quota exceeded or auth expired.\nTry: ytpt login", "OK");
+        }
+        catch (GoogleApiException ex)
+        {
+            HideSpinner();
+            _logger.LogError(ex, "YouTube API error during sync");
+            MessageBox.Query("YouTube Error", "Sync failed: " + ex.Message, "OK");
+        }
+        catch (HttpRequestException ex)
+        {
+            HideSpinner();
+            _logger.LogError(ex, "Network error during sync");
+            MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
+        }
         catch (Exception ex)
         {
             HideSpinner();
@@ -626,6 +660,24 @@ public class MainWindow : Window
             int totalRemoved = results.Values.Sum(r => r.Removed);
             MessageBox.Query("Sync All Complete",
                 results.Count + " playlists synced\n+" + totalAdded + " added, -" + totalRemoved + " removed", "OK");
+        }
+        catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            HideSpinner();
+            _logger.LogError(ex, "YouTube API quota or auth error during sync all");
+            MessageBox.Query("YouTube Error", "API quota exceeded or auth expired.\nTry: ytpt login", "OK");
+        }
+        catch (GoogleApiException ex)
+        {
+            HideSpinner();
+            _logger.LogError(ex, "YouTube API error during sync all");
+            MessageBox.Query("YouTube Error", "Sync failed: " + ex.Message, "OK");
+        }
+        catch (HttpRequestException ex)
+        {
+            HideSpinner();
+            _logger.LogError(ex, "Network error during sync all");
+            MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
         }
         catch (Exception ex)
         {

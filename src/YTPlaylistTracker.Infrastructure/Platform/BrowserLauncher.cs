@@ -25,7 +25,7 @@ public class BrowserLauncher : IBrowserLauncher
         {
             // Fallback: UseShellExecute (works on most platforms but may pollute stdout)
             try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-            catch { /* no browser available */ }
+            catch (Exception ex2) { Debug.WriteLine($"Could not open browser: {ex2.Message}"); }
         }
     }
 

@@ -7,6 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5" PrivateAssets="All" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.5" />
     <PackageReference Include="Terminal.Gui" Version="1.19.0" />
@@ -14,9 +15,6 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
 
     <!-- OAuth credentials injected at build time: dotnet build -p:OAuthClientId=xxx -p:OAuthClientSecret=yyy -->
     <OAuthClientId Condition="'$(OAuthClientId)' == ''"></OAuthClientId>
@@ -26,7 +24,6 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>ytpt</ToolCommandName>
     <PackageId>ytpt</PackageId>
-    <Version>0.1.0</Version>
     <Authors>YTPlaylistTracker</Authors>
     <Description>Track YouTube playlists and detect removed videos. TUI app with SQLite storage.</Description>
   </PropertyGroup>

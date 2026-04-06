@@ -153,7 +153,16 @@ public class SyncService(
         var results = new Dictionary<int, SyncResult>();
         foreach (var playlist in playlists)
         {
-            results[playlist.Id] = await SyncPlaylistAsync(playlist);
+            try
+            {
+                results[playlist.Id] = await SyncPlaylistAsync(playlist);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to sync playlist {PlaylistId} ({Title}), continuing with next",
+                    playlist.YouTubePlaylistId, playlist.Title);
+                results[playlist.Id] = new SyncResult(0, 0, 0);
+            }
         }
         return results;
     }
