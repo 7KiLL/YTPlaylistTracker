@@ -91,7 +91,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: CHANGELOG.md
-          files: |
-            artifacts/*
-            scripts/install.sh
-            scripts/install.ps1
+          files: artifacts/*
