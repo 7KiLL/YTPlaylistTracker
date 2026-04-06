@@ -70,62 +70,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          sparse-checkout: scripts
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
 
       - name: Generate changelog
-        id: changelog
-        run: |
-          # Find previous tag
-          CURRENT_TAG="${GITHUB_REF_NAME}"
-          PREV_TAG=$(git tag --sort=-v:refname | grep -v "^${CURRENT_TAG}$" | head -1)
-
-          if [ -n "$PREV_TAG" ]; then
-            RANGE="${PREV_TAG}..${CURRENT_TAG}"
-          else
-            RANGE="${CURRENT_TAG}"
-          fi
-
-          echo "Generating changelog for ${RANGE}..."
-
-          # Collect commits by type
-          FEATS=$(git log --pretty=format:'- %s' "$RANGE" --grep='^feat' 2>/dev/null | sed 's/^- feat[^:]*: /- /')
-          FIXES=$(git log --pretty=format:'- %s' "$RANGE" --grep='^fix' 2>/dev/null | sed 's/^- fix[^:]*: /- /')
-          OTHER=$(git log --pretty=format:'- %s' "$RANGE" --grep -v -E '^(feat|fix)' 2>/dev/null | head -20)
-
-          # Build body
-          BODY="## What's Changed"
-          BODY="${BODY}\n"
-          if [ -n "$FEATS" ]; then
-            BODY="${BODY}\n### Features\n${FEATS}\n"
-          fi
-          if [ -n "$FIXES" ]; then
-            BODY="${BODY}\n### Bug Fixes\n${FIXES}\n"
-          fi
-          if [ -n "$OTHER" ]; then
-            BODY="${BODY}\n### Other\n${OTHER}\n"
-          fi
-
-          # Install instructions
-          BODY="${BODY}\n---\n"
-          BODY="${BODY}\n## Install\n"
-          BODY="${BODY}\n**Linux / macOS:**\n\`\`\`bash\ncurl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash\n\`\`\`\n"
-          BODY="${BODY}\n**Windows (PowerShell):**\n\`\`\`powershell\nirm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.ps1 | iex\n\`\`\`\n"
-
-          if [ -n "$PREV_TAG" ]; then
-            BODY="${BODY}\n**Full Changelog**: https://github.com/7KiLL/YTPlaylistTracker/compare/${PREV_TAG}...${CURRENT_TAG}"
-          fi
-
-          # Write to file (multiline-safe)
-          echo -e "$BODY" > release_body.md
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: release_body.md
+          body_path: CHANGELOG.md
           files: |
             artifacts/*
             scripts/install.sh
