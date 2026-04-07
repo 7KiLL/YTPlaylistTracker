@@ -5,9 +5,9 @@ namespace YTPlaylistTracker.Infrastructure.Configuration;
 
 public class AppSettings
 {
-    public int SyncIntervalHours { get; set; } = 6;
-    public bool AutoSyncOnStartup { get; set; } = true;
-    public bool BackgroundSyncEnabled { get; set; } = true;
+    public static string SettingsPath => Path.Combine(AppDataDir, "settings.json");
+
+    public static bool AutoSyncOnStartup { get; set; } = true;
 
     public static string AppDataDir
     {
@@ -105,5 +105,33 @@ public class AppSettings
         {
             File.SetUnixFileMode(DbPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
+    }
+
+    /// <summary>
+    /// Load user settings from settings.json.
+    /// </summary>
+    public static void LoadSettings()
+    {
+        if (!File.Exists(SettingsPath)) return;
+        try
+        {
+            var doc = JsonDocument.Parse(File.ReadAllText(SettingsPath));
+            if (doc.RootElement.TryGetProperty("autoSyncOnStartup", out var val))
+                AutoSyncOnStartup = val.GetBoolean();
+        }
+        catch
+        {
+            // Malformed settings — use defaults
+        }
+    }
+
+    /// <summary>
+    /// Save user settings to settings.json.
+    /// </summary>
+    public static void SaveSettings()
+    {
+        var json = JsonSerializer.Serialize(new { autoSyncOnStartup = AutoSyncOnStartup },
+            new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(SettingsPath, json);
     }
 }

@@ -8,7 +8,7 @@ namespace YTPlaylistTracker.UI.Views;
 public class SettingsDialog : Dialog
 {
     public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist)
-        : base("Settings", 60, 16)
+        : base("Settings", 60, 18)
     {
         var dbPathLabel = new Label("Database path:") { X = 1, Y = 1 };
         var dbPathValue = new Label(AppSettings.DbPath) { X = 1, Y = 2 };
@@ -16,7 +16,14 @@ public class SettingsDialog : Dialog
         var logPathLabel = new Label("Log directory:") { X = 1, Y = 4 };
         var logPathValue = new Label(AppSettings.LogDir) { X = 1, Y = 5 };
 
-        var purgeBtn = new Button("Purge Deleted Videos") { X = 1, Y = 7 };
+        var autoSyncCheck = new CheckBox("Auto-sync on startup", AppSettings.AutoSyncOnStartup) { X = 1, Y = 7 };
+        autoSyncCheck.Toggled += (prev) =>
+        {
+            AppSettings.AutoSyncOnStartup = autoSyncCheck.Checked;
+            AppSettings.SaveSettings();
+        };
+
+        var purgeBtn = new Button("Purge Deleted Videos") { X = 1, Y = 9 };
         purgeBtn.Clicked += async () =>
         {
             try
@@ -43,7 +50,7 @@ public class SettingsDialog : Dialog
             }
         };
 
-        var resetBtn = new Button("Reset Database") { X = 1, Y = 9 };
+        var resetBtn = new Button("Reset Database") { X = 1, Y = 11 };
         resetBtn.Clicked += () =>
         {
             var confirm = MessageBox.Query("Reset Database",
@@ -69,7 +76,7 @@ public class SettingsDialog : Dialog
         var closeBtn = new Button("Close", true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
 
-        Add(dbPathLabel, dbPathValue, logPathLabel, logPathValue, purgeBtn, resetBtn);
+        Add(dbPathLabel, dbPathValue, logPathLabel, logPathValue, autoSyncCheck, purgeBtn, resetBtn);
         AddButton(closeBtn);
     }
 }

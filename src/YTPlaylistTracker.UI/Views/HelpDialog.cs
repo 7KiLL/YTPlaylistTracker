@@ -4,7 +4,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class HelpDialog : Dialog
 {
-    public HelpDialog() : base("Keybindings", 50, 20)
+    public HelpDialog() : base("Keybindings", 50, 23)
     {
         var keys = new[]
         {
@@ -14,6 +14,8 @@ public class HelpDialog : Dialog
             ("Enter", "View details"),
             ("/", "Search / filter videos"),
             ("o", "Sort videos"),
+            ("e", "Export removed videos"),
+            ("H", "Removal history"),
             ("?", "This help"),
             ("a / F1", "Add playlist by URL"),
             ("t / F2", "Toggle tracking"),

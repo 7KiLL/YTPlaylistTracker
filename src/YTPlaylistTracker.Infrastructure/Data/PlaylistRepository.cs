@@ -105,4 +105,15 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
         db.Videos.RemoveRange(deleted);
         await db.SaveChangesAsync();
     }
+
+    public async Task<List<(Playlist Playlist, Video Video)>> GetAllDeletedVideosAsync(int profileId)
+    {
+        var results = await db.Videos
+            .Include(v => v.Playlist)
+            .Where(v => v.Playlist.ProfileId == profileId && v.DeletedAt != null)
+            .OrderByDescending(v => v.DeletedAt)
+            .ToListAsync();
+
+        return results.Select(v => (v.Playlist, v)).ToList();
+    }
 }

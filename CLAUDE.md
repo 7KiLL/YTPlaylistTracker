@@ -20,6 +20,8 @@ dotnet run --project src/YTPlaylistTracker.UI -- sync          # Sync all tracke
 dotnet run --project src/YTPlaylistTracker.UI -- sync <id>     # Sync specific playlist
 dotnet run --project src/YTPlaylistTracker.UI -- status        # Show tracking summary
 dotnet run --project src/YTPlaylistTracker.UI -- reset [--yes]  # Delete database and start fresh
+dotnet run --project src/YTPlaylistTracker.UI -- export        # Export removed videos (CSV to stdout)
+dotnet run --project src/YTPlaylistTracker.UI -- export --format json --output report.json  # Export as JSON to file
 dotnet run --project src/YTPlaylistTracker.UI -- ui            # Launch TUI (explicit)
 dotnet run --project src/YTPlaylistTracker.UI -- --verbose     # Verbose logging (any command)
 dotnet test --filter "FullyQualifiedName~SyncServiceTests"     # Run specific test class
@@ -42,6 +44,8 @@ ytpt sync             # Sync all tracked playlists
 ytpt sync <id>        # Sync specific playlist
 ytpt status           # Show summary
 ytpt reset [--yes]    # Delete database and start fresh
+ytpt export           # Export removed videos report (CSV to stdout)
+ytpt export -f json -o report.json  # Export as JSON to file
 ytpt --verbose        # Add to any command for debug logging
 ```
 
