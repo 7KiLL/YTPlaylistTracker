@@ -119,6 +119,7 @@ public class MainWindow : Window
         };
         _videoTable.CellActivated += (args) => ShowDetail();
         _videoFrame.Add(_videoTable);
+        _videoTable.LayoutComplete += (_) => OnVideoTableResized();
 
         _profileList.OpenSelectedItem += (args) => ShowDetail();
         _playlistList.OpenSelectedItem += (args) => ShowDetail();
@@ -447,6 +448,42 @@ public class MainWindow : Window
         {
             _logger.LogError(ex, "Failed to refresh videos");
         }
+    }
+
+    private void OnVideoTableResized()
+    {
+        if (_videoTable.Table == null) return;
+
+        var newLayout = ColumnLayout.Compute(_videoTable.Bounds.Width);
+        if (newLayout == _lastLayout) return; // no change, skip redraw
+
+        // Re-truncate cell data with new widths
+        _lastLayout = newLayout;
+        var dt = _videoTable.Table;
+
+        for (int i = 0; i < dt.Rows.Count; i++)
+        {
+            if (i < _filteredVideos.Count)
+            {
+                var v = _filteredVideos[i];
+                dt.Rows[i][1] = UnicodeWidth.Truncate((v.Title ?? "").Trim(), newLayout.TitleWidth);
+                dt.Rows[i][2] = UnicodeWidth.Truncate(v.ChannelTitle ?? "", newLayout.ChannelWidth);
+            }
+        }
+
+        _videoTable.Style.ColumnStyles.Clear();
+        _videoTable.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
+            { MinWidth = 3, MaxWidth = newLayout.NumberWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
+            { MinWidth = 20, MaxWidth = newLayout.TitleWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
+            { MinWidth = 10, MaxWidth = newLayout.ChannelWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
+            { MinWidth = 10, MaxWidth = newLayout.AddedWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
+            { MinWidth = 6, MaxWidth = newLayout.StatusWidth };
+
+        _videoTable.SetNeedsDisplay();
     }
 
     private async void OnProfileSelected(ListViewItemEventArgs e)
