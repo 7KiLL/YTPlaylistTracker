@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\YTPlaylistTracker.Domain\YTPlaylistTracker.Domain.csproj" />
     <ProjectReference Include="..\..\src\YTPlaylistTracker.Application\YTPlaylistTracker.Application.csproj" />
+    <ProjectReference Include="..\..\src\YTPlaylistTracker.UI\YTPlaylistTracker.UI.csproj" />
   </ItemGroup>
 
 </Project>
