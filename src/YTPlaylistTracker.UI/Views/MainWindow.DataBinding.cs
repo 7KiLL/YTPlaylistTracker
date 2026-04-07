@@ -12,20 +12,31 @@ public partial class MainWindow
     {
         try
         {
-        if (_selectedPlaylist is null)
-        {
-            _videoTable.Table = null;
-            _videoFrame.Title = "Videos";
-            return;
-        }
+            if (_selectedPlaylist is null)
+            {
+                _videoTable.Table = null;
+                _videoFrame.Title = "Videos";
+                return;
+            }
 
-        _videos = (_showDeletedOnly
-            ? await playlistRepo.GetDeletedVideosAsync(_selectedPlaylist.Id)
-            : await playlistRepo.GetVideosAsync(_selectedPlaylist.Id)).ToList();
+            _videos = (_showDeletedOnly
+                ? await playlistRepo.GetDeletedVideosAsync(_selectedPlaylist.Id)
+                : await playlistRepo.GetVideosAsync(_selectedPlaylist.Id)).ToList();
+
+            ApplyFilterAndSort();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to refresh videos");
+        }
+    }
+
+    private void ApplyFilterAndSort()
+    {
+        if (_selectedPlaylist is null) return;
 
         var title = _selectedPlaylist.Title ?? _selectedPlaylist.YouTubePlaylistId;
 
-        // Apply search filter
         var filtered = _videos;
         if (!string.IsNullOrEmpty(_searchQuery))
         {
@@ -35,7 +46,6 @@ public partial class MainWindow
             ).ToList();
         }
 
-        // Apply sorting
         if (!string.IsNullOrEmpty(_sortColumn))
         {
             filtered = _sortColumn switch
@@ -56,12 +66,14 @@ public partial class MainWindow
             };
         }
 
+        string Arrow(string col) => _sortColumn == col ? (_sortAscending ? " ▲" : " ▼") : "";
+
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(string));
-        dt.Columns.Add("Title", typeof(string));
-        dt.Columns.Add("Channel", typeof(string));
-        dt.Columns.Add("Added  ", typeof(string));
-        dt.Columns.Add("Status", typeof(string));
+        dt.Columns.Add("Title" + Arrow("Title"), typeof(string));
+        dt.Columns.Add("Channel" + Arrow("Channel"), typeof(string));
+        dt.Columns.Add("Added" + Arrow("Added Date"), typeof(string));
+        dt.Columns.Add("Status" + Arrow("Status"), typeof(string));
 
         if (filtered.Count == 0)
         {
@@ -90,20 +102,12 @@ public partial class MainWindow
 
         _filteredVideos = filtered;
         _videoTable.Table = dt;
-
         ApplyColumnStyles(dt);
 
-        var sortIndicator = string.IsNullOrEmpty(_sortColumn) ? ""
-            : " " + (_sortAscending ? "^" : "v") + _sortColumn;
         var syncedLabel = " | synced: " + SyncService.FormatLastSynced(_selectedPlaylist);
         _videoFrame.Title = _showDeletedOnly
-            ? "Removed (" + title + ") [" + filtered.Count + "]" + sortIndicator + syncedLabel
-            : "Videos (" + title + ") [" + filtered.Count + "]" + sortIndicator + syncedLabel;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to refresh videos");
-        }
+            ? $"Removed ({title}) [{filtered.Count}]{syncedLabel}"
+            : $"Videos ({title}) [{filtered.Count}]{syncedLabel}";
     }
 
     private void OnVideoTableResized()

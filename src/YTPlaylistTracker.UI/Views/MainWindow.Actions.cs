@@ -189,7 +189,7 @@ public partial class MainWindow
         cancelBtn2.Clicked += () => global::Terminal.Gui.Application.RequestStop();
         dialog.AddButton(cancelBtn2);
         global::Terminal.Gui.Application.Run(dialog);
-        _ = RefreshVideosAsync();
+        ApplyFilterAndSort();
     }
 
     private void ShowSearch()
@@ -201,14 +201,37 @@ public partial class MainWindow
             X = 0, Y = 0,
             Width = Dim.Fill(),
         };
-        _searchField.TextChanged += (unused) =>
+        _searchField.TextChanged += (_) =>
         {
             _searchQuery = _searchField.Text?.ToString() ?? "";
-            _ = RefreshVideosAsync();
+
+            if (_searchDebounceTimer is not null)
+                global::Terminal.Gui.Application.MainLoop.RemoveTimeout(_searchDebounceTimer);
+
+            _searchDebounceTimer = global::Terminal.Gui.Application.MainLoop.AddTimeout(
+                TimeSpan.FromMilliseconds(150), (_) =>
+                {
+                    ApplyFilterAndSort();
+                    return false;
+                });
         };
         _searchField.KeyPress += (e) =>
         {
-            if (e.KeyEvent.Key == Key.Esc)
+            if (e.KeyEvent.Key == (Key.Backspace | Key.CtrlMask))
+            {
+                var text = _searchField.Text?.ToString() ?? "";
+                var pos = _searchField.CursorPosition;
+                if (pos > 0)
+                {
+                    int end = pos;
+                    while (end > 0 && char.IsWhiteSpace(text[end - 1])) end--;
+                    while (end > 0 && !char.IsWhiteSpace(text[end - 1])) end--;
+                    _searchField.Text = text.Remove(end, pos - end);
+                    _searchField.CursorPosition = end;
+                }
+                e.Handled = true;
+            }
+            else if (e.KeyEvent.Key == Key.Esc)
             {
                 HideSearch();
                 e.Handled = true;
@@ -230,12 +253,19 @@ public partial class MainWindow
     private void HideSearch()
     {
         if (_searchField is null) return;
+
+        if (_searchDebounceTimer is not null)
+        {
+            global::Terminal.Gui.Application.MainLoop.RemoveTimeout(_searchDebounceTimer);
+            _searchDebounceTimer = null;
+        }
+
         _videoFrame.Remove(_searchField);
         _searchField = null;
         _searchQuery = "";
         _videoTable.Y = 0;
         _videoTable.Height = Dim.Fill();
         _videoTable.SetFocus();
-        _ = RefreshVideosAsync();
+        ApplyFilterAndSort();
     }
 }

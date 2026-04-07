@@ -40,6 +40,7 @@ public partial class MainWindow(
     private bool _suppressEvents;
     private TextField? _searchField;
     private string _searchQuery = "";
+    private object? _searchDebounceTimer;
     private string _sortColumn = "Added Date";
     private bool _sortAscending;
     private bool _isSyncing;
