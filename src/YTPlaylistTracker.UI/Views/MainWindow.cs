@@ -20,6 +20,7 @@ public partial class MainWindow(
     ILogger<MainWindow> logger) : Window("ytpt - YouTube Playlist Tracker")
 {
     private UpdateInfo? _latestUpdate;
+    private bool _updateInstalled;
 
     private ListView _profileList = null!;
     private ListView _playlistList = null!;
@@ -205,15 +206,43 @@ public partial class MainWindow(
                     try
                     {
                         var updateResult = await updateService.CheckForUpdateAsync();
-                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                        if (updateResult.IsUpdateAvailable && userSettings.AutoInstallUpdates)
                         {
-                            _latestUpdate = updateResult;
-                            if (updateResult.IsUpdateAvailable)
+                            logger.LogInformation("[Update] Auto-installing v{Version}", updateResult.LatestVersion);
+                            try
                             {
-                                Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
-                                SetNeedsDisplay();
+                                await updateService.ApplyUpdateAsync(updateResult);
+                                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                                {
+                                    _latestUpdate = updateResult;
+                                    _updateInstalled = true;
+                                    Title = $"ytpt — v{updateResult.LatestVersion} installed, restart to apply";
+                                    SetNeedsDisplay();
+                                });
                             }
-                        });
+                            catch (Exception ex)
+                            {
+                                logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
+                                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                                {
+                                    _latestUpdate = updateResult;
+                                    Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
+                                    SetNeedsDisplay();
+                                });
+                            }
+                        }
+                        else
+                        {
+                            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                            {
+                                _latestUpdate = updateResult;
+                                if (updateResult.IsUpdateAvailable)
+                                {
+                                    Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
+                                    SetNeedsDisplay();
+                                }
+                            });
+                        }
                     }
                     catch (Exception ex) { logger.LogWarning(ex, "Update check failed"); }
                 }

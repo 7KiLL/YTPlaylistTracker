@@ -4,6 +4,7 @@ public interface IUserSettings
 {
     bool AutoSyncOnStartup { get; set; }
     bool CheckForUpdatesOnStartup { get; set; }
+    bool AutoInstallUpdates { get; set; }
     bool SortTrackedFirst { get; set; }
     void Save();
 }

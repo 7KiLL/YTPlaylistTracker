@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Interfaces;
+using YTPlaylistTracker.Domain.Models;
 using YTPlaylistTracker.Infrastructure.Update;
 
 namespace YTPlaylistTracker.UI.Views;
@@ -83,12 +85,25 @@ public partial class MainWindow
     {
         var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService, browser);
         global::Terminal.Gui.Application.Run(settingsDialog);
+
+        if (settingsDialog is { UpdateRequested: true, UpdateInfo: not null })
+        {
+            PerformUpdateAndRestart(settingsDialog.UpdateInfo);
+            return;
+        }
+
         await RefreshPlaylistsAsync();
         ApplyFilterAndSort();
     }
 
     private void OnUpdateCheck()
     {
+        if (_updateInstalled)
+        {
+            RestartApp();
+            return;
+        }
+
         if (_latestUpdate is { IsUpdateAvailable: true })
         {
             var confirm = MessageBox.Query("Update Available",
@@ -96,39 +111,55 @@ public partial class MainWindow
                 "Update", "Cancel");
 
             if (confirm == 0)
-            {
-                ShowSpinner("Downloading update...");
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        var message = await updateService.ApplyUpdateAsync(_latestUpdate);
-                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                        {
-                            HideSpinner();
-                            MessageBox.Query("Update Complete", message, "OK");
-                            if (OperatingSystem.IsWindows())
-                                global::Terminal.Gui.Application.RequestStop();
-                        });
-                    }
-                    catch (UpdateException ex)
-                    {
-                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                        {
-                            HideSpinner();
-                            var msg = ex.ManualDownloadUrl is not null
-                                ? $"{ex.Message}\n\nDownload manually:\n{ex.ManualDownloadUrl}"
-                                : ex.Message;
-                            MessageBox.Query("Update Failed", msg, "OK");
-                        });
-                    }
-                });
-            }
+                PerformUpdateAndRestart(_latestUpdate);
         }
         else
         {
             var currentVersion = UpdateService.GetCurrentVersion();
             MessageBox.Query("Up to Date", $"You're on the latest version (v{currentVersion}).", "OK");
         }
+    }
+
+    internal void PerformUpdateAndRestart(UpdateInfo update)
+    {
+        ShowSpinner("Downloading update...");
+        Task.Run(async () =>
+        {
+            try
+            {
+                await updateService.ApplyUpdateAsync(update);
+                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                {
+                    HideSpinner();
+                    RestartApp();
+                });
+            }
+            catch (UpdateException ex)
+            {
+                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                {
+                    HideSpinner();
+                    var msg = ex.ManualDownloadUrl is not null
+                        ? $"{ex.Message}\n\nDownload manually:\n{ex.ManualDownloadUrl}"
+                        : ex.Message;
+                    MessageBox.Query("Update Failed", msg, "OK");
+                });
+            }
+        });
+    }
+
+    private static void RestartApp()
+    {
+        var binaryPath = Environment.ProcessPath;
+        if (binaryPath is not null)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = binaryPath,
+                UseShellExecute = false
+            });
+        }
+
+        global::Terminal.Gui.Application.RequestStop();
     }
 }

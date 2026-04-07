@@ -10,6 +10,7 @@ public class UserSettings : IUserSettings
 
     public bool AutoSyncOnStartup { get; set; } = true;
     public bool CheckForUpdatesOnStartup { get; set; } = true;
+    public bool AutoInstallUpdates { get; set; }
     public bool SortTrackedFirst { get; set; } = true;
 
     public void Save()
@@ -19,6 +20,7 @@ public class UserSettings : IUserSettings
         {
             autoSyncOnStartup = AutoSyncOnStartup,
             checkForUpdatesOnStartup = CheckForUpdatesOnStartup,
+            autoInstallUpdates = AutoInstallUpdates,
             sortTrackedFirst = SortTrackedFirst,
         }, JsonOptions);
         File.WriteAllText(SettingsPath, json);
@@ -39,6 +41,8 @@ public class UserSettings : IUserSettings
                 settings.AutoSyncOnStartup = val.GetBoolean();
             if (doc.RootElement.TryGetProperty("checkForUpdatesOnStartup", out var val2))
                 settings.CheckForUpdatesOnStartup = val2.GetBoolean();
+            if (doc.RootElement.TryGetProperty("autoInstallUpdates", out var val4))
+                settings.AutoInstallUpdates = val4.GetBoolean();
             if (doc.RootElement.TryGetProperty("sortTrackedFirst", out var val3))
                 settings.SortTrackedFirst = val3.GetBoolean();
         }

@@ -11,6 +11,9 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class SettingsDialog : Dialog
 {
+    public bool UpdateRequested { get; private set; }
+    public UpdateInfo? UpdateInfo { get; private set; }
+
     public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist,
         IUserSettings userSettings, IUpdateService updateService, ISystemLauncher? launcher = null)
         : base("Settings", 70, 28)
@@ -29,6 +32,11 @@ public class SettingsDialog : Dialog
         var updatesCheck = new CheckBox("Check for updates on startup", userSettings.CheckForUpdatesOnStartup) { X = 2, Y = y };
         updatesCheck.Toggled += (_) => { userSettings.CheckForUpdatesOnStartup = updatesCheck.Checked; userSettings.Save(); };
         Add(updatesCheck);
+        y += 1;
+
+        var autoInstallCheck = new CheckBox("Auto-install updates on startup", userSettings.AutoInstallUpdates) { X = 2, Y = y };
+        autoInstallCheck.Toggled += (_) => { userSettings.AutoInstallUpdates = autoInstallCheck.Checked; userSettings.Save(); };
+        Add(autoInstallCheck);
         y += 1;
 
         var sortTrackedCheck = new CheckBox("Sort tracked playlists first", userSettings.SortTrackedFirst) { X = 2, Y = y };
@@ -118,8 +126,8 @@ public class SettingsDialog : Dialog
 
         Add(new Label($"  Version:  {UpdateService.GetCurrentVersion()}") { X = 1, Y = y });
         y += 1;
-        var checkNowBtn = new Button("Check for Updates") { X = 2, Y = y };
-        checkNowBtn.Clicked += () =>
+        var updateNowBtn = new Button("Update Now") { X = 2, Y = y };
+        updateNowBtn.Clicked += () =>
         {
             Task.Run(async () =>
             {
@@ -129,9 +137,15 @@ public class SettingsDialog : Dialog
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                     {
                         if (update.IsUpdateAvailable)
-                            MessageBox.Query("Update Available", $"Version {update.LatestVersion} is available.", "OK");
+                        {
+                            UpdateRequested = true;
+                            UpdateInfo = update;
+                            global::Terminal.Gui.Application.RequestStop();
+                        }
                         else
+                        {
                             MessageBox.Query("Up to Date", $"You're on the latest version ({update.CurrentVersion}).", "OK");
+                        }
                     });
                 }
                 catch (Exception ex)
@@ -141,7 +155,7 @@ public class SettingsDialog : Dialog
                 }
             });
         };
-        Add(checkNowBtn);
+        Add(updateNowBtn);
 
         var closeBtn = new Button("Close", true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
