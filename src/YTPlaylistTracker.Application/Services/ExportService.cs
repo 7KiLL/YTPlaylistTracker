@@ -47,7 +47,7 @@ public static class ExportService
     private static string Escape(string value)
     {
         if (value.AsSpan().IndexOfAny(['"', ',', '\n']) >= 0)
-            return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
         return value;
     }
 }

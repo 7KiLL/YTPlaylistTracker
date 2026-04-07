@@ -122,7 +122,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             request.MaxResults = 50;
             request.PageToken = nextPageToken;
 
-            var response = await request.ExecuteAsync();
+            var response = await request.ExecuteAsync().ConfigureAwait(false);
             _logger.LogInformation("[API] <- {Count} items, nextPage={Next}",
                 response.Items.Count, response.NextPageToken ?? "(none)");
 
@@ -169,7 +169,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         var request = _youtube.Playlists.List("snippet");
         request.Id = playlistId;
 
-        var response = await request.ExecuteAsync();
+        var response = await request.ExecuteAsync().ConfigureAwait(false);
         var item = response.Items.FirstOrDefault();
         if (item is null)
         {
@@ -205,7 +205,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             request.MaxResults = 50;
             request.PageToken = nextPageToken;
 
-            var response = await request.ExecuteAsync();
+            var response = await request.ExecuteAsync().ConfigureAwait(false);
             foreach (var item in response.Items)
             {
                 string? json = null;
@@ -236,7 +236,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         var request = _youtube.Channels.List("snippet,contentDetails");
         request.Mine = true;
 
-        var response = await request.ExecuteAsync();
+        var response = await request.ExecuteAsync().ConfigureAwait(false);
         var item = response.Items.FirstOrDefault();
         if (item is null)
         {
@@ -259,7 +259,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         {
             var request = _youtube.Videos.List("status");
             request.Id = videoId;
-            var response = await request.ExecuteAsync();
+            var response = await request.ExecuteAsync().ConfigureAwait(false);
 
             if (response.Items.Count == 0)
                 return RemovalReason.Deleted;

@@ -4,7 +4,7 @@ using YTPlaylistTracker.Domain.Entities;
 
 namespace YTPlaylistTracker.UI.Views;
 
-public class RemovedVideosDialog : Dialog
+public sealed class RemovedVideosDialog : Dialog
 {
     public RemovedVideosDialog(IReadOnlyList<Video> removedVideos, string playlistTitle)
         : base($"Removed Videos - {playlistTitle}", 80, 25)

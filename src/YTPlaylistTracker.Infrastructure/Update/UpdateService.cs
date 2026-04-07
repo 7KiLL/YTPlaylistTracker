@@ -33,7 +33,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
         var attr = Assembly.GetEntryAssembly()?
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         var full = attr?.InformationalVersion ?? "0.0.0";
-        var plusIdx = full.IndexOf('+');
+        var plusIdx = full.IndexOf('+', StringComparison.Ordinal);
         return plusIdx >= 0 ? full[..plusIdx] : full;
     }
 
@@ -52,7 +52,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
         try
         {
             using var checkCts = new CancellationTokenSource(CheckTimeout);
-            var json = await Http.GetStringAsync(GitHubApiUrl, checkCts.Token);
+            var json = await Http.GetStringAsync(GitHubApiUrl, checkCts.Token).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -136,12 +136,12 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             logger.LogInformation("[Update] Downloading {Url}", update.DownloadUrl);
 
             using var downloadCts = new CancellationTokenSource(DownloadTimeout);
-            var response = await Http.GetAsync(update.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, downloadCts.Token);
+            var response = await Http.GetAsync(update.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, downloadCts.Token).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             await using (var fileStream = File.Create(archivePath))
             {
-                await response.Content.CopyToAsync(fileStream, downloadCts.Token);
+                await response.Content.CopyToAsync(fileStream, downloadCts.Token).ConfigureAwait(false);
             }
 
             if (new FileInfo(archivePath).Length == 0)
@@ -172,7 +172,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             else
             {
                 await using var gzipStream = new GZipStream(File.OpenRead(archivePath), CompressionMode.Decompress);
-                await TarFile.ExtractToDirectoryAsync(gzipStream, tempDir, overwriteFiles: true);
+                await TarFile.ExtractToDirectoryAsync(gzipStream, tempDir, overwriteFiles: true).ConfigureAwait(false);
 
                 // Verify extracted binary is within temp directory
                 var fullTarget = Path.GetFullPath(tempDir);
@@ -189,7 +189,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             var currentBinaryPath = Environment.ProcessPath
                 ?? throw new UpdateException("Could not determine current binary path.");
 
-            return await binaryUpdater.ApplyAsync(extractedBinaryPath, currentBinaryPath);
+            return await binaryUpdater.ApplyAsync(extractedBinaryPath, currentBinaryPath).ConfigureAwait(false);
         }
         catch (UpdateException)
         {

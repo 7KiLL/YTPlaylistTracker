@@ -20,7 +20,7 @@ AppSettings.OAuthClientSecret = BuildConstants.OAuthClientSecret;
 AppSettings.EnsureDirectories();
 AppSettings.LoadCredentials();
 
-var isVerbose = args.Contains("--verbose") || args.Contains("-v");
+var isVerbose = args.Contains("--verbose", StringComparer.Ordinal) || args.Contains("-v", StringComparer.Ordinal);
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Is(isVerbose ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Information)
     .WriteTo.File(

@@ -4,7 +4,7 @@ using YTPlaylistTracker.Domain.Entities;
 
 namespace YTPlaylistTracker.UI.Views;
 
-public class RemovalHistoryDialog : Dialog
+public sealed class RemovalHistoryDialog : Dialog
 {
     public RemovalHistoryDialog(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos)
         : base("Removal History - All Playlists", 90, 28)

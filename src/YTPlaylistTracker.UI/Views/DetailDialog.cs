@@ -4,7 +4,7 @@ using YTPlaylistTracker.Infrastructure.Platform;
 
 namespace YTPlaylistTracker.UI.Views;
 
-public class DetailDialog : Dialog
+public sealed class DetailDialog : Dialog
 {
     public DetailDialog(string title, ISystemLauncher? browser, params (string label, string value)[] fields)
         : base(title, 75, Math.Min(fields.Length + 5, 22))

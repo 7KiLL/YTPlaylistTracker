@@ -6,7 +6,7 @@ namespace YTPlaylistTracker.Infrastructure.Platform;
 
 public class WindowsBinaryUpdater(ILogger<WindowsBinaryUpdater> logger) : IBinaryUpdater
 {
-    public Task<string> ApplyAsync(string newBinaryPath, string currentBinaryPath)
+    public async Task<string> ApplyAsync(string newBinaryPath, string currentBinaryPath)
     {
         if (!File.Exists(newBinaryPath) || new FileInfo(newBinaryPath).Length == 0)
             throw new UpdateException("Downloaded binary is missing or empty.");
@@ -30,7 +30,7 @@ public class WindowsBinaryUpdater(ILogger<WindowsBinaryUpdater> logger) : IBinar
                 del "%~f0"
                 """;
 
-            File.WriteAllText(scriptPath, script);
+            await File.WriteAllTextAsync(scriptPath, script).ConfigureAwait(false);
 
             logger.LogInformation("[Update] Launching update script: {Script}", scriptPath);
             Process.Start(new ProcessStartInfo
@@ -41,7 +41,7 @@ public class WindowsBinaryUpdater(ILogger<WindowsBinaryUpdater> logger) : IBinar
                 UseShellExecute = false
             });
 
-            return Task.FromResult("App will close and restart automatically.");
+            return "App will close and restart automatically.";
         }
         catch (UnauthorizedAccessException)
         {

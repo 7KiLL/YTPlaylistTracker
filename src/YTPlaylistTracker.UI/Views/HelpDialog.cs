@@ -2,7 +2,7 @@ using Terminal.Gui;
 
 namespace YTPlaylistTracker.UI.Views;
 
-public class HelpDialog : Dialog
+public sealed class HelpDialog : Dialog
 {
     public HelpDialog() : base("Keybindings", 52, 26)
     {
