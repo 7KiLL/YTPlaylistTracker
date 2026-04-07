@@ -1,5 +1,3 @@
-using NStack;
-
 namespace YTPlaylistTracker.UI;
 
 internal static class UnicodeWidth
@@ -15,6 +13,8 @@ internal static class UnicodeWidth
     public static string Truncate(string s, int maxDisplayWidth)
     {
         if (string.IsNullOrEmpty(s)) return s;
+        if (GetWidth(s) <= maxDisplayWidth) return s;
+
         int width = 0;
         for (int i = 0; i < s.Length; i++)
         {
