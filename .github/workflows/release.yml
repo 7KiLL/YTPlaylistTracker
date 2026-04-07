@@ -6,7 +6,23 @@ on:
       - 'v*'
 
 jobs:
+  validate-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate required secrets
+        env:
+          HAS_CLIENT_ID: ${{ secrets.YTPT_CLIENT_ID != '' }}
+          HAS_CLIENT_SECRET: ${{ secrets.YTPT_CLIENT_SECRET != '' }}
+        run: |
+          if [[ "$HAS_CLIENT_ID" != "true" || "$HAS_CLIENT_SECRET" != "true" ]]; then
+            echo "::error::Required secrets YTPT_CLIENT_ID and/or YTPT_CLIENT_SECRET are not set."
+            echo "Release builds require Google OAuth credentials as repository secrets."
+            exit 1
+          fi
+          echo "All required secrets are present."
+
   build:
+    needs: validate-secrets
     strategy:
       matrix:
         include:

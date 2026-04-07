@@ -111,7 +111,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
 
     public async Task<List<YouTubeVideoSnapshot>> GetPlaylistVideosAsync(string playlistId)
     {
-        _logger.LogDebug("Fetching videos for playlist: {PlaylistId}", playlistId);
+        _logger.LogInformation("[API] GET playlistItems.list playlist={PlaylistId}", playlistId);
         var results = new List<YouTubeVideoSnapshot>();
         string? nextPageToken = null;
 
@@ -123,8 +123,8 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             request.PageToken = nextPageToken;
 
             var response = await request.ExecuteAsync();
-            _logger.LogDebug("Fetched page with {Count} items, nextPage: {Next}",
-                response.Items.Count, response.NextPageToken);
+            _logger.LogInformation("[API] <- {Count} items, nextPage={Next}",
+                response.Items.Count, response.NextPageToken ?? "(none)");
 
             foreach (var item in response.Items)
             {
@@ -167,7 +167,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
 
     public async Task<YouTubePlaylistSnapshot?> GetPlaylistMetadataAsync(string playlistId)
     {
-        _logger.LogDebug("Fetching metadata for playlist: {PlaylistId}", playlistId);
+        _logger.LogInformation("[API] GET playlists.list id={PlaylistId}", playlistId);
         var request = _youtube.Playlists.List("snippet");
         request.Id = playlistId;
 
@@ -236,7 +236,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
 
     public async Task<RemovalReason> CheckVideoStatusAsync(string videoId)
     {
-        _logger.LogDebug("Checking video status: {VideoId}", videoId);
+        _logger.LogInformation("[API] GET videos.list id={VideoId}", videoId);
         try
         {
             var request = _youtube.Videos.List("status");

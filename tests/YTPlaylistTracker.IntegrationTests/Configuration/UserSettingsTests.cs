@@ -49,7 +49,7 @@ public class UserSettingsTests : IDisposable
         if (existed)
         {
             backup = settingsPath + ".bak";
-            File.Move(settingsPath, backup);
+            File.Move(settingsPath, backup, overwrite: true);
         }
 
         try
@@ -60,7 +60,7 @@ public class UserSettingsTests : IDisposable
         finally
         {
             if (backup != null)
-                File.Move(backup, settingsPath);
+                File.Move(backup, settingsPath, overwrite: true);
         }
     }
 
@@ -74,7 +74,7 @@ public class UserSettingsTests : IDisposable
         if (existed)
         {
             backup = settingsPath + ".bak";
-            File.Move(settingsPath, backup);
+            File.Move(settingsPath, backup, overwrite: true);
         }
 
         try
@@ -87,7 +87,7 @@ public class UserSettingsTests : IDisposable
         finally
         {
             if (backup != null)
-                File.Move(backup, settingsPath);
+                File.Move(backup, settingsPath, overwrite: true);
             else if (File.Exists(settingsPath))
                 File.Delete(settingsPath);
         }

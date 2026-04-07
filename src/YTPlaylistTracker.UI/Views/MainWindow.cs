@@ -274,11 +274,11 @@ public class MainWindow : Window
                         int totalRemoved = results.Values.Sum(r => r.Removed);
                         _logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
                             results.Count, totalAdded, totalRemoved);
-                        global::Terminal.Gui.Application.MainLoop.Invoke(async () =>
+                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                         {
                             HideSpinner();
-                            await RefreshPlaylistsAsync();
-                            await RefreshVideosAsync();
+                            RefreshPlaylistsAsync().GetAwaiter().GetResult();
+                            RefreshVideosAsync().GetAwaiter().GetResult();
                             Title = $"ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved})";
                             SetNeedsDisplay();
                             global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(5), _ =>
@@ -297,7 +297,11 @@ public class MainWindow : Window
                 }
                 else
                 {
-                    global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
+                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    {
+                        HideSpinner();
+                        RefreshPlaylistsAsync().GetAwaiter().GetResult();
+                    });
                 }
             });
             return false;
@@ -473,11 +477,11 @@ public class MainWindow : Window
 
     private void ShowSpinner(string message)
     {
+        HideSpinner();
         _spinnerFrame = 0;
-        _spinnerTimer = global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(80), _ =>
+        _spinnerTimer = global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(200), _ =>
         {
             Title = "ytpt " + SpinnerFrames[_spinnerFrame % SpinnerFrames.Length] + " " + message;
-            SetNeedsDisplay();
             _spinnerFrame++;
             return true;
         });
