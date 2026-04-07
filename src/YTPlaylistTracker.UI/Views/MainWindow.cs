@@ -113,13 +113,13 @@ public partial class MainWindow(
 
         Add(profileFrame, playlistFrame, _videoFrame);
 
-        var hintBar1 = new Label(" h/l:pane  j/k:nav  J/K:fast  Enter:detail  /:search  o:sort  a:add  t:track  T:all  s:sync  S:all  q:quit")
+        var hintBar1 = new Label(" h/l pane │ j/k nav │ J/K fast │ Tab cycle │ Enter detail │ / F3 search │ o F4 sort")
         {
             Y = Pos.AnchorEnd(2),
             Width = Dim.Fill(),
             ColorScheme = Colors.Menu
         };
-        var hintBar2 = new Label(" F1:add  F2:track  F5:sync  F6:sync all  F8:deleted  F9:settings  e:export  H:history  u:update  ?:help")
+        var hintBar2 = new Label(" a F1 add │ t F2 track │ s F5 sync │ S F6 all │ e F7 export │ F8 deleted │ F9 set │ H F11 hist │ ? F12 help │ q quit")
         {
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),

@@ -4,7 +4,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class HelpDialog : Dialog
 {
-    public HelpDialog() : base("Keybindings", 50, 24)
+    public HelpDialog() : base("Keybindings", 52, 26)
     {
         (string, string)[] keys =
         [
@@ -13,18 +13,19 @@ public class HelpDialog : Dialog
             ("J / K / Shift+Up/Down", "Fast scroll (5 rows)"),
             ("Tab / Shift+Tab", "Cycle panes"),
             ("Enter", "View details"),
-            ("/", "Search / filter videos"),
-            ("o", "Sort videos"),
-            ("e", "Export removed videos"),
-            ("H", "Removal history"),
-            ("?", "This help"),
+            ("/ / F3", "Search / filter videos"),
+            ("o / F4", "Sort videos"),
             ("a / F1", "Add playlist by URL"),
             ("t / F2", "Toggle tracking"),
             ("T", "Track / untrack all"),
             ("s / F5", "Sync selected playlist"),
             ("S / F6", "Sync all tracked"),
+            ("e / F7", "Export removed videos"),
             ("F8", "Toggle removed videos"),
             ("F9", "Settings"),
+            ("H / F11", "Removal history"),
+            ("? / F12", "This help"),
+            ("u", "Check for updates"),
             ("q / F10", "Quit"),
             ("Ctrl+C (x2)", "Quit"),
         ];
@@ -33,7 +34,7 @@ public class HelpDialog : Dialog
         foreach (var (key, action) in keys)
         {
             Add(new Label(key) { X = 1, Y = y, ColorScheme = Colors.Menu });
-            Add(new Label(action) { X = 24, Y = y });
+            Add(new Label(action) { X = 26, Y = y });
             y++;
         }
 

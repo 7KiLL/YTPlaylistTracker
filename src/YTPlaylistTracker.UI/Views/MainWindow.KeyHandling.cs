@@ -98,11 +98,18 @@ public partial class MainWindow
         {
             case Key.F1: _ = OnAddByUrlAsync(); return true;
             case Key.F2: OnToggleTrack(); return true;
+            case Key.F3: ShowSearch(); return true;
+            case Key.F4: ShowSortMenu(); return true;
             case Key.F5: OnSync(); return true;
             case Key.F6: OnSyncAll(); return true;
+            case Key.F7: _ = OnExport(); return true;
             case Key.F8: OnToggleDeleted(); return true;
             case Key.F9: OnSettings(); return true;
             case Key.F10: global::Terminal.Gui.Application.RequestStop(); return true;
+            case Key.F11: _ = OnShowHistory(); return true;
+            case Key.F12:
+                global::Terminal.Gui.Application.Run(new HelpDialog());
+                return true;
         }
 
         if (keyEvent.Key == (Key.C | Key.CtrlMask))
