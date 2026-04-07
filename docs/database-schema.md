@@ -26,8 +26,12 @@ File permissions: `600` (owner read/write only) on Linux/macOS.
 | ProfileId          | INTEGER  | FK → Profiles.Id                     |
 | YouTubePlaylistId  | TEXT     | NOT NULL, max 100                    |
 | Title              | TEXT     | nullable                             |
+| Description        | TEXT     | nullable                             |
+| ThumbnailUrl       | TEXT     | nullable                             |
+| PublishedAt        | TEXT     | datetime, nullable                   |
 | IsTracked          | INTEGER  | boolean                              |
 | LastSyncedAt       | TEXT     | datetime, nullable                   |
+| JsonMetadata       | TEXT     | nullable                             |
 
 **Unique index**: `(ProfileId, YouTubePlaylistId)`
 
@@ -39,8 +43,13 @@ File permissions: `600` (owner read/write only) on Linux/macOS.
 | YouTubeVideoId  | TEXT     | NOT NULL, max 20                     |
 | Title           | TEXT     | NOT NULL, max 500                    |
 | ChannelTitle    | TEXT     | nullable, max 200                    |
+| Description     | TEXT     | nullable                             |
+| ThumbnailUrl    | TEXT     | nullable                             |
+| Position        | INTEGER  | default 0                            |
+| AddedAt         | TEXT     | datetime, nullable                   |
 | RemovalReason   | INTEGER  | nullable, enum (0-4)                 |
 | DeletedAt       | TEXT     | datetime, nullable                   |
+| JsonMetadata    | TEXT     | nullable                             |
 
 **Unique index**: `(PlaylistId, YouTubeVideoId)`
 

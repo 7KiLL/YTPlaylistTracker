@@ -26,7 +26,7 @@ External concerns. Depends on Domain + Application.
 
 ### UI (`YTPlaylistTracker.UI`)
 Composition root and presentation. Depends on all layers.
-- **Program.cs**: System.CommandLine CLI entry point with `ui`, `login`, `logout`, `sync`, `status` subcommands
+- **Program.cs**: System.CommandLine CLI entry point with `ui`, `login`, `logout`, `sync`, `status`, `reset` subcommands
 - **MainWindow**: Terminal.Gui three-pane layout (Profiles → Playlists → Videos)
 - **SettingsDialog**: DB path display, purge deleted videos
 - **RemovedVideosDialog**: Filtered view of removed videos
@@ -64,4 +64,4 @@ Three auth modes (in priority order):
 3. **Terminal.Gui v1**: v2 is still pre-release. v1 is stable and sufficient.
 4. **System.CommandLine for CLI**: Auto-generates help, supports subcommands, minimal boilerplate.
 5. **Serilog with rolling file**: Structured logging, defaults to Information level. `--verbose` flag for debug.
-6. **EnsureCreated() over migrations**: Simpler for a standalone CLI tool.
+6. **EF Core Migrations**: Auto-applied on startup. Legacy v0.1.0 databases (created with `EnsureCreated`) are auto-detected and upgraded.
