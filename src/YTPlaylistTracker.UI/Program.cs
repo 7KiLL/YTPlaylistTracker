@@ -319,7 +319,9 @@ async Task RunLogin()
     }
     AppSettings.SaveCredentials(AppSettings.OAuthClientId, AppSettings.OAuthClientSecret);
     Console.WriteLine("Signing in with Google...");
-    Console.WriteLine("A browser window will open. Please sign in and grant YouTube access.\n");
+    Console.WriteLine("A browser window will open. Please sign in and grant YouTube access.");
+    Console.WriteLine("If the browser doesn't open automatically, check the console output below for the authorization URL.");
+    Console.WriteLine();
     try
     {
         var logger = sp.GetRequiredService<ILogger<YouTubeApiService>>();

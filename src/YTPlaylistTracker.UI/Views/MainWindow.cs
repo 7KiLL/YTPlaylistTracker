@@ -9,6 +9,7 @@ using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Domain.Models;
 using YTPlaylistTracker.Infrastructure.Platform;
 using YTPlaylistTracker.Infrastructure.Update;
+using YTPlaylistTracker.Infrastructure.YouTube;
 using Microsoft.Extensions.Logging;
 using YTPlaylistTracker.UI;
 
@@ -268,6 +269,24 @@ public class MainWindow : Window
         // Load videos for the initially selected playlist
         if (_selectedPlaylist is not null)
             await RefreshVideosAsync();
+
+        // Check if user is logged in before starting background work
+        if (!YouTubeApiService.HasStoredToken("default") &&
+            string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("YOUTUBE_API_KEY")))
+        {
+            global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _ =>
+            {
+                MessageBox.Query("Welcome to ytpt",
+                    "You're not logged in yet.\n\n" +
+                    "To get started, close the app and run:\n" +
+                    "  ytpt login\n\n" +
+                    "This will open your browser to sign in with Google\n" +
+                    "and grant YouTube read-only access.",
+                    "OK");
+                return false;
+            });
+            return;
+        }
 
         // Fetch playlists from YouTube in background after UI renders, then auto-sync if enabled
         var capturedProfile = _selectedProfile;
@@ -628,7 +647,7 @@ public class MainWindow : Window
             if (added > 0)
             {
                 _logger.LogInformation("Imported {Count} new playlists from YouTube", added);
-                global::Terminal.Gui.Application.MainLoop.Invoke(async () => await RefreshPlaylistsAsync());
+                global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshPlaylistsAsync().GetAwaiter().GetResult());
             }
         }
         catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
