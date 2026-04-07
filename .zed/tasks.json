@@ -6,9 +6,19 @@
     "tags": ["dotnet-run"]
   },
   {
+    "label": "Run TUI (external terminal)",
+    "command": "xdg-terminal-exec dotnet run --project src/YTPlaylistTracker.UI",
+    "tags": ["dotnet-run"]
+  },
+  {
     "label": "Run TUI (verbose)",
     "command": "dotnet run --project src/YTPlaylistTracker.UI -- --verbose",
     "use_new_terminal": true,
+    "tags": ["dotnet-run"]
+  },
+  {
+    "label": "Run TUI (verbose, external terminal)",
+    "command": "xdg-terminal-exec dotnet run --project src/YTPlaylistTracker.UI -- --verbose",
     "tags": ["dotnet-run"]
   },
   {
