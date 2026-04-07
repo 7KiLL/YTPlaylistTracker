@@ -21,6 +21,14 @@
 - [x] Install scripts (bash + PowerShell one-liners)
 - [x] Fixture-based sync tests
 
+## Bug Fixes (v0.4.x)
+- [x] Fix MainLoop.Invoke(async () => ...) deadlock — Terminal.Gui treats async lambdas as fire-and-forget; replaced with sync lambda + .GetAwaiter().GetResult()
+- [x] Fix ShowSpinner() timer leak — calling ShowSpinner twice leaked the first timer; now cleans up previous timer before creating a new one
+- [x] Fix spinner flicker — reduced interval from 80ms to 200ms
+- [x] Fix UserSettings test flakiness — File.Move now uses overwrite:true
+- [x] Add validate-secrets CI job in release.yml
+- [x] Improve API logging with [API] prefix for easier filtering
+
 ## Sub-project B: Background Sync & History
 - [ ] Background sync timer (configurable interval, runs while TUI is open)
 - [x] Auto-sync on startup (configurable)

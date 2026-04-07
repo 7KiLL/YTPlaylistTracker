@@ -108,6 +108,12 @@ Legacy v0.1.0 databases (created with `EnsureCreated`) are auto-detected and upg
 - **Unit tests** (`tests/YTPlaylistTracker.UnitTests/`): NSubstitute mocks, tests SyncService diff logic, error scenarios, and URL parsing
 - **Integration tests** (`tests/YTPlaylistTracker.IntegrationTests/`): Real in-memory SQLite, tests repository CRUD and end-to-end sync flow
 
+## Code Review Rules
+
+See `docs/rules/` for mandatory review checklists:
+- `async-tui-safety.md` — Terminal.Gui threading rules (no async lambdas in MainLoop.Invoke, timer cleanup, background work patterns)
+- `code-review-checklist.md` — General checklist for async, timers, threading, tests, and security
+
 ## Docs
 
-`docs/` is the project documentation directory (architecture decisions, DB schema, backlog).
+`docs/` is the project documentation directory (architecture decisions, DB schema, backlog, rules).
