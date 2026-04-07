@@ -13,6 +13,10 @@
     <PackageReference Include="Terminal.Gui" Version="1.19.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="YTPlaylistTracker.UnitTests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
 
