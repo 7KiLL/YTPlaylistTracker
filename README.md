@@ -213,7 +213,7 @@ dotnet run --project src/YTPlaylistTracker.UI
 
 ```bash
 dotnet pack src/YTPlaylistTracker.UI -c Release
-dotnet tool install -g --add-source src/YTPlaylistTracker.UI/nupkg ytpt
+dotnet tool install -g --add-source src/YTPlaylistTracker.UI/bin/Release ytpt
 ytpt
 ```
 

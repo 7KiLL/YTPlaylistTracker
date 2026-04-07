@@ -33,7 +33,7 @@ dotnet build -p:OAuthClientId=xxx -p:OAuthClientSecret=yyy
 ### Global Tool Install
 ```bash
 dotnet pack src/YTPlaylistTracker.UI -c Release
-dotnet tool install -g --add-source src/YTPlaylistTracker.UI/nupkg ytpt
+dotnet tool install -g --add-source src/YTPlaylistTracker.UI/bin/Release ytpt
 ytpt                  # Launch TUI
 ytpt ui               # Launch TUI (explicit)
 ytpt login            # Sign in with Google
