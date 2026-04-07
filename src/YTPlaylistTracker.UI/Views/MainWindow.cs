@@ -15,23 +15,22 @@ using YTPlaylistTracker.UI;
 
 namespace YTPlaylistTracker.UI.Views;
 
-public class MainWindow : Window
+public class MainWindow(
+    IPlaylistRepository playlistRepo,
+    IProfileRepository profileRepo,
+    ISyncService syncService,
+    IYouTubeApiService youtubeApi,
+    IBrowserLauncher browser,
+    IUserSettings userSettings,
+    IUpdateService updateService,
+    ILogger<MainWindow> logger) : Window("ytpt - YouTube Playlist Tracker")
 {
-    private readonly IPlaylistRepository _playlistRepo;
-    private readonly IProfileRepository _profileRepo;
-    private readonly ISyncService _syncService;
-    private readonly IYouTubeApiService _youtubeApi;
-    private readonly IBrowserLauncher _browser;
-    private readonly IUserSettings _userSettings;
-    private readonly IUpdateService _updateService;
-    private readonly ILogger _logger;
-
     private UpdateInfo? _latestUpdate;
 
-    private readonly ListView _profileList;
-    private readonly ListView _playlistList;
-    private readonly TableView _videoTable;
-    private readonly FrameView _videoFrame;
+    private ListView _profileList = null!;
+    private ListView _playlistList = null!;
+    private TableView _videoTable = null!;
+    private FrameView _videoFrame = null!;
 
     private List<Profile> _profiles = [];
     private List<Playlist> _playlists = [];
@@ -56,26 +55,8 @@ public class MainWindow : Window
         ? $"ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!)"
         : "ytpt - YouTube Playlist Tracker";
 
-    public MainWindow(
-        IPlaylistRepository playlistRepo,
-        IProfileRepository profileRepo,
-        ISyncService syncService,
-        IYouTubeApiService youtubeApi,
-        IBrowserLauncher browser,
-        IUserSettings userSettings,
-        IUpdateService updateService,
-        ILogger<MainWindow> logger) : base("ytpt - YouTube Playlist Tracker")
+    private void SetupUI()
     {
-        _playlistRepo = playlistRepo;
-        _profileRepo = profileRepo;
-        _syncService = syncService;
-        _youtubeApi = youtubeApi;
-        _browser = browser;
-        _userSettings = userSettings;
-        _updateService = updateService;
-        _logger = logger;
-
-        // Left pane: Profiles
         var profileFrame = new FrameView("Profiles")
         {
             X = 0, Y = 0,
@@ -90,7 +71,6 @@ public class MainWindow : Window
         _profileList.SelectedItemChanged += OnProfileSelected;
         profileFrame.Add(_profileList);
 
-        // Middle pane: Playlists
         var playlistFrame = new FrameView("Playlists")
         {
             X = Pos.Right(profileFrame),
@@ -106,7 +86,6 @@ public class MainWindow : Window
         _playlistList.SelectedItemChanged += OnPlaylistSelected;
         playlistFrame.Add(_playlistList);
 
-        // Right pane: Videos (TableView with minimal borders)
         _videoFrame = new FrameView("Videos")
         {
             X = Pos.Right(playlistFrame),
@@ -155,7 +134,7 @@ public class MainWindow : Window
             return base.ProcessHotKey(keyEvent);
 
         // Pane switching (arrows + h/l)
-        var panes = new View[] { _profileList, _playlistList, _videoTable };
+        View[] panes = [_profileList, _playlistList, _videoTable];
         var current = Array.FindIndex(panes, p => p.HasFocus);
 
         switch (keyEvent.Key)
@@ -169,9 +148,12 @@ public class MainWindow : Window
         }
 
         // Focused pane for j/k navigation
-        var focused = _profileList.HasFocus ? (View)_profileList
-            : _playlistList.HasFocus ? (View)_playlistList
-            : (View)_videoTable;
+        var focused = (_profileList.HasFocus, _playlistList.HasFocus) switch
+        {
+            (true, _) => (View)_profileList,
+            (_, true) => (View)_playlistList,
+            _ => (View)_videoTable
+        };
 
         // All single-letter keybinds in ProcessHotKey so child views don't eat them
         switch (keyEvent.KeyValue)
@@ -202,7 +184,7 @@ public class MainWindow : Window
         // Tab / Shift+Tab: cycle focus between the three panes
         if (keyEvent.Key == Key.Tab || keyEvent.Key == Key.BackTab)
         {
-            var panes = new View[] { _profileList, _playlistList, _videoTable };
+            View[] panes = [_profileList, _playlistList, _videoTable];
             var current = Array.FindIndex(panes, p => p.HasFocus);
             if (current < 0) current = 0;
             int next = keyEvent.Key == Key.Tab
@@ -255,12 +237,13 @@ public class MainWindow : Window
 
     public async Task InitializeAsync()
     {
-        _profiles = await _profileRepo.GetAllAsync();
+        SetupUI();
+        _profiles = (await profileRepo.GetAllAsync()).ToList();
         if (_profiles.Count == 0)
         {
             var defaultProfile = new Profile { Name = "Default", IsDefault = true };
-            await _profileRepo.AddAsync(defaultProfile);
-            _profiles = await _profileRepo.GetAllAsync();
+            await profileRepo.AddAsync(defaultProfile);
+            _profiles = (await profileRepo.GetAllAsync()).ToList();
         }
 
         _selectedProfile = _profiles.FirstOrDefault(p => p.IsDefault) ?? _profiles.First();
@@ -302,7 +285,7 @@ public class MainWindow : Window
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Background playlist fetch failed");
+                    logger.LogError(ex, "Background playlist fetch failed");
                 }
 
                 // Backfill channel info if not yet populated
@@ -310,25 +293,25 @@ public class MainWindow : Window
                 {
                     try
                     {
-                        var channel = await _youtubeApi.GetMyChannelAsync();
+                        var channel = await youtubeApi.GetMyChannelAsync();
                         if (channel is not null)
                         {
                             capturedProfile.YouTubeChannelId = channel.ChannelId;
                             capturedProfile.ChannelTitle = channel.Title;
                             capturedProfile.ChannelThumbnailUrl = channel.ThumbnailUrl;
-                            await _profileRepo.UpdateAsync(capturedProfile);
+                            await profileRepo.UpdateAsync(capturedProfile);
                             global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshProfileList());
                         }
                     }
-                    catch (Exception ex) { _logger.LogWarning(ex, "Failed to fetch channel info"); }
+                    catch (Exception ex) { logger.LogWarning(ex, "Failed to fetch channel info"); }
                 }
 
                 // Check for updates in background
-                if (_userSettings.CheckForUpdatesOnStartup)
+                if (userSettings.CheckForUpdatesOnStartup)
                 {
                     try
                     {
-                        var updateResult = await _updateService.CheckForUpdateAsync();
+                        var updateResult = await updateService.CheckForUpdateAsync();
                         global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                         {
                             _latestUpdate = updateResult;
@@ -339,10 +322,10 @@ public class MainWindow : Window
                             }
                         });
                     }
-                    catch (Exception ex) { _logger.LogWarning(ex, "Update check failed"); }
+                    catch (Exception ex) { logger.LogWarning(ex, "Update check failed"); }
                 }
 
-                if (_userSettings.AutoSyncOnStartup && capturedProfile is not null)
+                if (userSettings.AutoSyncOnStartup && capturedProfile is not null)
                 {
                     _isSyncing = true;
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
@@ -351,10 +334,10 @@ public class MainWindow : Window
                     {
                         var syncProgress = new Progress<string>(msg =>
                             global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
-                        var results = await _syncService.SyncAllTrackedAsync(capturedProfile.Id, syncProgress);
+                        var results = await syncService.SyncAllTrackedAsync(capturedProfile.Id, syncProgress);
                         int totalAdded = results.Values.Sum(r => r.Added);
                         int totalRemoved = results.Values.Sum(r => r.Removed);
-                        _logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
+                        logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
                             results.Count, totalAdded, totalRemoved);
                         global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                         {
@@ -373,7 +356,7 @@ public class MainWindow : Window
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Auto-sync failed");
+                        logger.LogError(ex, "Auto-sync failed");
                         global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
                     }
                     finally
@@ -406,7 +389,7 @@ public class MainWindow : Window
     {
         if (_selectedProfile is null) return;
         var prevIdx = _playlistList.SelectedItem;
-        _playlists = await _playlistRepo.GetByProfileAsync(_selectedProfile.Id);
+        _playlists = (await playlistRepo.GetByProfileAsync(_selectedProfile.Id)).ToList();
         var names = _playlists.Select(p =>
             (p.IsTracked ? "[x] " : "[ ] ") + (p.Title ?? p.YouTubePlaylistId)).ToList();
         _suppressEvents = true;
@@ -435,9 +418,9 @@ public class MainWindow : Window
             return;
         }
 
-        _videos = _showDeletedOnly
-            ? await _playlistRepo.GetDeletedVideosAsync(_selectedPlaylist.Id)
-            : await _playlistRepo.GetVideosAsync(_selectedPlaylist.Id);
+        _videos = (_showDeletedOnly
+            ? await playlistRepo.GetDeletedVideosAsync(_selectedPlaylist.Id)
+            : await playlistRepo.GetVideosAsync(_selectedPlaylist.Id)).ToList();
 
         var title = _selectedPlaylist.Title ?? _selectedPlaylist.YouTubePlaylistId;
 
@@ -518,7 +501,7 @@ public class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to refresh videos");
+            logger.LogError(ex, "Failed to refresh videos");
         }
     }
 
@@ -577,7 +560,7 @@ public class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load profile");
+            logger.LogError(ex, "Failed to load profile");
         }
     }
 
@@ -594,7 +577,7 @@ public class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load playlist");
+            logger.LogError(ex, "Failed to load playlist");
         }
     }
 
@@ -627,9 +610,9 @@ public class MainWindow : Window
 
         try
         {
-            var userPlaylists = await _youtubeApi.GetUserPlaylistsAsync();
+            var userPlaylists = await youtubeApi.GetUserPlaylistsAsync();
 
-            var dbPlaylists = await _playlistRepo.GetByProfileAsync(profile.Id);
+            var dbPlaylists = await playlistRepo.GetByProfileAsync(profile.Id);
             var existingIds = dbPlaylists.Select(p => p.YouTubePlaylistId).ToHashSet();
 
             var newPlaylists = new List<Playlist>();
@@ -639,6 +622,7 @@ public class MainWindow : Window
 
                 newPlaylists.Add(new Playlist
                 {
+                    Profile = profile,
                     ProfileId = profile.Id,
                     YouTubePlaylistId = meta.PlaylistId,
                     Title = meta.Title,
@@ -653,15 +637,16 @@ public class MainWindow : Window
             // Import Liked Videos playlist if not already in DB
             try
             {
-                var channel = await _youtubeApi.GetMyChannelAsync();
+                var channel = await youtubeApi.GetMyChannelAsync();
                 if (channel?.LikedVideosPlaylistId is not null
                     && !existingIds.Contains(channel.LikedVideosPlaylistId))
                 {
-                    var likedMeta = await _youtubeApi.GetPlaylistMetadataAsync(channel.LikedVideosPlaylistId);
+                    var likedMeta = await youtubeApi.GetPlaylistMetadataAsync(channel.LikedVideosPlaylistId);
                     if (likedMeta is not null)
                     {
                         newPlaylists.Add(new Playlist
                         {
+                            Profile = profile,
                             ProfileId = profile.Id,
                             YouTubePlaylistId = channel.LikedVideosPlaylistId,
                             Title = likedMeta.Title ?? "Liked Videos",
@@ -671,29 +656,29 @@ public class MainWindow : Window
                             PublishedAt = likedMeta.PublishedAt,
                             JsonMetadata = likedMeta.JsonMetadata
                         });
-                        _logger.LogInformation("Imported Liked Videos playlist ({Id})", channel.LikedVideosPlaylistId);
+                        logger.LogInformation("Imported Liked Videos playlist ({Id})", channel.LikedVideosPlaylistId);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to import Liked Videos playlist");
+                logger.LogWarning(ex, "Failed to import Liked Videos playlist");
             }
 
             if (newPlaylists.Count > 0)
             {
-                await _playlistRepo.AddPlaylistsAsync(newPlaylists);
-                _logger.LogInformation("Imported {Count} new playlists from YouTube", newPlaylists.Count);
+                await playlistRepo.AddPlaylistsAsync(newPlaylists);
+                logger.LogInformation("Imported {Count} new playlists from YouTube", newPlaylists.Count);
                 global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshPlaylistsAsync().GetAwaiter().GetResult());
             }
         }
         catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
         {
-            _logger.LogWarning("YouTube API quota/auth issue during background fetch — skipping");
+            logger.LogWarning("YouTube API quota/auth issue during background fetch — skipping");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch playlists from YouTube");
+            logger.LogError(ex, "Failed to fetch playlists from YouTube");
         }
     }
 
@@ -719,10 +704,11 @@ public class MainWindow : Window
         if (string.IsNullOrWhiteSpace(inputValue)) return;
 
         var playlistId = PlaylistUrlParser.ExtractPlaylistId(inputValue);
-        _logger.LogInformation("Adding playlist: {PlaylistId}", playlistId);
+        logger.LogInformation("Adding playlist: {PlaylistId}", playlistId);
 
         var playlist = new Playlist
         {
+            Profile = _selectedProfile,
             ProfileId = _selectedProfile.Id,
             YouTubePlaylistId = playlistId,
             IsTracked = true
@@ -730,7 +716,7 @@ public class MainWindow : Window
 
         try
         {
-            var meta = await _youtubeApi.GetPlaylistMetadataAsync(playlistId);
+            var meta = await youtubeApi.GetPlaylistMetadataAsync(playlistId);
             if (meta is not null)
             {
                 playlist.Title = meta.Title;
@@ -740,23 +726,23 @@ public class MainWindow : Window
                 playlist.JsonMetadata = meta.JsonMetadata;
             }
 
-            await _playlistRepo.AddAsync(playlist);
+            await playlistRepo.AddAsync(playlist);
             await RefreshPlaylistsAsync();
             MessageBox.Query("Success", "Added playlist: " + (playlist.Title ?? playlistId), "OK");
         }
         catch (GoogleApiException ex)
         {
-            _logger.LogError(ex, "YouTube API error adding playlist");
+            logger.LogError(ex, "YouTube API error adding playlist");
             MessageBox.Query("YouTube Error", "Could not fetch playlist: " + ex.Message, "OK");
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Network error adding playlist");
+            logger.LogError(ex, "Network error adding playlist");
             MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to add playlist");
+            logger.LogError(ex, "Failed to add playlist");
             MessageBox.Query("Error", "Failed to add playlist: " + ex.Message, "OK");
         }
     }
@@ -779,13 +765,13 @@ public class MainWindow : Window
         try
         {
             _selectedPlaylist.IsTracked = !_selectedPlaylist.IsTracked;
-            await _playlistRepo.UpdateAsync(_selectedPlaylist);
+            await playlistRepo.UpdateAsync(_selectedPlaylist);
             await RefreshPlaylistsAsync();
         }
         catch (Exception ex)
         {
             _selectedPlaylist.IsTracked = !_selectedPlaylist.IsTracked; // revert
-            _logger.LogError(ex, "Failed to toggle tracking");
+            logger.LogError(ex, "Failed to toggle tracking");
             MessageBox.Query("Error", "Failed to update: " + ex.Message, "OK");
         }
     }
@@ -800,13 +786,13 @@ public class MainWindow : Window
             foreach (var p in _playlists)
             {
                 p.IsTracked = newState;
-                await _playlistRepo.UpdateAsync(p);
+                await playlistRepo.UpdateAsync(p);
             }
             await RefreshPlaylistsAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to toggle all tracking");
+            logger.LogError(ex, "Failed to toggle all tracking");
             MessageBox.Query("Error", "Failed to update: " + ex.Message, "OK");
         }
     }
@@ -834,10 +820,10 @@ public class MainWindow : Window
         }
 
         _isSyncing = true;
-        ShowSpinner("Syncing " + _selectedPlaylist.Title + "...");
+        ShowSpinner($"Syncing {_selectedPlaylist.Title}...");
         try
         {
-            var result = await Task.Run(() => _syncService.SyncPlaylistAsync(_selectedPlaylist));
+            var result = await Task.Run(() => syncService.SyncPlaylistAsync(_selectedPlaylist));
             HideSpinner();
             await RefreshVideosAsync();
             MessageBox.Query("Sync Complete",
@@ -846,25 +832,25 @@ public class MainWindow : Window
         catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
         {
             HideSpinner();
-            _logger.LogError(ex, "YouTube API quota or auth error during sync");
+            logger.LogError(ex, "YouTube API quota or auth error during sync");
             MessageBox.Query("YouTube Error", "API quota exceeded or auth expired.\nTry: ytpt login", "OK");
         }
         catch (GoogleApiException ex)
         {
             HideSpinner();
-            _logger.LogError(ex, "YouTube API error during sync");
+            logger.LogError(ex, "YouTube API error during sync");
             MessageBox.Query("YouTube Error", "Sync failed: " + ex.Message, "OK");
         }
         catch (HttpRequestException ex)
         {
             HideSpinner();
-            _logger.LogError(ex, "Network error during sync");
+            logger.LogError(ex, "Network error during sync");
             MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
         }
         catch (Exception ex)
         {
             HideSpinner();
-            _logger.LogError(ex, "Sync failed");
+            logger.LogError(ex, "Sync failed");
             MessageBox.Query("Error", "Sync failed: " + ex.Message, "OK");
         }
         finally
@@ -883,7 +869,7 @@ public class MainWindow : Window
         {
             var syncProgress = new Progress<string>(msg =>
                 global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
-            var results = await Task.Run(() => _syncService.SyncAllTrackedAsync(_selectedProfile.Id, syncProgress));
+            var results = await Task.Run(() => syncService.SyncAllTrackedAsync(_selectedProfile.Id, syncProgress));
             HideSpinner();
             await RefreshPlaylistsAsync();
             await RefreshVideosAsync();
@@ -898,25 +884,25 @@ public class MainWindow : Window
         catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
         {
             HideSpinner();
-            _logger.LogError(ex, "YouTube API quota or auth error during sync all");
+            logger.LogError(ex, "YouTube API quota or auth error during sync all");
             MessageBox.Query("YouTube Error", "API quota exceeded or auth expired.\nTry: ytpt login", "OK");
         }
         catch (GoogleApiException ex)
         {
             HideSpinner();
-            _logger.LogError(ex, "YouTube API error during sync all");
+            logger.LogError(ex, "YouTube API error during sync all");
             MessageBox.Query("YouTube Error", "Sync failed: " + ex.Message, "OK");
         }
         catch (HttpRequestException ex)
         {
             HideSpinner();
-            _logger.LogError(ex, "Network error during sync all");
+            logger.LogError(ex, "Network error during sync all");
             MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
         }
         catch (Exception ex)
         {
             HideSpinner();
-            _logger.LogError(ex, "Sync all failed");
+            logger.LogError(ex, "Sync all failed");
             MessageBox.Query("Error", "Sync failed: " + ex.Message, "OK");
         }
         finally
@@ -929,7 +915,7 @@ public class MainWindow : Window
     {
         _showDeletedOnly = !_showDeletedOnly;
         try { await RefreshVideosAsync(); }
-        catch (Exception ex) { _logger.LogError(ex, "Failed to toggle deleted view"); }
+        catch (Exception ex) { logger.LogError(ex, "Failed to toggle deleted view"); }
     }
 
     private async void ShowDetail()
@@ -938,36 +924,36 @@ public class MainWindow : Window
         {
             if (_profileList.HasFocus && _selectedProfile is not null)
             {
-                var playlists = await _playlistRepo.GetByProfileAsync(_selectedProfile.Id);
+                var playlists = await playlistRepo.GetByProfileAsync(_selectedProfile.Id);
                 var tracked = playlists.Count(p => p.IsTracked);
-                var dialog = DetailDialog.ForProfile(_selectedProfile, playlists.Count, tracked, _browser);
+                var dialog = DetailDialog.ForProfile(_selectedProfile, playlists.Count, tracked, browser);
                 global::Terminal.Gui.Application.Run(dialog);
             }
             else if (_playlistList.HasFocus && _selectedPlaylist is not null)
             {
-                var videos = await _playlistRepo.GetVideosAsync(_selectedPlaylist.Id);
+                var videos = await playlistRepo.GetVideosAsync(_selectedPlaylist.Id);
                 var active = videos.Count(v => v.DeletedAt == null);
                 var removed = videos.Count(v => v.DeletedAt != null);
-                var dialog = DetailDialog.ForPlaylist(_selectedPlaylist, active, removed, _browser);
+                var dialog = DetailDialog.ForPlaylist(_selectedPlaylist, active, removed, browser);
                 global::Terminal.Gui.Application.Run(dialog);
             }
             else if (_videoTable.HasFocus && _videoTable.SelectedRow >= 0 && _videoTable.SelectedRow < _filteredVideos.Count)
             {
                 var video = _filteredVideos[_videoTable.SelectedRow];
-                var dialog = DetailDialog.ForVideo(video, _browser);
+                var dialog = DetailDialog.ForVideo(video, browser);
                 global::Terminal.Gui.Application.Run(dialog);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to show details");
+            logger.LogError(ex, "Failed to show details");
         }
     }
 
     private void ShowSortMenu()
     {
         var dialog = new Dialog("Sort by", 30, 10);
-        var options = new[] { "Title", "Channel", "Added Date", "Status" };
+        string[] options = ["Title", "Channel", "Added Date", "Status"];
         var list = new ListView(options)
         {
             Width = Dim.Fill(), Height = Dim.Fill()
@@ -1044,13 +1030,13 @@ public class MainWindow : Window
         if (_selectedProfile is null) return;
         try
         {
-            var removedVideos = await _playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
+            var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
             var dialog = new RemovalHistoryDialog(removedVideos);
             global::Terminal.Gui.Application.Run(dialog);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to show removal history");
+            logger.LogError(ex, "Failed to show removal history");
             MessageBox.Query("Error", "Failed to load history: " + ex.Message, "OK");
         }
     }
@@ -1061,7 +1047,7 @@ public class MainWindow : Window
 
         try
         {
-            var removedVideos = await _playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
+            var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
             if (removedVideos.Count == 0)
             {
                 MessageBox.Query("Export", "No removed videos to export.", "OK");
@@ -1105,14 +1091,14 @@ public class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Export failed");
+            logger.LogError(ex, "Export failed");
             MessageBox.Query("Error", "Export failed: " + ex.Message, "OK");
         }
     }
 
     private void OnSettings()
     {
-        var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist, _userSettings, _updateService);
+        var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService);
         global::Terminal.Gui.Application.Run(settingsDialog);
     }
 
@@ -1131,7 +1117,7 @@ public class MainWindow : Window
                 {
                     try
                     {
-                        var message = await _updateService.ApplyUpdateAsync(_latestUpdate);
+                        var message = await updateService.ApplyUpdateAsync(_latestUpdate);
                         global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                         {
                             HideSpinner();

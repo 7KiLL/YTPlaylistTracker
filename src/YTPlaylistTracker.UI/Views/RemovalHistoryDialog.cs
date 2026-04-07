@@ -6,7 +6,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class RemovalHistoryDialog : Dialog
 {
-    public RemovalHistoryDialog(List<(Playlist Playlist, Video Video)> removedVideos)
+    public RemovalHistoryDialog(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos)
         : base("Removal History - All Playlists", 90, 28)
     {
         var dt = new DataTable();

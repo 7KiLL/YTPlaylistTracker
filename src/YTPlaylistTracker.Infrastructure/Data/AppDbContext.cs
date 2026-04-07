@@ -3,13 +3,11 @@ using YTPlaylistTracker.Domain.Entities;
 
 namespace YTPlaylistTracker.Infrastructure.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<Video> Videos => Set<Video>();
-
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -4,20 +4,20 @@ namespace YTPlaylistTracker.Domain.Interfaces;
 
 public interface IPlaylistRepository
 {
-    Task<List<Playlist>> GetByProfileAsync(int profileId);
-    Task<List<Playlist>> GetTrackedByProfileAsync(int profileId);
-    Task<Playlist?> GetByIdAsync(int id);
-    Task AddAsync(Playlist playlist);
-    Task AddPlaylistsAsync(IEnumerable<Playlist> playlists);
-    Task UpdateAsync(Playlist playlist);
-    Task DeleteAsync(int id);
+    Task<IReadOnlyList<Playlist>> GetByProfileAsync(int profileId, CancellationToken ct = default);
+    Task<IReadOnlyList<Playlist>> GetTrackedByProfileAsync(int profileId, CancellationToken ct = default);
+    Task<Playlist?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task AddAsync(Playlist playlist, CancellationToken ct = default);
+    Task AddPlaylistsAsync(IEnumerable<Playlist> playlists, CancellationToken ct = default);
+    Task UpdateAsync(Playlist playlist, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
 
-    Task<List<Video>> GetVideosAsync(int playlistId);
-    Task<List<Video>> GetActiveVideosAsync(int playlistId);
-    Task<List<Video>> GetDeletedVideosAsync(int playlistId);
-    Task AddVideoAsync(Video video);
-    Task AddVideosAsync(IEnumerable<Video> videos);
-    Task UpdateVideoAsync(Video video);
-    Task PurgeDeletedVideosAsync(int playlistId);
-    Task<List<(Playlist Playlist, Video Video)>> GetAllDeletedVideosAsync(int profileId);
+    Task<IReadOnlyList<Video>> GetVideosAsync(int playlistId, CancellationToken ct = default);
+    Task<IReadOnlyList<Video>> GetActiveVideosAsync(int playlistId, CancellationToken ct = default);
+    Task<IReadOnlyList<Video>> GetDeletedVideosAsync(int playlistId, CancellationToken ct = default);
+    Task AddVideoAsync(Video video, CancellationToken ct = default);
+    Task AddVideosAsync(IEnumerable<Video> videos, CancellationToken ct = default);
+    Task UpdateVideoAsync(Video video, CancellationToken ct = default);
+    Task PurgeDeletedVideosAsync(int playlistId, CancellationToken ct = default);
+    Task<IReadOnlyList<(Playlist Playlist, Video Video)>> GetAllDeletedVideosAsync(int profileId, CancellationToken ct = default);
 }

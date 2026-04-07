@@ -7,118 +7,116 @@ namespace YTPlaylistTracker.Infrastructure.Data;
 
 public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> logger) : IPlaylistRepository
 {
-    public async Task<List<Playlist>> GetByProfileAsync(int profileId)
+    public async Task<IReadOnlyList<Playlist>> GetByProfileAsync(int profileId, CancellationToken ct = default)
     {
         return await db.Playlists
             .Where(p => p.ProfileId == profileId)
             .OrderBy(p => p.Title)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<List<Playlist>> GetTrackedByProfileAsync(int profileId)
+    public async Task<IReadOnlyList<Playlist>> GetTrackedByProfileAsync(int profileId, CancellationToken ct = default)
     {
         return await db.Playlists
             .Where(p => p.ProfileId == profileId && p.IsTracked)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<Playlist?> GetByIdAsync(int id)
+    public async Task<Playlist?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await db.Playlists.FindAsync(id);
+        return await db.Playlists.FindAsync([id], ct);
     }
 
-    public async Task AddAsync(Playlist playlist)
+    public async Task AddAsync(Playlist playlist, CancellationToken ct = default)
     {
         logger.LogInformation("Adding playlist: {PlaylistId} ({Title})", playlist.YouTubePlaylistId, playlist.Title);
         db.Playlists.Add(playlist);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task AddPlaylistsAsync(IEnumerable<Playlist> playlists)
+    public async Task AddPlaylistsAsync(IEnumerable<Playlist> playlists, CancellationToken ct = default)
     {
         db.Playlists.AddRange(playlists);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task UpdateAsync(Playlist playlist)
+    public async Task UpdateAsync(Playlist playlist, CancellationToken ct = default)
     {
         db.Playlists.Update(playlist);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var playlist = await db.Playlists.FindAsync(id);
+        var playlist = await db.Playlists.FindAsync([id], ct);
         if (playlist is not null)
         {
             logger.LogInformation("Deleting playlist: {PlaylistId}", playlist.YouTubePlaylistId);
             db.Playlists.Remove(playlist);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(ct);
         }
     }
 
-    public async Task<List<Video>> GetVideosAsync(int playlistId)
+    public async Task<IReadOnlyList<Video>> GetVideosAsync(int playlistId, CancellationToken ct = default)
     {
         return await db.Videos
             .Where(v => v.PlaylistId == playlistId)
             .OrderBy(v => v.DeletedAt.HasValue)
             .ThenBy(v => v.Title)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<List<Video>> GetActiveVideosAsync(int playlistId)
+    public async Task<IReadOnlyList<Video>> GetActiveVideosAsync(int playlistId, CancellationToken ct = default)
     {
         return await db.Videos
             .Where(v => v.PlaylistId == playlistId && v.DeletedAt == null)
             .OrderBy(v => v.Title)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<List<Video>> GetDeletedVideosAsync(int playlistId)
+    public async Task<IReadOnlyList<Video>> GetDeletedVideosAsync(int playlistId, CancellationToken ct = default)
     {
         return await db.Videos
             .Where(v => v.PlaylistId == playlistId && v.DeletedAt != null)
             .OrderByDescending(v => v.DeletedAt)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task AddVideoAsync(Video video)
+    public async Task AddVideoAsync(Video video, CancellationToken ct = default)
     {
         logger.LogDebug("Adding video: {VideoId} ({Title})", video.YouTubeVideoId, video.Title);
         db.Videos.Add(video);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task AddVideosAsync(IEnumerable<Video> videos)
+    public async Task AddVideosAsync(IEnumerable<Video> videos, CancellationToken ct = default)
     {
         db.Videos.AddRange(videos);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task UpdateVideoAsync(Video video)
+    public async Task UpdateVideoAsync(Video video, CancellationToken ct = default)
     {
         db.Videos.Update(video);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task PurgeDeletedVideosAsync(int playlistId)
+    public async Task PurgeDeletedVideosAsync(int playlistId, CancellationToken ct = default)
     {
-        var deleted = await db.Videos
+        var count = await db.Videos
             .Where(v => v.PlaylistId == playlistId && v.DeletedAt != null)
-            .ToListAsync();
+            .ExecuteDeleteAsync(ct);
 
-        logger.LogInformation("Purging {Count} deleted videos from playlist {PlaylistId}", deleted.Count, playlistId);
-        db.Videos.RemoveRange(deleted);
-        await db.SaveChangesAsync();
+        logger.LogInformation("Purging {Count} deleted videos from playlist {PlaylistId}", count, playlistId);
     }
 
-    public async Task<List<(Playlist Playlist, Video Video)>> GetAllDeletedVideosAsync(int profileId)
+    public async Task<IReadOnlyList<(Playlist Playlist, Video Video)>> GetAllDeletedVideosAsync(int profileId, CancellationToken ct = default)
     {
         var results = await db.Videos
             .Include(v => v.Playlist)
             .Where(v => v.Playlist.ProfileId == profileId && v.DeletedAt != null)
             .OrderByDescending(v => v.DeletedAt)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         return results.Select(v => (v.Playlist, v)).ToList();
     }

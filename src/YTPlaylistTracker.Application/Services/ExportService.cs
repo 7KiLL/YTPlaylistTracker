@@ -14,16 +14,16 @@ public static class ExportService
         string RemovalReason,
         string RemovedAt);
 
-    public static List<ExportEntry> BuildEntries(List<(Playlist Playlist, Video Video)> removedVideos)
+    public static List<ExportEntry> BuildEntries(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos)
     {
-        return removedVideos.Select(pv => new ExportEntry(
+        return [..removedVideos.Select(pv => new ExportEntry(
             pv.Playlist.Title ?? pv.Playlist.YouTubePlaylistId,
             pv.Video.YouTubeVideoId,
             pv.Video.Title,
             pv.Video.ChannelTitle ?? "",
             pv.Video.RemovalReason?.ToString() ?? "Unknown",
             pv.Video.DeletedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""
-        )).ToList();
+        ))];
     }
 
     public static string ToCsv(List<ExportEntry> entries)
@@ -44,7 +44,7 @@ public static class ExportService
 
     private static string Escape(string value)
     {
-        if (value.Contains('"') || value.Contains(',') || value.Contains('\n'))
+        if (value.AsSpan().IndexOfAny(['"', ',', '\n']) >= 0)
             return "\"" + value.Replace("\"", "\"\"") + "\"";
         return value;
     }

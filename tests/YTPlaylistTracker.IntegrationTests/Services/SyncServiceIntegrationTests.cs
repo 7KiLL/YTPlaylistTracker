@@ -39,7 +39,7 @@ public class SyncServiceIntegrationTests : IDisposable
         _db.Profiles.Add(profile);
         _db.SaveChanges();
 
-        _testPlaylist = new Playlist { ProfileId = profile.Id, YouTubePlaylistId = "PLintegration", Title = "Integration Test", IsTracked = true };
+        _testPlaylist = new Playlist { ProfileId = profile.Id, Profile = profile, YouTubePlaylistId = "PLintegration", Title = "Integration Test", IsTracked = true };
         _db.Playlists.Add(_testPlaylist);
         _db.SaveChanges();
     }

@@ -6,10 +6,12 @@ namespace YTPlaylistTracker.UnitTests.Services;
 
 public class ExportServiceTests
 {
+    private static readonly Profile _testProfile = new() { Name = "test" };
+
     private static List<(Playlist Playlist, Video Video)> CreateTestData()
     {
-        var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "My Favorites" };
-        var playlist2 = new Playlist { Id = 2, ProfileId = 1, YouTubePlaylistId = "PL2", Title = "Watch Later" };
+        var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "My Favorites", Profile = _testProfile };
+        var playlist2 = new Playlist { Id = 2, ProfileId = 1, YouTubePlaylistId = "PL2", Title = "Watch Later", Profile = _testProfile };
 
         return
         [
@@ -17,13 +19,13 @@ public class ExportServiceTests
             {
                 PlaylistId = 1, YouTubeVideoId = "abc123", Title = "Deleted Video",
                 ChannelTitle = "TestChannel", DeletedAt = new DateTime(2025, 6, 15, 10, 30, 0),
-                RemovalReason = RemovalReason.Deleted
+                RemovalReason = RemovalReason.Deleted, Playlist = playlist1
             }),
             (playlist2, new Video
             {
                 PlaylistId = 2, YouTubeVideoId = "def456", Title = "Private Video",
                 ChannelTitle = "OtherChannel", DeletedAt = new DateTime(2025, 7, 1, 14, 0, 0),
-                RemovalReason = RemovalReason.Private
+                RemovalReason = RemovalReason.Private, Playlist = playlist2
             }),
         ];
     }
@@ -46,11 +48,11 @@ public class ExportServiceTests
     [Fact]
     public void BuildEntries_UsesPlaylistIdWhenTitleNull()
     {
-        var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PLnoTitle", Title = null };
+        var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PLnoTitle", Title = null, Profile = _testProfile };
         var video = new Video
         {
             PlaylistId = 1, YouTubeVideoId = "v1", Title = "Some Video",
-            DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted
+            DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted, Playlist = playlist
         };
 
         var entries = ExportService.BuildEntries([(playlist, video)]);
@@ -61,11 +63,11 @@ public class ExportServiceTests
     [Fact]
     public void BuildEntries_HandlesNullChannelAndReason()
     {
-        var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "Test" };
+        var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "Test", Profile = _testProfile };
         var video = new Video
         {
             PlaylistId = 1, YouTubeVideoId = "v1", Title = "Video",
-            ChannelTitle = null, DeletedAt = DateTime.UtcNow, RemovalReason = null
+            ChannelTitle = null, DeletedAt = DateTime.UtcNow, RemovalReason = null, Playlist = playlist
         };
 
         var entries = ExportService.BuildEntries([(playlist, video)]);
@@ -90,11 +92,11 @@ public class ExportServiceTests
     [Fact]
     public void ToCsv_EscapesCommasAndQuotes()
     {
-        var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "Rock, Pop & Jazz" };
+        var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "Rock, Pop & Jazz", Profile = _testProfile };
         var video = new Video
         {
             PlaylistId = 1, YouTubeVideoId = "v1", Title = "He said \"hello\"",
-            ChannelTitle = "Ch", DeletedAt = new DateTime(2025, 1, 1), RemovalReason = RemovalReason.Deleted
+            ChannelTitle = "Ch", DeletedAt = new DateTime(2025, 1, 1), RemovalReason = RemovalReason.Deleted, Playlist = playlist
         };
 
         var entries = ExportService.BuildEntries([(playlist, video)]);

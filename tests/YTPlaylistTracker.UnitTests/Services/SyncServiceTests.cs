@@ -14,13 +14,16 @@ public class SyncServiceTests
     private readonly IPlaylistRepository _playlistRepo = Substitute.For<IPlaylistRepository>();
     private readonly ISyncService _syncService;
 
+    private static readonly Profile _testProfile = new() { Name = "test" };
+
     private readonly Playlist _testPlaylist = new()
     {
         Id = 1,
         ProfileId = 1,
         YouTubePlaylistId = "PLtest123",
         Title = "Test Playlist",
-        IsTracked = true
+        IsTracked = true,
+        Profile = _testProfile
     };
 
     public SyncServiceTests()
@@ -53,7 +56,7 @@ public class SyncServiceTests
         _youtubeApi.CheckVideoStatusAsync("vid1").Returns(RemovalReason.Deleted);
 
         _playlistRepo.GetVideosAsync(1).Returns([
-            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Gone Video", ChannelTitle = "Ch" }
+            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Gone Video", ChannelTitle = "Ch", Playlist = _testPlaylist }
         ]);
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
@@ -70,7 +73,7 @@ public class SyncServiceTests
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns(new List<YouTubeVideoSnapshot>());
         _youtubeApi.CheckVideoStatusAsync("vid1").Returns(RemovalReason.Private);
 
-        var video = new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Important Title", ChannelTitle = "Author" };
+        var video = new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Important Title", ChannelTitle = "Author", Playlist = _testPlaylist };
         _playlistRepo.GetVideosAsync(1).Returns([video]);
 
         await _syncService.SyncPlaylistAsync(_testPlaylist);
@@ -89,7 +92,7 @@ public class SyncServiceTests
 
         _playlistRepo.GetVideosAsync(1).Returns([
             new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Old Title",
-                        DeletedAt = DateTime.UtcNow.AddDays(-1), RemovalReason = RemovalReason.Deleted }
+                        DeletedAt = DateTime.UtcNow.AddDays(-1), RemovalReason = RemovalReason.Deleted, Playlist = _testPlaylist }
         ]);
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
@@ -107,7 +110,7 @@ public class SyncServiceTests
         ]);
 
         _playlistRepo.GetVideosAsync(1).Returns([
-            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Old Title", ChannelTitle = "Old Channel" }
+            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Old Title", ChannelTitle = "Old Channel", Playlist = _testPlaylist }
         ]);
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
@@ -140,8 +143,8 @@ public class SyncServiceTests
         _youtubeApi.CheckVideoStatusAsync("vid2").Returns(RemovalReason.Deleted);
 
         _playlistRepo.GetVideosAsync(1).Returns([
-            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Private Vid" },
-            new Video { Id = 11, PlaylistId = 1, YouTubeVideoId = "vid2", Title = "Deleted Vid" },
+            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Private Vid", Playlist = _testPlaylist },
+            new Video { Id = 11, PlaylistId = 1, YouTubeVideoId = "vid2", Title = "Deleted Vid", Playlist = _testPlaylist },
         ]);
 
         await _syncService.SyncPlaylistAsync(_testPlaylist);
@@ -160,7 +163,7 @@ public class SyncServiceTests
         ]);
 
         _playlistRepo.GetVideosAsync(1).Returns([
-            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Same Title", ChannelTitle = "Same Channel" }
+            new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Same Title", ChannelTitle = "Same Channel", Playlist = _testPlaylist }
         ]);
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist);

@@ -6,8 +6,8 @@ public class HelpDialog : Dialog
 {
     public HelpDialog() : base("Keybindings", 50, 23)
     {
-        var keys = new[]
-        {
+        (string, string)[] keys =
+        [
             ("h / l / Left / Right", "Switch panes"),
             ("j / k / Up / Down", "Navigate within pane"),
             ("Tab / Shift+Tab", "Cycle panes"),
@@ -26,7 +26,7 @@ public class HelpDialog : Dialog
             ("F9", "Settings"),
             ("q / F10", "Quit"),
             ("Ctrl+C (x2)", "Quit"),
-        };
+        ];
 
         int y = 0;
         foreach (var (key, action) in keys)

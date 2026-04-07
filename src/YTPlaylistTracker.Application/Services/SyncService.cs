@@ -23,7 +23,7 @@ public class SyncService(
 
     public static TimeSpan? GetRemainingCooldown(Playlist playlist)
     {
-        if (!IsLikedPlaylist(playlist.YouTubePlaylistId) || !playlist.LastSyncedAt.HasValue)
+        if (!IsLikedPlaylist(playlist.YouTubePlaylistId) || playlist.LastSyncedAt is null)
             return null;
         var remaining = LikedManualCooldown - (DateTime.UtcNow - playlist.LastSyncedAt.Value);
         return remaining > TimeSpan.Zero ? remaining : null;
@@ -31,7 +31,7 @@ public class SyncService(
 
     public static string FormatLastSynced(Playlist playlist)
     {
-        if (!playlist.LastSyncedAt.HasValue)
+        if (playlist.LastSyncedAt is null)
             return "never";
         var ago = DateTime.UtcNow - playlist.LastSyncedAt.Value;
         return ago.TotalMinutes < 1 ? "just now"
@@ -42,7 +42,7 @@ public class SyncService(
 
     private static bool IsAutoSyncCooldownActive(Playlist playlist)
     {
-        if (!playlist.LastSyncedAt.HasValue) return false;
+        if (playlist.LastSyncedAt is null) return false;
         // Liked playlists are never auto-synced
         if (IsLikedPlaylist(playlist.YouTubePlaylistId)) return true;
         return DateTime.UtcNow - playlist.LastSyncedAt.Value < AutoSyncCooldown;
@@ -60,12 +60,12 @@ public class SyncService(
         return await ApplyPlaylistDiff(playlist, apiVideos, metadata);
     }
 
-    public async Task<Dictionary<int, SyncResult>> SyncAllTrackedAsync(int profileId, IProgress<string>? progress = null)
+    public async Task<IReadOnlyDictionary<int, SyncResult>> SyncAllTrackedAsync(int profileId, IProgress<string>? progress = null)
     {
         var allPlaylists = await playlistRepo.GetTrackedByProfileAsync(profileId);
 
         // Filter out playlists on cooldown (Liked never auto-syncs, others skip if <6h)
-        var playlists = allPlaylists.Where(p => !IsAutoSyncCooldownActive(p)).ToList();
+        List<Playlist> playlists = [..allPlaylists.Where(p => !IsAutoSyncCooldownActive(p))];
         var skipped = allPlaylists.Count - playlists.Count;
 
         if (skipped > 0)
@@ -77,7 +77,7 @@ public class SyncService(
             return new Dictionary<int, SyncResult>();
 
         // Phase 1: Fetch all API data in parallel (up to MaxConcurrentFetches at a time)
-        var fetchResults = new ConcurrentDictionary<int, (List<YouTubeVideoSnapshot> Videos, YouTubePlaylistSnapshot? Meta)>();
+        var fetchResults = new ConcurrentDictionary<int, (IReadOnlyList<YouTubeVideoSnapshot> Videos, YouTubePlaylistSnapshot? Meta)>();
         var semaphore = new SemaphoreSlim(MaxConcurrentFetches);
         int fetched = 0;
 
@@ -137,17 +137,17 @@ public class SyncService(
 
     private async Task<SyncResult> ApplyPlaylistDiff(
         Playlist playlist,
-        List<YouTubeVideoSnapshot> apiVideos,
+        IReadOnlyList<YouTubeVideoSnapshot> apiVideos,
         YouTubePlaylistSnapshot? metadata)
     {
         // YouTube allows duplicate videos in a playlist — deduplicate, keeping first occurrence
-        var apiVideoIds = apiVideos.GroupBy(v => v.VideoId).ToDictionary(g => g.Key, g => g.First());
+        var apiVideoIds = apiVideos.DistinctBy(v => v.VideoId).ToDictionary(v => v.VideoId);
 
         logger.LogDebug("API returned {Count} videos for playlist {PlaylistId}", apiVideos.Count, playlist.YouTubePlaylistId);
 
         var dbVideos = await playlistRepo.GetVideosAsync(playlist.Id);
-        var activeDbVideos = dbVideos.Where(v => v.DeletedAt == null).ToList();
-        var deletedDbVideos = dbVideos.Where(v => v.DeletedAt != null).ToDictionary(v => v.YouTubeVideoId);
+        List<Video> activeDbVideos = [..dbVideos.Where(v => v.DeletedAt is null)];
+        var deletedDbVideos = dbVideos.Where(v => v.DeletedAt is not null).ToDictionary(v => v.YouTubeVideoId);
         var activeDbVideoIds = activeDbVideos.ToDictionary(v => v.YouTubeVideoId);
 
         int added = 0, removed = 0, updated = 0;
@@ -234,6 +234,7 @@ public class SyncService(
                 // New video — collect for batch insert
                 newVideos.Add(new Video
                 {
+                    Playlist = playlist,
                     PlaylistId = playlist.Id,
                     YouTubeVideoId = apiVideo.VideoId,
                     Title = apiVideo.Title,

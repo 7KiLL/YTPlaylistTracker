@@ -12,13 +12,13 @@ namespace YTPlaylistTracker.UI;
 /// </summary>
 internal class LazyYouTubeApiProxy(Lazy<IYouTubeApiService> lazy) : IYouTubeApiService
 {
-    public Task<List<YouTubeVideoSnapshot>> GetPlaylistVideosAsync(string playlistId)
+    public Task<IReadOnlyList<YouTubeVideoSnapshot>> GetPlaylistVideosAsync(string playlistId)
         => lazy.Value.GetPlaylistVideosAsync(playlistId);
 
     public Task<YouTubePlaylistSnapshot?> GetPlaylistMetadataAsync(string playlistId)
         => lazy.Value.GetPlaylistMetadataAsync(playlistId);
 
-    public Task<List<YouTubePlaylistSnapshot>> GetUserPlaylistsAsync()
+    public Task<IReadOnlyList<YouTubePlaylistSnapshot>> GetUserPlaylistsAsync()
         => lazy.Value.GetUserPlaylistsAsync();
 
     public Task<RemovalReason> CheckVideoStatusAsync(string videoId)

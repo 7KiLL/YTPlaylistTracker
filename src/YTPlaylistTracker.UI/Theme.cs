@@ -7,46 +7,18 @@ public static class Theme
 {
     public static void Apply()
     {
-        // Modern dark theme — black background, cyan accents (lazydocker-style)
-        var baseScheme = new ColorScheme
+        static ColorScheme CreateScheme(Color normal, Color focus, Color hotNormal, Color hotFocus) => new()
         {
-            Normal = App.Driver.MakeAttribute(Color.White, Color.Black),
-            Focus = App.Driver.MakeAttribute(Color.Black, Color.Cyan),
-            HotNormal = App.Driver.MakeAttribute(Color.Cyan, Color.Black),
-            HotFocus = App.Driver.MakeAttribute(Color.Black, Color.Cyan),
+            Normal = App.Driver.MakeAttribute(normal, Color.Black),
+            Focus = App.Driver.MakeAttribute(Color.Black, focus),
+            HotNormal = App.Driver.MakeAttribute(hotNormal, Color.Black),
+            HotFocus = App.Driver.MakeAttribute(Color.Black, hotFocus),
             Disabled = App.Driver.MakeAttribute(Color.DarkGray, Color.Black),
         };
 
-        var dialogScheme = new ColorScheme
-        {
-            Normal = App.Driver.MakeAttribute(Color.White, Color.Black),
-            Focus = App.Driver.MakeAttribute(Color.Black, Color.Cyan),
-            HotNormal = App.Driver.MakeAttribute(Color.Cyan, Color.Black),
-            HotFocus = App.Driver.MakeAttribute(Color.Black, Color.Cyan),
-            Disabled = App.Driver.MakeAttribute(Color.DarkGray, Color.Black),
-        };
-
-        var menuScheme = new ColorScheme
-        {
-            Normal = App.Driver.MakeAttribute(Color.White, Color.Black),
-            Focus = App.Driver.MakeAttribute(Color.Black, Color.Cyan),
-            HotNormal = App.Driver.MakeAttribute(Color.Cyan, Color.Black),
-            HotFocus = App.Driver.MakeAttribute(Color.Black, Color.Cyan),
-            Disabled = App.Driver.MakeAttribute(Color.DarkGray, Color.Black),
-        };
-
-        var errorScheme = new ColorScheme
-        {
-            Normal = App.Driver.MakeAttribute(Color.Red, Color.Black),
-            Focus = App.Driver.MakeAttribute(Color.Black, Color.Red),
-            HotNormal = App.Driver.MakeAttribute(Color.BrightRed, Color.Black),
-            HotFocus = App.Driver.MakeAttribute(Color.Black, Color.BrightRed),
-            Disabled = App.Driver.MakeAttribute(Color.DarkGray, Color.Black),
-        };
-
-        Colors.Base = baseScheme;
-        Colors.Dialog = dialogScheme;
-        Colors.Menu = menuScheme;
-        Colors.Error = errorScheme;
+        Colors.Base = CreateScheme(Color.White, Color.Cyan, Color.Cyan, Color.Cyan);
+        Colors.Dialog = CreateScheme(Color.White, Color.Cyan, Color.Cyan, Color.Cyan);
+        Colors.Menu = CreateScheme(Color.White, Color.Cyan, Color.Cyan, Color.Cyan);
+        Colors.Error = CreateScheme(Color.Red, Color.Red, Color.BrightRed, Color.BrightRed);
     }
 }

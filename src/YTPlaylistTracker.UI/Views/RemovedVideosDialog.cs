@@ -6,7 +6,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class RemovedVideosDialog : Dialog
 {
-    public RemovedVideosDialog(List<Video> removedVideos, string playlistTitle)
+    public RemovedVideosDialog(IReadOnlyList<Video> removedVideos, string playlistTitle)
         : base($"Removed Videos - {playlistTitle}", 80, 25)
     {
         var dt = new DataTable();

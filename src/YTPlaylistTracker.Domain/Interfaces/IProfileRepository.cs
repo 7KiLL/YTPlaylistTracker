@@ -4,11 +4,11 @@ namespace YTPlaylistTracker.Domain.Interfaces;
 
 public interface IProfileRepository
 {
-    Task<List<Profile>> GetAllAsync();
-    Task<Profile?> GetByIdAsync(int id);
-    Task<Profile?> GetDefaultAsync();
-    Task AddAsync(Profile profile);
-    Task UpdateAsync(Profile profile);
-    Task DeleteAsync(int id);
-    Task SetDefaultAsync(int id);
+    Task<IReadOnlyList<Profile>> GetAllAsync(CancellationToken ct = default);
+    Task<Profile?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<Profile?> GetDefaultAsync(CancellationToken ct = default);
+    Task AddAsync(Profile profile, CancellationToken ct = default);
+    Task UpdateAsync(Profile profile, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
+    Task SetDefaultAsync(int id, CancellationToken ct = default);
 }

@@ -53,22 +53,24 @@ services.AddSingleton<IUpdateService>(sp =>
     new UpdateService(
         sp.GetRequiredService<IBinaryUpdater>(),
         sp.GetRequiredService<ILogger<UpdateService>>()));
+IYouTubeApiService CreateYouTubeApiService(IServiceProvider sp)
+{
+    var logger = sp.GetRequiredService<ILogger<YouTubeApiService>>();
+    if (YouTubeApiService.HasStoredToken("default"))
+        return YouTubeApiService.CreateWithEmbeddedOAuthAsync("default", logger).GetAwaiter().GetResult();
+    var credPath = Environment.GetEnvironmentVariable("YTPT_OAUTH_CREDENTIALS")
+                   ?? Path.Combine(AppSettings.AppDataDir, "client_secrets.json");
+    if (File.Exists(credPath))
+        return YouTubeApiService.CreateWithOAuthAsync(credPath, "default", logger).GetAwaiter().GetResult();
+    var apiKey = Environment.GetEnvironmentVariable("YOUTUBE_API_KEY");
+    if (!string.IsNullOrWhiteSpace(apiKey))
+        return YouTubeApiService.CreateWithApiKey(apiKey, logger);
+    Log.Warning("Not logged in. Run 'ytpt login' or set YOUTUBE_API_KEY.");
+    return YouTubeApiService.CreateWithApiKey("", logger);
+}
+
 services.AddSingleton<Lazy<IYouTubeApiService>>(sp =>
-    new Lazy<IYouTubeApiService>(() =>
-    {
-        var logger = sp.GetRequiredService<ILogger<YouTubeApiService>>();
-        if (YouTubeApiService.HasStoredToken("default"))
-            return YouTubeApiService.CreateWithEmbeddedOAuthAsync("default", logger).GetAwaiter().GetResult();
-        var credPath = Environment.GetEnvironmentVariable("YTPT_OAUTH_CREDENTIALS")
-                       ?? Path.Combine(AppSettings.AppDataDir, "client_secrets.json");
-        if (File.Exists(credPath))
-            return YouTubeApiService.CreateWithOAuthAsync(credPath, "default", logger).GetAwaiter().GetResult();
-        var apiKey = Environment.GetEnvironmentVariable("YOUTUBE_API_KEY");
-        if (!string.IsNullOrWhiteSpace(apiKey))
-            return YouTubeApiService.CreateWithApiKey(apiKey, logger);
-        Log.Warning("Not logged in. Run 'ytpt login' or set YOUTUBE_API_KEY.");
-        return YouTubeApiService.CreateWithApiKey("", logger);
-    }));
+    new Lazy<IYouTubeApiService>(() => CreateYouTubeApiService(sp)));
 services.AddSingleton<IYouTubeApiService>(sp =>
     new LazyYouTubeApiProxy(sp.GetRequiredService<Lazy<IYouTubeApiService>>()));
 

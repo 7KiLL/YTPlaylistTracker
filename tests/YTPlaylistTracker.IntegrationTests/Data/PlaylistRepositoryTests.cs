@@ -11,6 +11,7 @@ public class PlaylistRepositoryTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly PlaylistRepository _repo;
+    private readonly Profile _profile;
 
     public PlaylistRepositoryTests()
     {
@@ -26,14 +27,15 @@ public class PlaylistRepositoryTests : IDisposable
         _repo = new PlaylistRepository(_db, logger);
 
         // Seed a profile
-        _db.Profiles.Add(new Profile { Id = 1, Name = "Test", IsDefault = true });
+        _profile = new Profile { Id = 1, Name = "Test", IsDefault = true };
+        _db.Profiles.Add(_profile);
         _db.SaveChanges();
     }
 
     [Fact]
     public async Task AddPlaylist_CanQueryBack()
     {
-        var playlist = new Playlist { ProfileId = 1, YouTubePlaylistId = "PL123", Title = "Test Playlist", IsTracked = true };
+        var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PL123", Title = "Test Playlist", IsTracked = true };
         await _repo.AddAsync(playlist);
 
         var result = await _repo.GetByProfileAsync(1);
@@ -45,11 +47,11 @@ public class PlaylistRepositoryTests : IDisposable
     [Fact]
     public async Task AddVideos_QueryByPlaylist()
     {
-        var playlist = new Playlist { ProfileId = 1, YouTubePlaylistId = "PL456", IsTracked = true };
+        var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PL456", IsTracked = true };
         await _repo.AddAsync(playlist);
 
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, YouTubeVideoId = "v1", Title = "Video 1", ChannelTitle = "Ch1" });
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, YouTubeVideoId = "v2", Title = "Video 2" });
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Video 1", ChannelTitle = "Ch1" });
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v2", Title = "Video 2" });
 
         var videos = await _repo.GetVideosAsync(playlist.Id);
         Assert.Equal(2, videos.Count);
@@ -58,10 +60,10 @@ public class PlaylistRepositoryTests : IDisposable
     [Fact]
     public async Task SoftDeleteVideo_AppearsInDeleted()
     {
-        var playlist = new Playlist { ProfileId = 1, YouTubePlaylistId = "PL789", IsTracked = true };
+        var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PL789", IsTracked = true };
         await _repo.AddAsync(playlist);
 
-        var video = new Video { PlaylistId = playlist.Id, YouTubeVideoId = "v1", Title = "Will Be Removed" };
+        var video = new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Will Be Removed" };
         await _repo.AddVideoAsync(video);
 
         video.DeletedAt = DateTime.UtcNow;
@@ -79,23 +81,23 @@ public class PlaylistRepositoryTests : IDisposable
     [Fact]
     public async Task UniqueConstraint_DuplicateVideoId_Throws()
     {
-        var playlist = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLunique", IsTracked = true };
+        var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLunique", IsTracked = true };
         await _repo.AddAsync(playlist);
 
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, YouTubeVideoId = "dup1", Title = "First" });
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "dup1", Title = "First" });
 
         await Assert.ThrowsAsync<DbUpdateException>(() =>
-            _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, YouTubeVideoId = "dup1", Title = "Duplicate" }));
+            _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "dup1", Title = "Duplicate" }));
     }
 
     [Fact]
     public async Task PurgeDeletedVideos_RemovesPermanently()
     {
-        var playlist = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLpurge", IsTracked = true };
+        var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLpurge", IsTracked = true };
         await _repo.AddAsync(playlist);
 
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, YouTubeVideoId = "v1", Title = "Active" });
-        var deletedVideo = new Video { PlaylistId = playlist.Id, YouTubeVideoId = "v2", Title = "Deleted", DeletedAt = DateTime.UtcNow };
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Active" });
+        var deletedVideo = new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v2", Title = "Deleted", DeletedAt = DateTime.UtcNow };
         await _repo.AddVideoAsync(deletedVideo);
 
         await _repo.PurgeDeletedVideosAsync(playlist.Id);
@@ -108,9 +110,9 @@ public class PlaylistRepositoryTests : IDisposable
     [Fact]
     public async Task GetTrackedByProfile_FiltersCorrectly()
     {
-        await _repo.AddAsync(new Playlist { ProfileId = 1, YouTubePlaylistId = "tracked1", IsTracked = true });
-        await _repo.AddAsync(new Playlist { ProfileId = 1, YouTubePlaylistId = "untracked1", IsTracked = false });
-        await _repo.AddAsync(new Playlist { ProfileId = 1, YouTubePlaylistId = "tracked2", IsTracked = true });
+        await _repo.AddAsync(new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "tracked1", IsTracked = true });
+        await _repo.AddAsync(new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "untracked1", IsTracked = false });
+        await _repo.AddAsync(new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "tracked2", IsTracked = true });
 
         var tracked = await _repo.GetTrackedByProfileAsync(1);
         Assert.Equal(2, tracked.Count);
@@ -120,23 +122,23 @@ public class PlaylistRepositoryTests : IDisposable
     [Fact]
     public async Task GetAllDeletedVideosAsync_ReturnsAcrossPlaylists()
     {
-        var playlist1 = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLcross1", Title = "Playlist A", IsTracked = true };
-        var playlist2 = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLcross2", Title = "Playlist B", IsTracked = true };
+        var playlist1 = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLcross1", Title = "Playlist A", IsTracked = true };
+        var playlist2 = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLcross2", Title = "Playlist B", IsTracked = true };
         await _repo.AddAsync(playlist1);
         await _repo.AddAsync(playlist2);
 
         // Active video — should not appear
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist1.Id, YouTubeVideoId = "active1", Title = "Active" });
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist1.Id, Playlist = playlist1, YouTubeVideoId = "active1", Title = "Active" });
 
         // Deleted videos across both playlists
         await _repo.AddVideoAsync(new Video
         {
-            PlaylistId = playlist1.Id, YouTubeVideoId = "del1", Title = "Deleted From A",
+            PlaylistId = playlist1.Id, Playlist = playlist1, YouTubeVideoId = "del1", Title = "Deleted From A",
             DeletedAt = new DateTime(2025, 6, 1), RemovalReason = RemovalReason.Deleted
         });
         await _repo.AddVideoAsync(new Video
         {
-            PlaylistId = playlist2.Id, YouTubeVideoId = "del2", Title = "Private In B",
+            PlaylistId = playlist2.Id, Playlist = playlist2, YouTubeVideoId = "del2", Title = "Private In B",
             DeletedAt = new DateTime(2025, 7, 1), RemovalReason = RemovalReason.Private
         });
 
@@ -154,22 +156,23 @@ public class PlaylistRepositoryTests : IDisposable
     public async Task GetAllDeletedVideosAsync_FiltersOtherProfiles()
     {
         // Add a second profile
-        _db.Profiles.Add(new Profile { Id = 2, Name = "Other" });
+        var otherProfile = new Profile { Id = 2, Name = "Other" };
+        _db.Profiles.Add(otherProfile);
         await _db.SaveChangesAsync();
 
-        var playlist1 = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLprof1", IsTracked = true };
-        var playlist2 = new Playlist { ProfileId = 2, YouTubePlaylistId = "PLprof2", IsTracked = true };
+        var playlist1 = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLprof1", IsTracked = true };
+        var playlist2 = new Playlist { ProfileId = 2, Profile = otherProfile, YouTubePlaylistId = "PLprof2", IsTracked = true };
         await _repo.AddAsync(playlist1);
         await _repo.AddAsync(playlist2);
 
         await _repo.AddVideoAsync(new Video
         {
-            PlaylistId = playlist1.Id, YouTubeVideoId = "v1", Title = "Mine",
+            PlaylistId = playlist1.Id, Playlist = playlist1, YouTubeVideoId = "v1", Title = "Mine",
             DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted
         });
         await _repo.AddVideoAsync(new Video
         {
-            PlaylistId = playlist2.Id, YouTubeVideoId = "v2", Title = "Not Mine",
+            PlaylistId = playlist2.Id, Playlist = playlist2, YouTubeVideoId = "v2", Title = "Not Mine",
             DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted
         });
 
@@ -185,9 +188,9 @@ public class PlaylistRepositoryTests : IDisposable
     [Fact]
     public async Task GetAllDeletedVideosAsync_EmptyWhenNoDeleted()
     {
-        var playlist = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLempty", IsTracked = true };
+        var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLempty", IsTracked = true };
         await _repo.AddAsync(playlist);
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, YouTubeVideoId = "v1", Title = "Active" });
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Active" });
 
         var results = await _repo.GetAllDeletedVideosAsync(1);
 

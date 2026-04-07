@@ -17,13 +17,16 @@ public class FixtureBasedSyncTests
 
     private const string TestPlaylistId = "PLtest_fixture_001";
 
+    private static readonly Profile _testProfile = new() { Name = "test" };
+
     private readonly Playlist _testPlaylist = new()
     {
         Id = 1,
         ProfileId = 1,
         YouTubePlaylistId = TestPlaylistId,
         Title = "Test Fixture Playlist",
-        IsTracked = true
+        IsTracked = true,
+        Profile = _testProfile
     };
 
     public FixtureBasedSyncTests()
@@ -77,6 +80,7 @@ public class FixtureBasedSyncTests
             Title = v.Title,
             ChannelTitle = v.ChannelTitle,
             Position = v.Position,
+            Playlist = _testPlaylist,
         }).ToList();
         _playlistRepo.GetVideosAsync(1).Returns(dbVideos);
 
@@ -100,6 +104,7 @@ public class FixtureBasedSyncTests
             Title = v.Title,
             ChannelTitle = v.ChannelTitle,
             Position = v.Position,
+            Playlist = _testPlaylist,
         }).ToList();
         _playlistRepo.GetVideosAsync(1).Returns(dbVideos);
 
@@ -128,6 +133,7 @@ public class FixtureBasedSyncTests
             Title = v.Title,
             ChannelTitle = v.ChannelTitle,
             Position = v.Position,
+            Playlist = _testPlaylist,
         }).ToList();
         _playlistRepo.GetVideosAsync(1).Returns(dbVideos);
         _youtubeApi.GetPlaylistVideosAsync(TestPlaylistId).Returns(fixtureVideos);
@@ -152,6 +158,7 @@ public class FixtureBasedSyncTests
             Title = i == 0 ? "Old Title That Changed" : v.Title,
             ChannelTitle = v.ChannelTitle,
             Position = v.Position,
+            Playlist = _testPlaylist,
         }).ToList();
         _playlistRepo.GetVideosAsync(1).Returns(dbVideos);
         _youtubeApi.GetPlaylistVideosAsync(TestPlaylistId).Returns(fixtureVideos);

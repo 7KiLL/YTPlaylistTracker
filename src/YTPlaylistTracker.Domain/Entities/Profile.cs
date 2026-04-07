@@ -2,7 +2,7 @@ namespace YTPlaylistTracker.Domain.Entities;
 
 public class Profile
 {
-    public int Id { get; set; }
+    public int Id { get; init; }
     public required string Name { get; set; }
     public string? YouTubeChannelId { get; set; }
     public string? ChannelTitle { get; set; }

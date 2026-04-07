@@ -109,7 +109,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         return new YouTubeApiService(youtube, logger);
     }
 
-    public async Task<List<YouTubeVideoSnapshot>> GetPlaylistVideosAsync(string playlistId)
+    public async Task<IReadOnlyList<YouTubeVideoSnapshot>> GetPlaylistVideosAsync(string playlistId)
     {
         _logger.LogInformation("[API] GET playlistItems.list playlist={PlaylistId}", playlistId);
         var results = new List<YouTubeVideoSnapshot>();
@@ -128,7 +128,6 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
 
             foreach (var item in response.Items)
             {
-                // Skip already-removed videos that show as placeholders
                 if (item.Snippet.Title is "Deleted video" or "Private video")
                 {
                     _logger.LogDebug("Skipping unavailable video: {VideoId}", item.ContentDetails.VideoId);
@@ -144,8 +143,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
                 catch { /* best effort */ }
 
                 var description = item.Snippet.Description;
-                var thumbnailUrl = item.Snippet.Thumbnails?.Medium?.Url
-                                ?? item.Snippet.Thumbnails?.Default__?.Url;
+                var thumbnailUrl = ExtractThumbnailUrl(item.Snippet.Thumbnails);
 
                 results.Add(new YouTubeVideoSnapshot(
                     item.ContentDetails.VideoId,
@@ -188,14 +186,13 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         catch { /* best effort */ }
 
         var description = item.Snippet.Description;
-        var thumbnailUrl = item.Snippet.Thumbnails?.Medium?.Url
-                        ?? item.Snippet.Thumbnails?.Default__?.Url;
+        var thumbnailUrl = ExtractThumbnailUrl(item.Snippet.Thumbnails);
 
         return new YouTubePlaylistSnapshot(item.Id, item.Snippet.Title, item.Snippet.ChannelTitle,
             description, thumbnailUrl, publishedAt, json);
     }
 
-    public async Task<List<YouTubePlaylistSnapshot>> GetUserPlaylistsAsync()
+    public async Task<IReadOnlyList<YouTubePlaylistSnapshot>> GetUserPlaylistsAsync()
     {
         _logger.LogInformation("Fetching user's own playlists");
         var results = new List<YouTubePlaylistSnapshot>();
@@ -220,8 +217,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
                 catch { /* best effort */ }
 
                 var description = item.Snippet.Description;
-                var thumbnailUrl = item.Snippet.Thumbnails?.Medium?.Url
-                                ?? item.Snippet.Thumbnails?.Default__?.Url;
+                var thumbnailUrl = ExtractThumbnailUrl(item.Snippet.Thumbnails);
 
                 results.Add(new YouTubePlaylistSnapshot(item.Id, item.Snippet.Title, item.Snippet.ChannelTitle,
                     description, thumbnailUrl, publishedAt, json));
@@ -248,8 +244,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             return null;
         }
 
-        var thumbnailUrl = item.Snippet.Thumbnails?.Medium?.Url
-                        ?? item.Snippet.Thumbnails?.Default__?.Url;
+        var thumbnailUrl = ExtractThumbnailUrl(item.Snippet.Thumbnails);
         var likedPlaylistId = item.ContentDetails?.RelatedPlaylists?.Likes;
 
         _logger.LogInformation("[API] Channel: {Title} ({Id}), LikedPlaylist: {LikedId}",
@@ -281,6 +276,9 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             return RemovalReason.Deleted;
         }
     }
+
+    private static string? ExtractThumbnailUrl(Google.Apis.YouTube.v3.Data.ThumbnailDetails? thumbnails) =>
+        thumbnails?.Medium?.Url ?? thumbnails?.Default__?.Url;
 
     public void Dispose()
     {

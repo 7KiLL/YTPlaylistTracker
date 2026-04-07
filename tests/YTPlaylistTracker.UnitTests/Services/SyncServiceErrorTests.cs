@@ -13,13 +13,16 @@ public class SyncServiceErrorTests
     private readonly IPlaylistRepository _playlistRepo = Substitute.For<IPlaylistRepository>();
     private readonly ISyncService _syncService;
 
+    private static readonly Profile _testProfile = new() { Name = "test" };
+
     private readonly Playlist _testPlaylist = new()
     {
         Id = 1,
         ProfileId = 1,
         YouTubePlaylistId = "PLtest123",
         Title = "Test Playlist",
-        IsTracked = true
+        IsTracked = true,
+        Profile = _testProfile
     };
 
     public SyncServiceErrorTests()
@@ -41,8 +44,8 @@ public class SyncServiceErrorTests
     [Fact]
     public async Task SyncAllTrackedAsync_WhenOnePlaylistFails_ContinuesWithOthers()
     {
-        var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "P1", IsTracked = true };
-        var playlist2 = new Playlist { Id = 2, ProfileId = 1, YouTubePlaylistId = "PL2", Title = "P2", IsTracked = true };
+        var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "P1", IsTracked = true, Profile = _testProfile };
+        var playlist2 = new Playlist { Id = 2, ProfileId = 1, YouTubePlaylistId = "PL2", Title = "P2", IsTracked = true, Profile = _testProfile };
 
         _playlistRepo.GetTrackedByProfileAsync(1).Returns(new List<Playlist> { playlist1, playlist2 });
 
@@ -65,7 +68,7 @@ public class SyncServiceErrorTests
     [Fact]
     public async Task SyncAllTrackedAsync_WhenAllPlaylistsFail_ReturnsZeroResults()
     {
-        var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "P1", IsTracked = true };
+        var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "P1", IsTracked = true, Profile = _testProfile };
 
         _playlistRepo.GetTrackedByProfileAsync(1).Returns(new List<Playlist> { playlist1 });
 
