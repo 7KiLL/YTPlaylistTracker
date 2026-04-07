@@ -35,9 +35,6 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
                     b.Property<string>("JsonMetadata")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("Kind")
-                        .HasColumnType("INTEGER");
-
                     b.Property<DateTime?>("LastSyncedAt")
                         .HasColumnType("TEXT");
 

@@ -11,8 +11,8 @@ using YTPlaylistTracker.Infrastructure.Data;
 namespace YTPlaylistTracker.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260407221610_AddPlaylistKindAndIsManuallyAdded")]
-    partial class AddPlaylistKindAndIsManuallyAdded
+    [Migration("20260407222239_AddIsManuallyAdded")]
+    partial class AddIsManuallyAdded
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -37,9 +37,6 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
 
                     b.Property<string>("JsonMetadata")
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("LastSyncedAt")
                         .HasColumnType("TEXT");

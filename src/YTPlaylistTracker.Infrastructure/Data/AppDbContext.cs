@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(p => p.YouTubePlaylistId).IsRequired().HasMaxLength(100);
             e.HasIndex(p => new { p.ProfileId, p.YouTubePlaylistId }).IsUnique();
             e.HasMany(p => p.Videos).WithOne(v => v.Playlist).HasForeignKey(v => v.PlaylistId);
+            e.Ignore(p => p.Kind);
         });
 
         modelBuilder.Entity<Video>(e =>

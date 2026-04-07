@@ -40,7 +40,6 @@ public partial class MainWindow
             Profile = _selectedProfile,
             ProfileId = _selectedProfile.Id,
             YouTubePlaylistId = playlistId,
-            Kind = PlaylistPolicy.DetectKind(playlistId),
             IsManuallyAdded = true,
             IsTracked = true
         };

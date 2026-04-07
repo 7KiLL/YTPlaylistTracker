@@ -33,7 +33,7 @@ public partial class MainWindow
                     ProfileId = profile.Id,
                     YouTubePlaylistId = meta.PlaylistId,
                     Title = meta.Title,
-                    Kind = PlaylistPolicy.DetectKind(meta.PlaylistId),
+
                     IsTracked = false,
                     Description = meta.Description,
                     ThumbnailUrl = meta.ThumbnailUrl,
@@ -58,7 +58,7 @@ public partial class MainWindow
                             ProfileId = profile.Id,
                             YouTubePlaylistId = channel.LikedVideosPlaylistId,
                             Title = likedMeta.Title ?? "Liked Videos",
-                            Kind = PlaylistPolicy.DetectKind(channel.LikedVideosPlaylistId),
+
                             IsTracked = false,
                             Description = likedMeta.Description,
                             ThumbnailUrl = likedMeta.ThumbnailUrl,
