@@ -6,16 +6,13 @@ public interface IPlaylistRepository
 {
     Task<IReadOnlyList<Playlist>> GetByProfileAsync(int profileId, CancellationToken ct = default);
     Task<IReadOnlyList<Playlist>> GetTrackedByProfileAsync(int profileId, CancellationToken ct = default);
-    Task<Playlist?> GetByIdAsync(int id, CancellationToken ct = default);
     Task AddAsync(Playlist playlist, CancellationToken ct = default);
     Task AddPlaylistsAsync(IEnumerable<Playlist> playlists, CancellationToken ct = default);
     Task UpdateAsync(Playlist playlist, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
 
     Task<IReadOnlyList<Video>> GetVideosAsync(int playlistId, CancellationToken ct = default);
-    Task<IReadOnlyList<Video>> GetActiveVideosAsync(int playlistId, CancellationToken ct = default);
     Task<IReadOnlyList<Video>> GetDeletedVideosAsync(int playlistId, CancellationToken ct = default);
-    Task AddVideoAsync(Video video, CancellationToken ct = default);
     Task AddVideosAsync(IEnumerable<Video> videos, CancellationToken ct = default);
     Task UpdateVideoAsync(Video video, CancellationToken ct = default);
     Task PurgeDeletedVideosAsync(int playlistId, CancellationToken ct = default);

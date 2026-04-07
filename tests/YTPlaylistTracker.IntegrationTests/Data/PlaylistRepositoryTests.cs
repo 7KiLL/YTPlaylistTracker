@@ -50,8 +50,8 @@ public class PlaylistRepositoryTests : IDisposable
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PL456", IsTracked = true };
         await _repo.AddAsync(playlist);
 
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Video 1", ChannelTitle = "Ch1" });
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v2", Title = "Video 2" });
+        await _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Video 1", ChannelTitle = "Ch1" }]);
+        await _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v2", Title = "Video 2" }]);
 
         var videos = await _repo.GetVideosAsync(playlist.Id);
         Assert.Equal(2, videos.Count);
@@ -64,13 +64,14 @@ public class PlaylistRepositoryTests : IDisposable
         await _repo.AddAsync(playlist);
 
         var video = new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Will Be Removed" };
-        await _repo.AddVideoAsync(video);
+        await _repo.AddVideosAsync([video]);
 
         video.DeletedAt = DateTime.UtcNow;
         video.RemovalReason = RemovalReason.Deleted;
         await _repo.UpdateVideoAsync(video);
 
-        var active = await _repo.GetActiveVideosAsync(playlist.Id);
+        var all = await _repo.GetVideosAsync(playlist.Id);
+        var active = all.Where(v => v.DeletedAt == null).ToList();
         var deleted = await _repo.GetDeletedVideosAsync(playlist.Id);
 
         Assert.Empty(active);
@@ -84,10 +85,10 @@ public class PlaylistRepositoryTests : IDisposable
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLunique", IsTracked = true };
         await _repo.AddAsync(playlist);
 
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "dup1", Title = "First" });
+        await _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "dup1", Title = "First" }]);
 
         await Assert.ThrowsAsync<DbUpdateException>(() =>
-            _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "dup1", Title = "Duplicate" }));
+            _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "dup1", Title = "Duplicate" }]));
     }
 
     [Fact]
@@ -96,9 +97,9 @@ public class PlaylistRepositoryTests : IDisposable
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLpurge", IsTracked = true };
         await _repo.AddAsync(playlist);
 
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Active" });
+        await _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Active" }]);
         var deletedVideo = new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v2", Title = "Deleted", DeletedAt = DateTime.UtcNow };
-        await _repo.AddVideoAsync(deletedVideo);
+        await _repo.AddVideosAsync([deletedVideo]);
 
         await _repo.PurgeDeletedVideosAsync(playlist.Id);
 
@@ -128,19 +129,19 @@ public class PlaylistRepositoryTests : IDisposable
         await _repo.AddAsync(playlist2);
 
         // Active video — should not appear
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist1.Id, Playlist = playlist1, YouTubeVideoId = "active1", Title = "Active" });
+        await _repo.AddVideosAsync([new Video { PlaylistId = playlist1.Id, Playlist = playlist1, YouTubeVideoId = "active1", Title = "Active" }]);
 
         // Deleted videos across both playlists
-        await _repo.AddVideoAsync(new Video
+        await _repo.AddVideosAsync([new Video
         {
             PlaylistId = playlist1.Id, Playlist = playlist1, YouTubeVideoId = "del1", Title = "Deleted From A",
             DeletedAt = new DateTime(2025, 6, 1), RemovalReason = RemovalReason.Deleted
-        });
-        await _repo.AddVideoAsync(new Video
+        }]);
+        await _repo.AddVideosAsync([new Video
         {
             PlaylistId = playlist2.Id, Playlist = playlist2, YouTubeVideoId = "del2", Title = "Private In B",
             DeletedAt = new DateTime(2025, 7, 1), RemovalReason = RemovalReason.Private
-        });
+        }]);
 
         var results = await _repo.GetAllDeletedVideosAsync(1);
 
@@ -165,16 +166,16 @@ public class PlaylistRepositoryTests : IDisposable
         await _repo.AddAsync(playlist1);
         await _repo.AddAsync(playlist2);
 
-        await _repo.AddVideoAsync(new Video
+        await _repo.AddVideosAsync([new Video
         {
             PlaylistId = playlist1.Id, Playlist = playlist1, YouTubeVideoId = "v1", Title = "Mine",
             DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted
-        });
-        await _repo.AddVideoAsync(new Video
+        }]);
+        await _repo.AddVideosAsync([new Video
         {
             PlaylistId = playlist2.Id, Playlist = playlist2, YouTubeVideoId = "v2", Title = "Not Mine",
             DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted
-        });
+        }]);
 
         var profile1Results = await _repo.GetAllDeletedVideosAsync(1);
         var profile2Results = await _repo.GetAllDeletedVideosAsync(2);
@@ -190,7 +191,7 @@ public class PlaylistRepositoryTests : IDisposable
     {
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLempty", IsTracked = true };
         await _repo.AddAsync(playlist);
-        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Active" });
+        await _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v1", Title = "Active" }]);
 
         var results = await _repo.GetAllDeletedVideosAsync(1);
 

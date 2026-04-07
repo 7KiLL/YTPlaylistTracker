@@ -58,7 +58,8 @@ public class SyncServiceIntegrationTests : IDisposable
         Assert.Equal(3, result.Added);
         Assert.Equal(0, result.Removed);
 
-        var videos = await _playlistRepo.GetActiveVideosAsync(_testPlaylist.Id);
+        var all = await _playlistRepo.GetVideosAsync(_testPlaylist.Id);
+        var videos = all.Where(v => v.DeletedAt == null).ToList();
         Assert.Equal(3, videos.Count);
     }
 
@@ -115,7 +116,8 @@ public class SyncServiceIntegrationTests : IDisposable
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
 
         Assert.Equal(1, result.Added);
-        var active = await _playlistRepo.GetActiveVideosAsync(_testPlaylist.Id);
+        var allVideos = await _playlistRepo.GetVideosAsync(_testPlaylist.Id);
+        var active = allVideos.Where(v => v.DeletedAt == null).ToList();
         Assert.Single(active);
         Assert.Equal("Video Restored", active[0].Title);
         Assert.Null(active[0].DeletedAt);

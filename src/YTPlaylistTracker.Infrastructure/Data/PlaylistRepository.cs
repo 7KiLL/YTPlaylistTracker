@@ -22,38 +22,33 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
             .ToListAsync(ct);
     }
 
-    public async Task<Playlist?> GetByIdAsync(int id, CancellationToken ct = default)
-    {
-        return await db.Playlists.FindAsync([id], ct);
-    }
-
     public async Task AddAsync(Playlist playlist, CancellationToken ct = default)
     {
         logger.LogInformation("Adding playlist: {PlaylistId} ({Title})", playlist.YouTubePlaylistId, playlist.Title);
         db.Playlists.Add(playlist);
-        await db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     public async Task AddPlaylistsAsync(IEnumerable<Playlist> playlists, CancellationToken ct = default)
     {
         db.Playlists.AddRange(playlists);
-        await db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     public async Task UpdateAsync(Playlist playlist, CancellationToken ct = default)
     {
         db.Playlists.Update(playlist);
-        await db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var playlist = await db.Playlists.FindAsync([id], ct);
+        var playlist = await db.Playlists.FindAsync([id], ct).ConfigureAwait(false);
         if (playlist is not null)
         {
             logger.LogInformation("Deleting playlist: {PlaylistId}", playlist.YouTubePlaylistId);
             db.Playlists.Remove(playlist);
-            await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct).ConfigureAwait(false);
         }
     }
 
@@ -66,14 +61,6 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
             .ToListAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Video>> GetActiveVideosAsync(int playlistId, CancellationToken ct = default)
-    {
-        return await db.Videos
-            .Where(v => v.PlaylistId == playlistId && v.DeletedAt == null)
-            .OrderBy(v => v.Title)
-            .ToListAsync(ct);
-    }
-
     public async Task<IReadOnlyList<Video>> GetDeletedVideosAsync(int playlistId, CancellationToken ct = default)
     {
         return await db.Videos
@@ -82,23 +69,16 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
             .ToListAsync(ct);
     }
 
-    public async Task AddVideoAsync(Video video, CancellationToken ct = default)
-    {
-        logger.LogDebug("Adding video: {VideoId} ({Title})", video.YouTubeVideoId, video.Title);
-        db.Videos.Add(video);
-        await db.SaveChangesAsync(ct);
-    }
-
     public async Task AddVideosAsync(IEnumerable<Video> videos, CancellationToken ct = default)
     {
         db.Videos.AddRange(videos);
-        await db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     public async Task UpdateVideoAsync(Video video, CancellationToken ct = default)
     {
         db.Videos.Update(video);
-        await db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     public async Task PurgeDeletedVideosAsync(int playlistId, CancellationToken ct = default)
