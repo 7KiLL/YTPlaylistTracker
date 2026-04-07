@@ -46,8 +46,8 @@ public class MainWindow(
     private bool _suppressEvents;
     private TextField? _searchField;
     private string _searchQuery = "";
-    private string _sortColumn = "";
-    private bool _sortAscending = true;
+    private string _sortColumn = "Added Date";
+    private bool _sortAscending = false;
     private bool _isSyncing;
     private ColumnWidths _lastLayout;
 
@@ -154,6 +154,21 @@ public class MainWindow(
             (_, true) => (View)_playlistList,
             _ => (View)_videoTable
         };
+
+        // Shift+Arrow / Shift+j/k: fast scroll (5 rows at a time)
+        switch (keyEvent.Key)
+        {
+            case Key.CursorDown | Key.ShiftMask:
+            case Key.J | Key.ShiftMask:
+                for (int i = 0; i < 5; i++)
+                    focused.ProcessKey(new KeyEvent(Key.CursorDown, new KeyModifiers()));
+                return true;
+            case Key.CursorUp | Key.ShiftMask:
+            case Key.K | Key.ShiftMask:
+                for (int i = 0; i < 5; i++)
+                    focused.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
+                return true;
+        }
 
         // All single-letter keybinds in ProcessHotKey so child views don't eat them
         switch (keyEvent.KeyValue)

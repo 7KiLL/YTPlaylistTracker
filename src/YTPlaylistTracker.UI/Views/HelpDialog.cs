@@ -4,12 +4,13 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class HelpDialog : Dialog
 {
-    public HelpDialog() : base("Keybindings", 50, 23)
+    public HelpDialog() : base("Keybindings", 50, 24)
     {
         (string, string)[] keys =
         [
             ("h / l / Left / Right", "Switch panes"),
             ("j / k / Up / Down", "Navigate within pane"),
+            ("J / K / Shift+Up/Down", "Fast scroll (5 rows)"),
             ("Tab / Shift+Tab", "Cycle panes"),
             ("Enter", "View details"),
             ("/", "Search / filter videos"),
