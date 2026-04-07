@@ -3,6 +3,7 @@ using System.Net.Http;
 using Google;
 using Terminal.Gui;
 using YTPlaylistTracker.Application.Helpers;
+using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Platform;
@@ -17,6 +18,7 @@ public class MainWindow : Window
     private readonly ISyncService _syncService;
     private readonly IYouTubeApiService _youtubeApi;
     private readonly IBrowserLauncher _browser;
+    private readonly IUserSettings _userSettings;
     private readonly ILogger _logger;
 
     private readonly ListView _profileList;
@@ -47,6 +49,7 @@ public class MainWindow : Window
         ISyncService syncService,
         IYouTubeApiService youtubeApi,
         IBrowserLauncher browser,
+        IUserSettings userSettings,
         ILogger<MainWindow> logger) : base("ytpt - YouTube Playlist Tracker")
     {
         _playlistRepo = playlistRepo;
@@ -54,6 +57,7 @@ public class MainWindow : Window
         _syncService = syncService;
         _youtubeApi = youtubeApi;
         _browser = browser;
+        _userSettings = userSettings;
         _logger = logger;
 
         // Left pane: Profiles
@@ -118,7 +122,7 @@ public class MainWindow : Window
 
         Add(profileFrame, playlistFrame, _videoFrame);
 
-        var hintBar = new Label(" h/l:pane  j/k:nav  Enter:detail  /:search  o:sort  ?:help  a:add  t:track  T:all  s:sync  S:sync all  q:quit")
+        var hintBar = new Label(" h/l:pane  j/k:nav  Enter:detail  /:search  o:sort  e:export  H:history  ?:help  a:add  t:track  s:sync  S:all  q:quit")
         {
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
@@ -162,6 +166,8 @@ public class MainWindow : Window
             case 'T': OnToggleAllTracking(); return true;
             case 's': OnSync(); return true;
             case 'S': OnSyncAll(); return true;
+            case 'e': _ = OnExport(); return true;
+            case 'H': _ = OnShowHistory(); return true;
             case 'o': ShowSortMenu(); return true;
             case 'q': global::Terminal.Gui.Application.RequestStop(); return true;
             case '/': ShowSearch(); return true;
@@ -240,7 +246,7 @@ public class MainWindow : Window
         if (_selectedPlaylist is not null)
             await RefreshVideosAsync();
 
-        // Fetch playlists from YouTube in background after UI renders
+        // Fetch playlists from YouTube in background after UI renders, then auto-sync if enabled
         var capturedProfile = _selectedProfile;
         global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _ =>
         {
@@ -255,7 +261,40 @@ public class MainWindow : Window
                 {
                     _logger.LogError(ex, "Background playlist fetch failed");
                 }
-                finally
+
+                if (_userSettings.AutoSyncOnStartup && capturedProfile is not null)
+                {
+                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                        ShowSpinner("Auto-syncing all playlists..."));
+                    try
+                    {
+                        var results = await _syncService.SyncAllTrackedAsync(capturedProfile.Id);
+                        int totalAdded = results.Values.Sum(r => r.Added);
+                        int totalRemoved = results.Values.Sum(r => r.Removed);
+                        _logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
+                            results.Count, totalAdded, totalRemoved);
+                        global::Terminal.Gui.Application.MainLoop.Invoke(async () =>
+                        {
+                            HideSpinner();
+                            await RefreshPlaylistsAsync();
+                            await RefreshVideosAsync();
+                            Title = $"ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved})";
+                            SetNeedsDisplay();
+                            global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(5), _ =>
+                            {
+                                Title = "ytpt - YouTube Playlist Tracker";
+                                SetNeedsDisplay();
+                                return false;
+                            });
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Auto-sync failed");
+                        global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
+                    }
+                }
+                else
                 {
                     global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
                 }
@@ -799,9 +838,80 @@ public class MainWindow : Window
         _ = RefreshVideosAsync();
     }
 
+    private async Task OnShowHistory()
+    {
+        if (_selectedProfile is null) return;
+        try
+        {
+            var removedVideos = await _playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
+            var dialog = new RemovalHistoryDialog(removedVideos);
+            global::Terminal.Gui.Application.Run(dialog);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to show removal history");
+            MessageBox.Query("Error", "Failed to load history: " + ex.Message, "OK");
+        }
+    }
+
+    private async Task OnExport()
+    {
+        if (_selectedProfile is null) return;
+
+        try
+        {
+            var removedVideos = await _playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
+            if (removedVideos.Count == 0)
+            {
+                MessageBox.Query("Export", "No removed videos to export.", "OK");
+                return;
+            }
+
+            var dialog = new Dialog("Export Removed Videos", 50, 10);
+            var formatLabel = new Label("Format:") { X = 1, Y = 1 };
+            var formatRadio = new RadioGroup(new NStack.ustring[] { "CSV", "JSON" }) { X = 12, Y = 1 };
+            var pathLabel = new Label("File:") { X = 1, Y = 3 };
+            var defaultPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "ytpt-removed-videos");
+            var pathField = new TextField(defaultPath) { X = 12, Y = 3, Width = Dim.Fill(2) };
+            var okBtn = new Button("Export", true);
+            var cancelBtn = new Button("Cancel");
+
+            string? resultPath = null;
+            int selectedFormat = 0;
+            okBtn.Clicked += () => { resultPath = pathField.Text?.ToString(); selectedFormat = formatRadio.SelectedItem; global::Terminal.Gui.Application.RequestStop(); };
+            cancelBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+
+            dialog.Add(formatLabel, formatRadio, pathLabel, pathField);
+            dialog.AddButton(okBtn);
+            dialog.AddButton(cancelBtn);
+            global::Terminal.Gui.Application.Run(dialog);
+
+            if (resultPath is null) return;
+
+            var ext = selectedFormat == 1 ? ".json" : ".csv";
+            if (!resultPath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+                resultPath += ext;
+
+            var entries = ExportService.BuildEntries(removedVideos);
+            var content = selectedFormat == 1
+                ? ExportService.ToJson(entries)
+                : ExportService.ToCsv(entries);
+
+            await File.WriteAllTextAsync(resultPath, content);
+            MessageBox.Query("Export Complete", $"Exported {entries.Count} removed videos to:\n{resultPath}", "OK");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Export failed");
+            MessageBox.Query("Error", "Export failed: " + ex.Message, "OK");
+        }
+    }
+
     private void OnSettings()
     {
-        var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist);
+        var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist, _userSettings);
         global::Terminal.Gui.Application.Run(settingsDialog);
     }
 }

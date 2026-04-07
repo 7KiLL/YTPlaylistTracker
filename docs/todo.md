@@ -23,12 +23,12 @@
 
 ## Sub-project B: Background Sync & History
 - [ ] Background sync timer (configurable interval, runs while TUI is open)
-- [ ] Auto-sync on startup (configurable)
-- [ ] Removal history/timeline view (show when videos were removed)
+- [x] Auto-sync on startup (configurable)
+- [x] Removal history/timeline view (show when videos were removed)
 - [ ] Undo/restore soft-deleted videos
 
 ## Future
-- [ ] Export removed videos report (CSV/JSON)
+- [x] Export removed videos report (CSV/JSON)
 - [ ] Notification when videos are removed (desktop notification or webhook)
 - [ ] Track video duration/view count changes
 - [ ] Playlist diff view (side-by-side before/after sync)

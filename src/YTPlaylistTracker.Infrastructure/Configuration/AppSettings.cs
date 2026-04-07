@@ -5,10 +5,6 @@ namespace YTPlaylistTracker.Infrastructure.Configuration;
 
 public class AppSettings
 {
-    public int SyncIntervalHours { get; set; } = 6;
-    public bool AutoSyncOnStartup { get; set; } = true;
-    public bool BackgroundSyncEnabled { get; set; } = true;
-
     public static string AppDataDir
     {
         get
@@ -106,4 +102,5 @@ public class AppSettings
             File.SetUnixFileMode(DbPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
     }
+
 }

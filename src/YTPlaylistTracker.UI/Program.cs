@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
+using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Configuration;
 using YTPlaylistTracker.Infrastructure.Data;
@@ -42,6 +43,7 @@ services.AddScoped<IProfileRepository, ProfileRepository>();
 services.AddScoped<IPlaylistRepository, PlaylistRepository>();
 services.AddScoped<ISyncService, SyncService>();
 services.AddSingleton<IBrowserLauncher, BrowserLauncher>();
+services.AddSingleton<IUserSettings>(UserSettings.Load());
 services.AddSingleton<Lazy<IYouTubeApiService>>(sp =>
     new Lazy<IYouTubeApiService>(() =>
     {
@@ -165,6 +167,19 @@ resetCmd.SetAction((result, _) =>
 });
 root.Add(resetCmd);
 
+// export [--format csv|json] [--output path]
+var exportFormatOpt = new System.CommandLine.Option<string>("--format", "-f") { Description = "Output format: csv or json (default: csv)" };
+var exportOutputOpt = new System.CommandLine.Option<string?>("--output", "-o") { Description = "Output file path (default: stdout)" };
+var exportCmd = new CliCommand("export", "Export removed videos report") { exportFormatOpt, exportOutputOpt };
+exportCmd.SetAction(async (result, _) =>
+{
+    var format = result.GetValue(exportFormatOpt);
+    if (string.IsNullOrEmpty(format)) format = "csv";
+    var output = result.GetValue(exportOutputOpt);
+    await RunExport(format, output);
+});
+root.Add(exportCmd);
+
 // Default: launch TUI
 root.SetAction(async (_, _) => await RunUi());
 
@@ -199,6 +214,7 @@ async Task RunUi()
             s.GetRequiredService<ISyncService>(),
             s.GetRequiredService<IYouTubeApiService>(),
             sp.GetRequiredService<IBrowserLauncher>(),
+            sp.GetRequiredService<IUserSettings>(),
             s.GetRequiredService<ILogger<MainWindow>>());
         await mainWindow.InitializeAsync();
         Application.Run(mainWindow);
@@ -281,6 +297,37 @@ async Task RunLogin()
         service.Dispose();
     }
     catch (Exception ex) { Console.Error.WriteLine($"Login failed: {ex.Message}"); }
+}
+
+async Task RunExport(string format, string? outputPath)
+{
+    using var scope = sp.CreateScope();
+    var s = scope.ServiceProvider;
+    var profileRepo = s.GetRequiredService<IProfileRepository>();
+    var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
+
+    var profile = await profileRepo.GetDefaultAsync();
+    if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
+
+    var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(profile.Id);
+    if (removedVideos.Count == 0) { Console.WriteLine("No removed videos found."); return; }
+
+    var entries = ExportService.BuildEntries(removedVideos);
+    var content = format.ToLower() switch
+    {
+        "json" => ExportService.ToJson(entries),
+        _ => ExportService.ToCsv(entries)
+    };
+
+    if (outputPath is not null)
+    {
+        await File.WriteAllTextAsync(outputPath, content);
+        Console.WriteLine($"Exported {entries.Count} removed videos to {outputPath}");
+    }
+    else
+    {
+        Console.Write(content);
+    }
 }
 
 void RunLogout()

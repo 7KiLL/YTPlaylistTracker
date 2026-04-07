@@ -117,6 +117,83 @@ public class PlaylistRepositoryTests : IDisposable
         Assert.All(tracked, p => Assert.True(p.IsTracked));
     }
 
+    [Fact]
+    public async Task GetAllDeletedVideosAsync_ReturnsAcrossPlaylists()
+    {
+        var playlist1 = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLcross1", Title = "Playlist A", IsTracked = true };
+        var playlist2 = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLcross2", Title = "Playlist B", IsTracked = true };
+        await _repo.AddAsync(playlist1);
+        await _repo.AddAsync(playlist2);
+
+        // Active video — should not appear
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist1.Id, YouTubeVideoId = "active1", Title = "Active" });
+
+        // Deleted videos across both playlists
+        await _repo.AddVideoAsync(new Video
+        {
+            PlaylistId = playlist1.Id, YouTubeVideoId = "del1", Title = "Deleted From A",
+            DeletedAt = new DateTime(2025, 6, 1), RemovalReason = RemovalReason.Deleted
+        });
+        await _repo.AddVideoAsync(new Video
+        {
+            PlaylistId = playlist2.Id, YouTubeVideoId = "del2", Title = "Private In B",
+            DeletedAt = new DateTime(2025, 7, 1), RemovalReason = RemovalReason.Private
+        });
+
+        var results = await _repo.GetAllDeletedVideosAsync(1);
+
+        Assert.Equal(2, results.Count);
+        // Should be ordered by DeletedAt descending (most recent first)
+        Assert.Equal("Private In B", results[0].Video.Title);
+        Assert.Equal("Playlist B", results[0].Playlist.Title);
+        Assert.Equal("Deleted From A", results[1].Video.Title);
+        Assert.Equal("Playlist A", results[1].Playlist.Title);
+    }
+
+    [Fact]
+    public async Task GetAllDeletedVideosAsync_FiltersOtherProfiles()
+    {
+        // Add a second profile
+        _db.Profiles.Add(new Profile { Id = 2, Name = "Other" });
+        await _db.SaveChangesAsync();
+
+        var playlist1 = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLprof1", IsTracked = true };
+        var playlist2 = new Playlist { ProfileId = 2, YouTubePlaylistId = "PLprof2", IsTracked = true };
+        await _repo.AddAsync(playlist1);
+        await _repo.AddAsync(playlist2);
+
+        await _repo.AddVideoAsync(new Video
+        {
+            PlaylistId = playlist1.Id, YouTubeVideoId = "v1", Title = "Mine",
+            DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted
+        });
+        await _repo.AddVideoAsync(new Video
+        {
+            PlaylistId = playlist2.Id, YouTubeVideoId = "v2", Title = "Not Mine",
+            DeletedAt = DateTime.UtcNow, RemovalReason = RemovalReason.Deleted
+        });
+
+        var profile1Results = await _repo.GetAllDeletedVideosAsync(1);
+        var profile2Results = await _repo.GetAllDeletedVideosAsync(2);
+
+        Assert.Single(profile1Results);
+        Assert.Equal("Mine", profile1Results[0].Video.Title);
+        Assert.Single(profile2Results);
+        Assert.Equal("Not Mine", profile2Results[0].Video.Title);
+    }
+
+    [Fact]
+    public async Task GetAllDeletedVideosAsync_EmptyWhenNoDeleted()
+    {
+        var playlist = new Playlist { ProfileId = 1, YouTubePlaylistId = "PLempty", IsTracked = true };
+        await _repo.AddAsync(playlist);
+        await _repo.AddVideoAsync(new Video { PlaylistId = playlist.Id, YouTubeVideoId = "v1", Title = "Active" });
+
+        var results = await _repo.GetAllDeletedVideosAsync(1);
+
+        Assert.Empty(results);
+    }
+
     public void Dispose()
     {
         _db.Dispose();

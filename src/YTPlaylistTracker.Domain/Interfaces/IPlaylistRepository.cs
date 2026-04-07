@@ -18,4 +18,5 @@ public interface IPlaylistRepository
     Task AddVideosAsync(IEnumerable<Video> videos);
     Task UpdateVideoAsync(Video video);
     Task PurgeDeletedVideosAsync(int playlistId);
+    Task<List<(Playlist Playlist, Video Video)>> GetAllDeletedVideosAsync(int profileId);
 }
