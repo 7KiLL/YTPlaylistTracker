@@ -73,7 +73,7 @@ resolve_version() {
         return
     fi
 
-    say "Fetching latest release..."
+    say "Fetching latest release..." >&2
     local tag
     tag="$(curl -fsSL "${GITHUB_API}/latest" | grep '"tag_name"' | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/')"
     if [[ -z "$tag" ]]; then
