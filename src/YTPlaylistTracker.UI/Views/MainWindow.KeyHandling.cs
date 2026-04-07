@@ -32,24 +32,31 @@ public partial class MainWindow
             _ => (View)_videoTable
         };
 
-        // Shift+Arrow / Shift+j/k: fast scroll (5 rows at a time)
+        // Shift+Arrow: fast scroll (5 rows at a time)
         switch (keyEvent.Key)
         {
             case Key.CursorDown | Key.ShiftMask:
-            case Key.J | Key.ShiftMask:
                 for (int i = 0; i < 5; i++)
                     focused.ProcessKey(new KeyEvent(Key.CursorDown, new KeyModifiers()));
                 return true;
             case Key.CursorUp | Key.ShiftMask:
-            case Key.K | Key.ShiftMask:
                 for (int i = 0; i < 5; i++)
                     focused.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
                 return true;
         }
 
         // All single-letter keybinds in ProcessHotKey so child views don't eat them
+        // Shift+J/K (uppercase) = fast scroll; lowercase = single step
         switch (keyEvent.KeyValue)
         {
+            case 'J':
+                for (int i = 0; i < 5; i++)
+                    focused.ProcessKey(new KeyEvent(Key.CursorDown, new KeyModifiers()));
+                return true;
+            case 'K':
+                for (int i = 0; i < 5; i++)
+                    focused.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
+                return true;
             case 'j': focused.ProcessKey(new KeyEvent(Key.CursorDown, new KeyModifiers())); return true;
             case 'k': focused.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers())); return true;
             case 'a': _ = OnAddByUrlAsync(); return true;
