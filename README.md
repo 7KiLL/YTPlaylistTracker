@@ -170,6 +170,7 @@ Add `--verbose` or `-v` to any command for debug logging.
 | `Enter` | View details of selected profile/playlist/video |
 | `h` / `l` | Navigate between panes (profiles, playlists, videos) |
 | `j` / `k` | Navigate up/down in focused pane |
+| `J` / `K` / Shift+Up/Down | Fast scroll (5 rows) |
 | Tab / Shift+Tab | Cycle focus between panes |
 | `F8` | Toggle: show removed videos only |
 | `F9` | Settings |
@@ -254,6 +255,10 @@ See [docs/architecture.md](docs/architecture.md) for details.
 - **Google.Apis.YouTube.v3** — YouTube Data API client
 - **Serilog** — structured logging
 - **xUnit + NSubstitute** — testing
+
+## Known Issues
+
+- **Emoji in video titles** — Emoji characters (e.g. 🏕, 🎮) are replaced with spaces in the TUI display. This is a Terminal.Gui v1 limitation: its Unicode width tables (NStack) don't accurately measure modern emoji, causing column misalignment. The original titles with emoji are preserved in the database and in exports.
 
 ## AI Disclosure
 
