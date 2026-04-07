@@ -1013,7 +1013,7 @@ public class MainWindow : Window
 
     private void OnSettings()
     {
-        var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist, _userSettings);
+        var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist, _userSettings, _updateService);
         global::Terminal.Gui.Application.Run(settingsDialog);
     }
 

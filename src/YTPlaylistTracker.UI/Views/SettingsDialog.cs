@@ -2,13 +2,15 @@ using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Configuration;
+using YTPlaylistTracker.Infrastructure.Update;
 
 namespace YTPlaylistTracker.UI.Views;
 
 public class SettingsDialog : Dialog
 {
-    public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist, IUserSettings userSettings)
-        : base("Settings", 60, 18)
+    public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist,
+        IUserSettings userSettings, IUpdateService updateService)
+        : base("Settings", 60, 22)
     {
         var dbPathLabel = new Label("Database path:") { X = 1, Y = 1 };
         var dbPathValue = new Label(AppSettings.DbPath) { X = 1, Y = 2 };
@@ -23,7 +25,40 @@ public class SettingsDialog : Dialog
             userSettings.Save();
         };
 
-        var purgeBtn = new Button("Purge Deleted Videos") { X = 1, Y = 9 };
+        var checkForUpdatesCheck = new CheckBox("Check for updates on startup", userSettings.CheckForUpdatesOnStartup) { X = 1, Y = 9 };
+        checkForUpdatesCheck.Toggled += (prev) =>
+        {
+            userSettings.CheckForUpdatesOnStartup = checkForUpdatesCheck.Checked;
+            userSettings.Save();
+        };
+
+        var versionLabel = new Label($"Version: {UpdateService.GetCurrentVersion()}") { X = 1, Y = 11 };
+
+        var checkNowBtn = new Button("Check Now") { X = 1, Y = 13 };
+        checkNowBtn.Clicked += () =>
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var update = await updateService.CheckForUpdateAsync();
+                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    {
+                        if (update.IsUpdateAvailable)
+                            MessageBox.Query("Update Available", $"Version {update.LatestVersion} is available.", "OK");
+                        else
+                            MessageBox.Query("Up to Date", $"You're on the latest version ({update.CurrentVersion}).", "OK");
+                    });
+                }
+                catch (Exception ex)
+                {
+                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                        MessageBox.Query("Error", $"Update check failed: {ex.Message}", "OK"));
+                }
+            });
+        };
+
+        var purgeBtn = new Button("Purge Deleted Videos") { X = 1, Y = 15 };
         purgeBtn.Clicked += async () =>
         {
             try
@@ -50,7 +85,7 @@ public class SettingsDialog : Dialog
             }
         };
 
-        var resetBtn = new Button("Reset Database") { X = 1, Y = 11 };
+        var resetBtn = new Button("Reset Database") { X = 1, Y = 17 };
         resetBtn.Clicked += () =>
         {
             var confirm = MessageBox.Query("Reset Database",
@@ -76,7 +111,8 @@ public class SettingsDialog : Dialog
         var closeBtn = new Button("Close", true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
 
-        Add(dbPathLabel, dbPathValue, logPathLabel, logPathValue, autoSyncCheck, purgeBtn, resetBtn);
+        Add(dbPathLabel, dbPathValue, logPathLabel, logPathValue, autoSyncCheck,
+            checkForUpdatesCheck, versionLabel, checkNowBtn, purgeBtn, resetBtn);
         AddButton(closeBtn);
     }
 }
