@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="ytpt logo" width="400">
+</p>
+
 # ytpt — YouTube Playlist Tracker
 
 Track your YouTube playlists and know exactly which videos disappeared. When a video gets deleted, made private, or removed — **ytpt** preserves the title and metadata so you always know what's gone.
