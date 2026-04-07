@@ -278,13 +278,24 @@ public partial class MainWindow(
         if (idx >= 0) _profileList.SelectedItem = idx;
     }
 
+    private static bool IsLikedPlaylist(Playlist p) =>
+        p.YouTubePlaylistId.StartsWith("LL", StringComparison.Ordinal);
+
     private async Task RefreshPlaylistsAsync()
     {
         if (_selectedProfile is null) return;
         var prevIdx = _playlistList.SelectedItem;
-        _playlists = (await playlistRepo.GetByProfileAsync(_selectedProfile.Id)).ToList();
+        _playlists = (await playlistRepo.GetByProfileAsync(_selectedProfile.Id))
+            .OrderByDescending(p => IsLikedPlaylist(p))
+            .ThenBy(p => p.Title ?? p.YouTubePlaylistId)
+            .ToList();
         var names = _playlists.Select(p =>
-            (p.IsTracked ? "[x] " : "[ ] ") + (p.Title ?? p.YouTubePlaylistId)).ToList();
+        {
+            var prefix = p.IsTracked ? "[x] " : "[ ] ";
+            return IsLikedPlaylist(p)
+                ? prefix + "♥ " + (p.Title ?? p.YouTubePlaylistId)
+                : prefix + (p.Title ?? p.YouTubePlaylistId);
+        }).ToList();
         _suppressEvents = true;
         _playlistList.SetSource(names);
         if (prevIdx >= 0 && prevIdx < _playlists.Count)

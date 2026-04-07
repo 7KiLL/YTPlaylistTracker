@@ -169,20 +169,34 @@ public partial class MainWindow
         }
     }
 
-    private async void OnPlaylistSelected(ListViewItemEventArgs e)
+    private void OnPlaylistSelected(ListViewItemEventArgs e)
     {
         if (_suppressEvents) return;
-        try
+        if (e.Item < 0 || e.Item >= _playlists.Count) return;
+
+        _selectedPlaylist = _playlists[e.Item];
+
+        // Load videos in background to avoid UI stutter on large playlists
+        var playlist = _selectedPlaylist;
+        Task.Run(async () =>
         {
-            if (e.Item >= 0 && e.Item < _playlists.Count)
+            try
             {
-                _selectedPlaylist = _playlists[e.Item];
-                await RefreshVideosAsync();
+                var videos = (_showDeletedOnly
+                    ? await playlistRepo.GetDeletedVideosAsync(playlist.Id)
+                    : await playlistRepo.GetVideosAsync(playlist.Id)).ToList();
+
+                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                {
+                    if (_selectedPlaylist?.Id != playlist.Id) return;
+                    _videos = videos;
+                    ApplyFilterAndSort();
+                });
             }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to load playlist");
-        }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to load playlist videos");
+            }
+        });
     }
 }
