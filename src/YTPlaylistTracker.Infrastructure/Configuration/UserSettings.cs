@@ -11,6 +11,7 @@ public class UserSettings : IUserSettings
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
         var json = JsonSerializer.Serialize(new { autoSyncOnStartup = AutoSyncOnStartup },
             new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(SettingsPath, json);
