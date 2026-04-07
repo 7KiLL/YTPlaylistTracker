@@ -8,6 +8,7 @@ using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Platform;
 using Microsoft.Extensions.Logging;
+using YTPlaylistTracker.UI;
 
 namespace YTPlaylistTracker.UI.Views;
 
@@ -42,6 +43,7 @@ public class MainWindow : Window
     private string _searchQuery = "";
     private string _sortColumn = "";
     private bool _sortAscending = true;
+    private ColumnWidths _lastLayout;
 
     public MainWindow(
         IPlaylistRepository playlistRepo,
@@ -402,14 +404,17 @@ public class MainWindow : Window
         }
         else
         {
+            _lastLayout = ColumnLayout.Compute(_videoTable.Bounds.Width);
+
             for (int i = 0; i < filtered.Count; i++)
             {
                 var v = filtered[i];
-                var t = (v.Title ?? "").Trim();
+                var t = UnicodeWidth.Truncate((v.Title ?? "").Trim(), _lastLayout.TitleWidth);
+                var ch = UnicodeWidth.Truncate(v.ChannelTitle ?? "", _lastLayout.ChannelWidth);
                 dt.Rows.Add(
                     (i + 1).ToString(),
                     t,
-                    v.ChannelTitle ?? "",
+                    ch,
                     (v.AddedAt?.ToString("yyyy-MM-dd") ?? "") + "  ",
                     v.DeletedAt.HasValue
                         ? "X " + (v.RemovalReason?.ToString() ?? "Removed")
@@ -421,10 +426,16 @@ public class MainWindow : Window
         _videoTable.Table = dt;
 
         _videoTable.Style.ColumnStyles.Clear();
-        _videoTable.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle { MinWidth = 3, MaxWidth = 5 };
-        _videoTable.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle { MinWidth = 8, MaxWidth = 25 };
-        _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle { MinWidth = 10, MaxWidth = 12 };
-        _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle { MinWidth = 6, MaxWidth = 16 };
+        _videoTable.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
+            { MinWidth = 3, MaxWidth = _lastLayout.NumberWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
+            { MinWidth = 20, MaxWidth = _lastLayout.TitleWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
+            { MinWidth = 10, MaxWidth = _lastLayout.ChannelWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
+            { MinWidth = 10, MaxWidth = _lastLayout.AddedWidth };
+        _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
+            { MinWidth = 6, MaxWidth = _lastLayout.StatusWidth };
 
         var sortIndicator = string.IsNullOrEmpty(_sortColumn) ? ""
             : " " + (_sortAscending ? "^" : "v") + _sortColumn;
