@@ -41,7 +41,7 @@ public class RemovedVideosDialog : Dialog
                 ShowVerticalHeaderLines = false,
                 ShowHorizontalHeaderOverline = false,
                 ShowHorizontalHeaderUnderline = true,
-                ExpandLastColumn = true,
+                ExpandLastColumn = false,
                 AlwaysShowHeaders = true,
                 ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>()
             }
@@ -58,15 +58,15 @@ public class RemovedVideosDialog : Dialog
             var layout = ColumnLayout.Compute(table.Bounds.Width);
             table.Style.ColumnStyles.Clear();
             table.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
-                { MinWidth = 3, MaxWidth = layout.NumberWidth };
+                { MinWidth = layout.NumberWidth, MaxWidth = layout.NumberWidth };
             table.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
-                { MinWidth = 20, MaxWidth = layout.TitleWidth };
+                { MinWidth = layout.TitleWidth };
             table.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
-                { MinWidth = 10, MaxWidth = layout.ChannelWidth };
+                { MinWidth = layout.ChannelWidth, MaxWidth = layout.ChannelWidth };
             table.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
-                { MinWidth = 7, MaxWidth = 14 };
+                { MinWidth = 14, MaxWidth = 14 };
             table.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
-                { MinWidth = 10, MaxWidth = 18 };
+                { MinWidth = 18, MaxWidth = 18 };
             table.SetNeedsDisplay();
         };
 

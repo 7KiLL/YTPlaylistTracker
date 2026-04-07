@@ -112,7 +112,7 @@ public class MainWindow : Window
                 ShowVerticalHeaderLines = false,
                 ShowHorizontalHeaderOverline = false,
                 ShowHorizontalHeaderUnderline = true,
-                ExpandLastColumn = true,
+                ExpandLastColumn = false,
                 AlwaysShowHeaders = true,
                 ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>()
             }
@@ -410,12 +410,10 @@ public class MainWindow : Window
             for (int i = 0; i < filtered.Count; i++)
             {
                 var v = filtered[i];
-                var t = UnicodeWidth.Truncate((v.Title ?? "").Trim(), _lastLayout.TitleWidth);
-                var ch = UnicodeWidth.Truncate(v.ChannelTitle ?? "", _lastLayout.ChannelWidth);
                 dt.Rows.Add(
                     (i + 1).ToString(),
-                    t,
-                    ch,
+                    UnicodeWidth.Truncate((v.Title ?? "").Trim(), _lastLayout.TitleWidth),
+                    UnicodeWidth.Truncate(v.ChannelTitle ?? "", _lastLayout.ChannelWidth),
                     (v.AddedAt?.ToString("yyyy-MM-dd") ?? "") + "  ",
                     v.DeletedAt.HasValue
                         ? "X " + (v.RemovalReason?.ToString() ?? "Removed")
@@ -426,17 +424,7 @@ public class MainWindow : Window
         _filteredVideos = filtered;
         _videoTable.Table = dt;
 
-        _videoTable.Style.ColumnStyles.Clear();
-        _videoTable.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
-            { MinWidth = 3, MaxWidth = _lastLayout.NumberWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
-            { MinWidth = 20, MaxWidth = _lastLayout.TitleWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
-            { MinWidth = 10, MaxWidth = _lastLayout.ChannelWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
-            { MinWidth = 10, MaxWidth = _lastLayout.AddedWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
-            { MinWidth = 6, MaxWidth = _lastLayout.StatusWidth };
+        ApplyColumnStyles(dt);
 
         var sortIndicator = string.IsNullOrEmpty(_sortColumn) ? ""
             : " " + (_sortAscending ? "^" : "v") + _sortColumn;
@@ -455,9 +443,8 @@ public class MainWindow : Window
         if (_videoTable.Table == null) return;
 
         var newLayout = ColumnLayout.Compute(_videoTable.Bounds.Width);
-        if (newLayout == _lastLayout) return; // no change, skip redraw
+        if (newLayout == _lastLayout) return;
 
-        // Re-truncate cell data with new widths
         _lastLayout = newLayout;
         var dt = _videoTable.Table;
 
@@ -471,19 +458,23 @@ public class MainWindow : Window
             }
         }
 
+        ApplyColumnStyles(dt);
+        _videoTable.SetNeedsDisplay();
+    }
+
+    private void ApplyColumnStyles(DataTable dt)
+    {
         _videoTable.Style.ColumnStyles.Clear();
         _videoTable.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
-            { MinWidth = 3, MaxWidth = newLayout.NumberWidth };
+            { MinWidth = _lastLayout.NumberWidth, MaxWidth = _lastLayout.NumberWidth };
         _videoTable.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
-            { MinWidth = 20, MaxWidth = newLayout.TitleWidth };
+            { MinWidth = _lastLayout.TitleWidth };
         _videoTable.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
-            { MinWidth = 10, MaxWidth = newLayout.ChannelWidth };
+            { MinWidth = _lastLayout.ChannelWidth, MaxWidth = _lastLayout.ChannelWidth };
         _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
-            { MinWidth = 10, MaxWidth = newLayout.AddedWidth };
+            { MinWidth = _lastLayout.AddedWidth, MaxWidth = _lastLayout.AddedWidth };
         _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
-            { MinWidth = 6, MaxWidth = newLayout.StatusWidth };
-
-        _videoTable.SetNeedsDisplay();
+            { MinWidth = _lastLayout.StatusWidth, MaxWidth = _lastLayout.StatusWidth };
     }
 
     private async void OnProfileSelected(ListViewItemEventArgs e)
