@@ -3,6 +3,7 @@ using YTPlaylistTracker.Infrastructure.Update;
 
 namespace YTPlaylistTracker.Infrastructure.Platform;
 
+#pragma warning disable CA1416 // Platform compatibility — only instantiated on Unix via DI
 public class UnixBinaryUpdater(ILogger<UnixBinaryUpdater> logger) : IBinaryUpdater
 {
     public Task<string> ApplyAsync(string newBinaryPath, string currentBinaryPath)

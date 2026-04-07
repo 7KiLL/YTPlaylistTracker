@@ -17,13 +17,16 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
 
     private static readonly HttpClient Http = new()
     {
-        Timeout = TimeSpan.FromSeconds(15),
+        Timeout = Timeout.InfiniteTimeSpan,
         DefaultRequestHeaders =
         {
             { "User-Agent", "ytpt-updater" },
             { "Accept", "application/vnd.github+json" }
         }
     };
+
+    private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan DownloadTimeout = TimeSpan.FromMinutes(5);
 
     public static string GetCurrentVersion()
     {
@@ -48,7 +51,8 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
 
         try
         {
-            var json = await Http.GetStringAsync(GitHubApiUrl);
+            using var checkCts = new CancellationTokenSource(CheckTimeout);
+            var json = await Http.GetStringAsync(GitHubApiUrl, checkCts.Token);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -123,12 +127,13 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             var archivePath = Path.Combine(tempDir, assetName);
             logger.LogInformation("[Update] Downloading {Url}", update.DownloadUrl);
 
-            var response = await Http.GetAsync(update.DownloadUrl, HttpCompletionOption.ResponseHeadersRead);
+            using var downloadCts = new CancellationTokenSource(DownloadTimeout);
+            var response = await Http.GetAsync(update.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, downloadCts.Token);
             response.EnsureSuccessStatusCode();
 
             await using (var fileStream = File.Create(archivePath))
             {
-                await response.Content.CopyToAsync(fileStream);
+                await response.Content.CopyToAsync(fileStream, downloadCts.Token);
             }
 
             if (new FileInfo(archivePath).Length == 0)
@@ -174,8 +179,13 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); }
-            catch { /* non-fatal */ }
+            // On Windows, the update script runs after the process exits and needs
+            // the temp directory. On Unix, we can clean up immediately.
+            if (!OperatingSystem.IsWindows())
+            {
+                try { Directory.Delete(tempDir, recursive: true); }
+                catch { /* non-fatal */ }
+            }
         }
     }
 }

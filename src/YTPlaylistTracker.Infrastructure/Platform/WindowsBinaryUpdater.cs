@@ -15,11 +15,13 @@ public class WindowsBinaryUpdater(ILogger<WindowsBinaryUpdater> logger) : IBinar
 
         try
         {
+            var tempDir = Path.GetDirectoryName(newBinaryPath);
             var script = $"""
                 @echo off
                 timeout /t 2 /nobreak >nul
                 copy /y "{newBinaryPath}" "{currentBinaryPath}"
                 start "" "{currentBinaryPath}"
+                rmdir /s /q "{tempDir}"
                 del "%~f0"
                 """;
 
