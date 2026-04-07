@@ -79,10 +79,12 @@ public partial class MainWindow
         }
     }
 
-    private void OnSettings()
+    private async void OnSettings()
     {
         var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService, browser);
         global::Terminal.Gui.Application.Run(settingsDialog);
+        await RefreshPlaylistsAsync();
+        ApplyFilterAndSort();
     }
 
     private void OnUpdateCheck()
