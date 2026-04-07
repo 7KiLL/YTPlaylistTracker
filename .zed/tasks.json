@@ -1,0 +1,68 @@
+[
+  {
+    "label": "Run TUI",
+    "command": "dotnet run --project src/YTPlaylistTracker.UI",
+    "use_new_terminal": true,
+    "tags": ["dotnet-run"]
+  },
+  {
+    "label": "Run TUI (verbose)",
+    "command": "dotnet run --project src/YTPlaylistTracker.UI -- --verbose",
+    "use_new_terminal": true,
+    "tags": ["dotnet-run"]
+  },
+  {
+    "label": "Sync All Playlists",
+    "command": "dotnet run --project src/YTPlaylistTracker.UI -- sync",
+    "use_new_terminal": true,
+    "tags": ["dotnet-run"]
+  },
+  {
+    "label": "Show Status",
+    "command": "dotnet run --project src/YTPlaylistTracker.UI -- status",
+    "use_new_terminal": true,
+    "tags": ["dotnet-run"]
+  },
+  {
+    "label": "Build",
+    "command": "dotnet build",
+    "tags": ["dotnet-build"]
+  },
+  {
+    "label": "Build (Release)",
+    "command": "dotnet build -c Release",
+    "tags": ["dotnet-build"]
+  },
+  {
+    "label": "Test All",
+    "command": "dotnet test",
+    "tags": ["dotnet-test"]
+  },
+  {
+    "label": "Test Unit",
+    "command": "dotnet test tests/YTPlaylistTracker.UnitTests",
+    "tags": ["dotnet-test"]
+  },
+  {
+    "label": "Test Integration",
+    "command": "dotnet test tests/YTPlaylistTracker.IntegrationTests",
+    "tags": ["dotnet-test"]
+  },
+  {
+    "label": "Pack & Install Global Tool",
+    "command": "dotnet pack src/YTPlaylistTracker.UI -c Release && dotnet tool install -g --add-source src/YTPlaylistTracker.UI/bin/Release ytpt",
+    "use_new_terminal": true,
+    "tags": ["dotnet-pack"]
+  },
+  {
+    "label": "Export Removed (CSV)",
+    "command": "dotnet run --project src/YTPlaylistTracker.UI -- export",
+    "use_new_terminal": true,
+    "tags": ["dotnet-run"]
+  },
+  {
+    "label": "Add EF Migration",
+    "command": "echo 'Usage: dotnet ef migrations add <Name> --project src/YTPlaylistTracker.Infrastructure --startup-project src/YTPlaylistTracker.UI --output-dir Data/Migrations'",
+    "tags": ["dotnet-ef"]
+  }
+]
