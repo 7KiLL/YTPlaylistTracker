@@ -255,6 +255,10 @@ See [docs/architecture.md](docs/architecture.md) for details.
 - **Serilog** — structured logging
 - **xUnit + NSubstitute** — testing
 
+## AI Disclosure
+
+This project was largely built with AI assistance ([Claude Code](https://claude.ai/code)). The logo was generated with ChatGPT. All code, documentation, and CI/CD pipelines were reviewed and approved by a human maintainer.
+
 ## License
 
 MIT
