@@ -1,3 +1,5 @@
+using YTPlaylistTracker.Domain.Enums;
+
 namespace YTPlaylistTracker.Domain.Entities;
 
 public class Playlist
@@ -7,6 +9,8 @@ public class Playlist
     public required string YouTubePlaylistId { get; set; }
     public string? Title { get; set; }
     public bool IsTracked { get; set; }
+    public PlaylistKind Kind { get; set; }
+    public bool IsManuallyAdded { get; set; }
     public DateTime? LastSyncedAt { get; set; }
     public string? JsonMetadata { get; set; }
     public string? Description { get; set; }
