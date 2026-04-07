@@ -35,10 +35,13 @@
 - [x] Export removed videos report (CSV/JSON)
 - [x] Bulk import playlists from YouTube account (auto-imports on startup via authenticated API)
 
+## In Progress
+- [x] **Enrich profile with YouTube channel info** — Fetch channel name, ID, and avatar via `channels.list?mine=true` on login/sync/startup; profile list shows channel name instead of "Default".
+- [x] **Update/upgrade system** — Auto-check for updates on startup, title bar notification, in-place binary replacement via Ctrl+U / Settings / `ytpt update` CLI.
+
 ## Backlog (prioritized)
 
 ### P1 — Core UX gaps
-- [ ] **Enrich profile with Google account info** — Store account name, email, and avatar URL from YouTube API on login/sync so profiles are identifiable.
 - [ ] **Profile management in TUI** — Add create/rename/delete profile dialogs so multi-account users can manage profiles without CLI workarounds.
 
 ### P2 — Polish
