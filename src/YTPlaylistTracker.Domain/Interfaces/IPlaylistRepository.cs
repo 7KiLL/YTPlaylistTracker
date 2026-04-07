@@ -8,6 +8,7 @@ public interface IPlaylistRepository
     Task<List<Playlist>> GetTrackedByProfileAsync(int profileId);
     Task<Playlist?> GetByIdAsync(int id);
     Task AddAsync(Playlist playlist);
+    Task AddPlaylistsAsync(IEnumerable<Playlist> playlists);
     Task UpdateAsync(Playlist playlist);
     Task DeleteAsync(int id);
 

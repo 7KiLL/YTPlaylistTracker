@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
+using YTPlaylistTracker.Domain.Models;
 
 namespace YTPlaylistTracker.Application.Services;
 
@@ -9,11 +11,135 @@ public class SyncService(
     IPlaylistRepository playlistRepo,
     ILogger<SyncService> logger) : ISyncService
 {
+    // --- Tunable cooldowns ---
+    public static readonly TimeSpan LikedManualCooldown = TimeSpan.FromDays(1);
+    public static readonly TimeSpan AutoSyncCooldown = TimeSpan.FromHours(6);
+    private const int MaxConcurrentFetches = 4;
+
+    // --- Helpers ---
+
+    public static bool IsLikedPlaylist(string youtubePlaylistId)
+        => youtubePlaylistId.StartsWith("LL", StringComparison.Ordinal);
+
+    public static TimeSpan? GetRemainingCooldown(Playlist playlist)
+    {
+        if (!IsLikedPlaylist(playlist.YouTubePlaylistId) || !playlist.LastSyncedAt.HasValue)
+            return null;
+        var remaining = LikedManualCooldown - (DateTime.UtcNow - playlist.LastSyncedAt.Value);
+        return remaining > TimeSpan.Zero ? remaining : null;
+    }
+
+    public static string FormatLastSynced(Playlist playlist)
+    {
+        if (!playlist.LastSyncedAt.HasValue)
+            return "never";
+        var ago = DateTime.UtcNow - playlist.LastSyncedAt.Value;
+        return ago.TotalMinutes < 1 ? "just now"
+            : ago.TotalMinutes < 60 ? $"{(int)ago.TotalMinutes}m ago"
+            : ago.TotalHours < 24 ? $"{(int)ago.TotalHours}h ago"
+            : $"{(int)ago.TotalDays}d ago";
+    }
+
+    private static bool IsAutoSyncCooldownActive(Playlist playlist)
+    {
+        if (!playlist.LastSyncedAt.HasValue) return false;
+        // Liked playlists are never auto-synced
+        if (IsLikedPlaylist(playlist.YouTubePlaylistId)) return true;
+        return DateTime.UtcNow - playlist.LastSyncedAt.Value < AutoSyncCooldown;
+    }
+
+    // --- Sync operations ---
+
     public async Task<SyncResult> SyncPlaylistAsync(Playlist playlist)
     {
         logger.LogInformation("Syncing playlist: {PlaylistId} ({Title})", playlist.YouTubePlaylistId, playlist.Title);
 
         var apiVideos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId);
+        var metadata = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId);
+
+        return await ApplyPlaylistDiff(playlist, apiVideos, metadata);
+    }
+
+    public async Task<Dictionary<int, SyncResult>> SyncAllTrackedAsync(int profileId, IProgress<string>? progress = null)
+    {
+        var allPlaylists = await playlistRepo.GetTrackedByProfileAsync(profileId);
+
+        // Filter out playlists on cooldown (Liked never auto-syncs, others skip if <6h)
+        var playlists = allPlaylists.Where(p => !IsAutoSyncCooldownActive(p)).ToList();
+        var skipped = allPlaylists.Count - playlists.Count;
+
+        if (skipped > 0)
+            logger.LogInformation("Auto-sync: skipping {Skipped} playlists on cooldown", skipped);
+
+        logger.LogInformation("Syncing {Count} tracked playlists for profile {ProfileId}", playlists.Count, profileId);
+
+        if (playlists.Count == 0)
+            return new Dictionary<int, SyncResult>();
+
+        // Phase 1: Fetch all API data in parallel (up to MaxConcurrentFetches at a time)
+        var fetchResults = new ConcurrentDictionary<int, (List<YouTubeVideoSnapshot> Videos, YouTubePlaylistSnapshot? Meta)>();
+        var semaphore = new SemaphoreSlim(MaxConcurrentFetches);
+        int fetched = 0;
+
+        var fetchTasks = playlists.Select(async playlist =>
+        {
+            await semaphore.WaitAsync();
+            try
+            {
+                progress?.Report($"Fetching {Interlocked.Increment(ref fetched)}/{playlists.Count}: {playlist.Title}...");
+
+                var videos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId);
+                var meta = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId);
+                fetchResults[playlist.Id] = (videos, meta);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to fetch playlist {PlaylistId} ({Title})",
+                    playlist.YouTubePlaylistId, playlist.Title);
+                fetchResults[playlist.Id] = ([], null);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }).ToArray();
+
+        await Task.WhenAll(fetchTasks);
+
+        // Phase 2: Apply diffs sequentially (SQLite single-writer)
+        var results = new Dictionary<int, SyncResult>();
+        int applied = 0;
+
+        foreach (var playlist in playlists)
+        {
+            progress?.Report($"Saving {++applied}/{playlists.Count}: {playlist.Title}...");
+
+            if (!fetchResults.TryGetValue(playlist.Id, out var data) || data.Videos.Count == 0 && data.Meta is null)
+            {
+                results[playlist.Id] = new SyncResult(0, 0, 0);
+                continue;
+            }
+
+            try
+            {
+                results[playlist.Id] = await ApplyPlaylistDiff(playlist, data.Videos, data.Meta);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to apply diff for playlist {PlaylistId} ({Title})",
+                    playlist.YouTubePlaylistId, playlist.Title);
+                results[playlist.Id] = new SyncResult(0, 0, 0);
+            }
+        }
+
+        return results;
+    }
+
+    private async Task<SyncResult> ApplyPlaylistDiff(
+        Playlist playlist,
+        List<YouTubeVideoSnapshot> apiVideos,
+        YouTubePlaylistSnapshot? metadata)
+    {
         // YouTube allows duplicate videos in a playlist — deduplicate, keeping first occurrence
         var apiVideoIds = apiVideos.GroupBy(v => v.VideoId).ToDictionary(g => g.Key, g => g.First());
 
@@ -40,6 +166,7 @@ public class SyncService(
         }
 
         // Detect additions and re-additions (use deduped dictionary values)
+        var newVideos = new List<Video>();
         foreach (var apiVideo in apiVideoIds.Values)
         {
             if (activeDbVideoIds.ContainsKey(apiVideo.VideoId))
@@ -104,9 +231,8 @@ public class SyncService(
             }
             else
             {
-                // New video
-                logger.LogDebug("New video: {VideoId} ({Title})", apiVideo.VideoId, apiVideo.Title);
-                await playlistRepo.AddVideoAsync(new Video
+                // New video — collect for batch insert
+                newVideos.Add(new Video
                 {
                     PlaylistId = playlist.Id,
                     YouTubeVideoId = apiVideo.VideoId,
@@ -122,17 +248,23 @@ public class SyncService(
             }
         }
 
-        // Update playlist metadata
-        var meta = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId);
-        if (meta is not null)
+        // Batch insert new videos
+        if (newVideos.Count > 0)
         {
-            if (playlist.Title is null || playlist.Title != meta.Title)
-                playlist.Title = meta.Title;
-            playlist.Description = meta.Description;
-            playlist.ThumbnailUrl = meta.ThumbnailUrl;
-            playlist.PublishedAt = meta.PublishedAt;
-            if (meta.JsonMetadata is not null)
-                playlist.JsonMetadata = meta.JsonMetadata;
+            await playlistRepo.AddVideosAsync(newVideos);
+            logger.LogDebug("Batch inserted {Count} new videos for {PlaylistId}", newVideos.Count, playlist.YouTubePlaylistId);
+        }
+
+        // Update playlist metadata
+        if (metadata is not null)
+        {
+            if (playlist.Title is null || playlist.Title != metadata.Title)
+                playlist.Title = metadata.Title;
+            playlist.Description = metadata.Description;
+            playlist.ThumbnailUrl = metadata.ThumbnailUrl;
+            playlist.PublishedAt = metadata.PublishedAt;
+            if (metadata.JsonMetadata is not null)
+                playlist.JsonMetadata = metadata.JsonMetadata;
         }
 
         playlist.LastSyncedAt = DateTime.UtcNow;
@@ -143,27 +275,5 @@ public class SyncService(
             playlist.YouTubePlaylistId, result.Added, result.Removed, result.Updated);
 
         return result;
-    }
-
-    public async Task<Dictionary<int, SyncResult>> SyncAllTrackedAsync(int profileId)
-    {
-        var playlists = await playlistRepo.GetTrackedByProfileAsync(profileId);
-        logger.LogInformation("Syncing {Count} tracked playlists for profile {ProfileId}", playlists.Count, profileId);
-
-        var results = new Dictionary<int, SyncResult>();
-        foreach (var playlist in playlists)
-        {
-            try
-            {
-                results[playlist.Id] = await SyncPlaylistAsync(playlist);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to sync playlist {PlaylistId} ({Title}), continuing with next",
-                    playlist.YouTubePlaylistId, playlist.Title);
-                results[playlist.Id] = new SyncResult(0, 0, 0);
-            }
-        }
-        return results;
     }
 }

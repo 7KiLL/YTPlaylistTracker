@@ -237,7 +237,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
     public async Task<YouTubeChannelSnapshot?> GetMyChannelAsync()
     {
         _logger.LogInformation("[API] GET channels.list mine=true");
-        var request = _youtube.Channels.List("snippet");
+        var request = _youtube.Channels.List("snippet,contentDetails");
         request.Mine = true;
 
         var response = await request.ExecuteAsync();
@@ -250,9 +250,11 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
 
         var thumbnailUrl = item.Snippet.Thumbnails?.Medium?.Url
                         ?? item.Snippet.Thumbnails?.Default__?.Url;
+        var likedPlaylistId = item.ContentDetails?.RelatedPlaylists?.Likes;
 
-        _logger.LogInformation("[API] Channel: {Title} ({Id})", item.Snippet.Title, item.Id);
-        return new YouTubeChannelSnapshot(item.Id, item.Snippet.Title, thumbnailUrl);
+        _logger.LogInformation("[API] Channel: {Title} ({Id}), LikedPlaylist: {LikedId}",
+            item.Snippet.Title, item.Id, likedPlaylistId ?? "(none)");
+        return new YouTubeChannelSnapshot(item.Id, item.Snippet.Title, thumbnailUrl, likedPlaylistId);
     }
 
     public async Task<RemovalReason> CheckVideoStatusAsync(string videoId)

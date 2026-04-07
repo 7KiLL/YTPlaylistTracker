@@ -43,7 +43,7 @@ public class SyncServiceTests
         Assert.Equal(2, result.Added);
         Assert.Equal(0, result.Removed);
         Assert.Equal(0, result.Updated);
-        await _playlistRepo.Received(2).AddVideoAsync(Arg.Any<Video>());
+        await _playlistRepo.Received(1).AddVideosAsync(Arg.Is<IEnumerable<Video>>(v => v.Count() == 2));
     }
 
     [Fact]

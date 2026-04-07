@@ -44,7 +44,7 @@ public class FixtureBasedSyncTests
         Assert.Equal(fixtureVideos.Count, result.Added);
         Assert.Equal(0, result.Removed);
         Assert.Equal(0, result.Updated);
-        await _playlistRepo.Received(fixtureVideos.Count).AddVideoAsync(Arg.Any<Video>());
+        await _playlistRepo.Received(1).AddVideosAsync(Arg.Is<IEnumerable<Video>>(v => v.Count() == fixtureVideos.Count));
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class FixtureBasedSyncTests
 
         await _syncService.SyncPlaylistAsync(_testPlaylist);
 
-        await _playlistRepo.Received(1).AddVideoAsync(Arg.Is<Video>(v => v.AddedAt == now));
+        await _playlistRepo.Received(1).AddVideosAsync(Arg.Is<IEnumerable<Video>>(vs => vs.Any(v => v.AddedAt == now)));
     }
 
     [Fact]

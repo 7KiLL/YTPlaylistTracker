@@ -34,6 +34,12 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
         await db.SaveChangesAsync();
     }
 
+    public async Task AddPlaylistsAsync(IEnumerable<Playlist> playlists)
+    {
+        db.Playlists.AddRange(playlists);
+        await db.SaveChangesAsync();
+    }
+
     public async Task UpdateAsync(Playlist playlist)
     {
         db.Playlists.Update(playlist);

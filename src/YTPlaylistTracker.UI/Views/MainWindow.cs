@@ -49,6 +49,7 @@ public class MainWindow : Window
     private string _searchQuery = "";
     private string _sortColumn = "";
     private bool _sortAscending = true;
+    private bool _isSyncing;
     private ColumnWidths _lastLayout;
 
     private string DefaultTitle => _latestUpdate is { IsUpdateAvailable: true }
@@ -343,11 +344,14 @@ public class MainWindow : Window
 
                 if (_userSettings.AutoSyncOnStartup && capturedProfile is not null)
                 {
+                    _isSyncing = true;
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                         ShowSpinner("Auto-syncing all playlists..."));
                     try
                     {
-                        var results = await _syncService.SyncAllTrackedAsync(capturedProfile.Id);
+                        var syncProgress = new Progress<string>(msg =>
+                            global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
+                        var results = await _syncService.SyncAllTrackedAsync(capturedProfile.Id, syncProgress);
                         int totalAdded = results.Values.Sum(r => r.Added);
                         int totalRemoved = results.Values.Sum(r => r.Removed);
                         _logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
@@ -371,6 +375,10 @@ public class MainWindow : Window
                     {
                         _logger.LogError(ex, "Auto-sync failed");
                         global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
+                    }
+                    finally
+                    {
+                        _isSyncing = false;
                     }
                 }
                 else
@@ -503,9 +511,10 @@ public class MainWindow : Window
 
         var sortIndicator = string.IsNullOrEmpty(_sortColumn) ? ""
             : " " + (_sortAscending ? "^" : "v") + _sortColumn;
+        var syncedLabel = " | synced: " + SyncService.FormatLastSynced(_selectedPlaylist);
         _videoFrame.Title = _showDeletedOnly
-            ? "Removed (" + title + ") [" + filtered.Count + "]" + sortIndicator
-            : "Videos (" + title + ") [" + filtered.Count + "]" + sortIndicator;
+            ? "Removed (" + title + ") [" + filtered.Count + "]" + sortIndicator + syncedLabel
+            : "Videos (" + title + ") [" + filtered.Count + "]" + sortIndicator + syncedLabel;
         }
         catch (Exception ex)
         {
@@ -619,17 +628,16 @@ public class MainWindow : Window
         try
         {
             var userPlaylists = await _youtubeApi.GetUserPlaylistsAsync();
-            if (userPlaylists.Count == 0) return;
 
             var dbPlaylists = await _playlistRepo.GetByProfileAsync(profile.Id);
             var existingIds = dbPlaylists.Select(p => p.YouTubePlaylistId).ToHashSet();
 
-            int added = 0;
+            var newPlaylists = new List<Playlist>();
             foreach (var meta in userPlaylists)
             {
                 if (existingIds.Contains(meta.PlaylistId)) continue;
 
-                var playlist = new Playlist
+                newPlaylists.Add(new Playlist
                 {
                     ProfileId = profile.Id,
                     YouTubePlaylistId = meta.PlaylistId,
@@ -639,14 +647,43 @@ public class MainWindow : Window
                     ThumbnailUrl = meta.ThumbnailUrl,
                     PublishedAt = meta.PublishedAt,
                     JsonMetadata = meta.JsonMetadata
-                };
-                await _playlistRepo.AddAsync(playlist);
-                added++;
+                });
             }
 
-            if (added > 0)
+            // Import Liked Videos playlist if not already in DB
+            try
             {
-                _logger.LogInformation("Imported {Count} new playlists from YouTube", added);
+                var channel = await _youtubeApi.GetMyChannelAsync();
+                if (channel?.LikedVideosPlaylistId is not null
+                    && !existingIds.Contains(channel.LikedVideosPlaylistId))
+                {
+                    var likedMeta = await _youtubeApi.GetPlaylistMetadataAsync(channel.LikedVideosPlaylistId);
+                    if (likedMeta is not null)
+                    {
+                        newPlaylists.Add(new Playlist
+                        {
+                            ProfileId = profile.Id,
+                            YouTubePlaylistId = channel.LikedVideosPlaylistId,
+                            Title = likedMeta.Title ?? "Liked Videos",
+                            IsTracked = false,
+                            Description = likedMeta.Description,
+                            ThumbnailUrl = likedMeta.ThumbnailUrl,
+                            PublishedAt = likedMeta.PublishedAt,
+                            JsonMetadata = likedMeta.JsonMetadata
+                        });
+                        _logger.LogInformation("Imported Liked Videos playlist ({Id})", channel.LikedVideosPlaylistId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to import Liked Videos playlist");
+            }
+
+            if (newPlaylists.Count > 0)
+            {
+                await _playlistRepo.AddPlaylistsAsync(newPlaylists);
+                _logger.LogInformation("Imported {Count} new playlists from YouTube", newPlaylists.Count);
                 global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshPlaylistsAsync().GetAwaiter().GetResult());
             }
         }
@@ -727,6 +764,18 @@ public class MainWindow : Window
     private async void OnToggleTrack()
     {
         if (_selectedPlaylist is null) return;
+
+        // Warn when enabling tracking on Liked Videos (can be very large)
+        if (!_selectedPlaylist.IsTracked
+            && _selectedPlaylist.YouTubePlaylistId.StartsWith("LL", StringComparison.Ordinal))
+        {
+            var result = MessageBox.Query("Large Playlist",
+                "Liked Videos can contain thousands of videos.\n" +
+                "Initial sync may take a while.\n\n" +
+                "Enable tracking?", "Yes", "Cancel");
+            if (result != 0) return;
+        }
+
         try
         {
             _selectedPlaylist.IsTracked = !_selectedPlaylist.IsTracked;
@@ -764,12 +813,27 @@ public class MainWindow : Window
 
     private async void OnSync()
     {
+        if (_isSyncing) return;
         if (_selectedPlaylist is null)
         {
             MessageBox.Query("Info", "Select a playlist first.", "OK");
             return;
         }
 
+        // Liked Videos: enforce daily manual cooldown
+        var remaining = SyncService.GetRemainingCooldown(_selectedPlaylist);
+        if (remaining.HasValue)
+        {
+            var r = remaining.Value;
+            var timeLeft = r.TotalHours >= 1 ? $"{(int)r.TotalHours}h {r.Minutes}m" : $"{r.Minutes}m";
+            MessageBox.Query("Cooldown",
+                "Liked Videos can only be synced once per day.\n" +
+                $"Last synced: {SyncService.FormatLastSynced(_selectedPlaylist)}\n" +
+                $"Next sync available in {timeLeft}.", "OK");
+            return;
+        }
+
+        _isSyncing = true;
         ShowSpinner("Syncing " + _selectedPlaylist.Title + "...");
         try
         {
@@ -803,16 +867,23 @@ public class MainWindow : Window
             _logger.LogError(ex, "Sync failed");
             MessageBox.Query("Error", "Sync failed: " + ex.Message, "OK");
         }
+        finally
+        {
+            _isSyncing = false;
+        }
     }
 
     private async void OnSyncAll()
     {
-        if (_selectedProfile is null) return;
+        if (_isSyncing || _selectedProfile is null) return;
 
+        _isSyncing = true;
         ShowSpinner("Syncing all playlists...");
         try
         {
-            var results = await Task.Run(() => _syncService.SyncAllTrackedAsync(_selectedProfile.Id));
+            var syncProgress = new Progress<string>(msg =>
+                global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
+            var results = await Task.Run(() => _syncService.SyncAllTrackedAsync(_selectedProfile.Id, syncProgress));
             HideSpinner();
             await RefreshPlaylistsAsync();
             await RefreshVideosAsync();
@@ -847,6 +918,10 @@ public class MainWindow : Window
             HideSpinner();
             _logger.LogError(ex, "Sync all failed");
             MessageBox.Query("Error", "Sync failed: " + ex.Message, "OK");
+        }
+        finally
+        {
+            _isSyncing = false;
         }
     }
 
