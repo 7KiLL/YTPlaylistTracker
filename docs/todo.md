@@ -29,18 +29,22 @@
 - [x] Add validate-secrets CI job in release.yml
 - [x] Improve API logging with [API] prefix for easier filtering
 
-## Sub-project B: Background Sync & History
-- [ ] Background sync timer (configurable interval, runs while TUI is open)
+## Completed (v0.5.0)
 - [x] Auto-sync on startup (configurable)
 - [x] Removal history/timeline view (show when videos were removed)
-- [ ] Undo/restore soft-deleted videos
-
-## Future
 - [x] Export removed videos report (CSV/JSON)
-- [ ] Notification when videos are removed (desktop notification or webhook)
-- [ ] Track video duration/view count changes
-- [ ] Playlist diff view (side-by-side before/after sync)
-- [ ] Bulk import playlists from YouTube account
-- [ ] Light theme toggle in TUI
-- [ ] Multiple profiles in TUI (create/rename/delete profiles)
-- [ ] Smoke tests with Testcontainers (Linux container)
+- [x] Bulk import playlists from YouTube account (auto-imports on startup via authenticated API)
+
+## Backlog (prioritized)
+
+### P1 — Core UX gaps
+- [ ] **Enrich profile with Google account info** — Store account name, email, and avatar URL from YouTube API on login/sync so profiles are identifiable.
+- [ ] **Profile management in TUI** — Add create/rename/delete profile dialogs so multi-account users can manage profiles without CLI workarounds.
+
+### P2 — Polish
+- [ ] **Playlist diff view** — Side-by-side before/after comparison when a sync detects changes, making removals easier to review at a glance.
+- [ ] **Light theme toggle** — Add a theme switcher in TUI settings for users who prefer light terminals.
+
+### P3 — Infrastructure / nice-to-have
+- [ ] **Track video duration & view count** — Fetch `contentDetails`/`statistics` from YouTube API and store in DB for richer historical records (no UI display needed).
+- [ ] **Smoke tests with Testcontainers** — End-to-end test in a Linux container to catch platform-specific issues in CI.
