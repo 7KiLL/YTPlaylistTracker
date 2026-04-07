@@ -6,7 +6,9 @@ using YTPlaylistTracker.Application.Helpers;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
+using YTPlaylistTracker.Domain.Models;
 using YTPlaylistTracker.Infrastructure.Platform;
+using YTPlaylistTracker.Infrastructure.Update;
 using Microsoft.Extensions.Logging;
 using YTPlaylistTracker.UI;
 
@@ -20,7 +22,10 @@ public class MainWindow : Window
     private readonly IYouTubeApiService _youtubeApi;
     private readonly IBrowserLauncher _browser;
     private readonly IUserSettings _userSettings;
+    private readonly IUpdateService _updateService;
     private readonly ILogger _logger;
+
+    private UpdateInfo? _latestUpdate;
 
     private readonly ListView _profileList;
     private readonly ListView _playlistList;
@@ -52,6 +57,7 @@ public class MainWindow : Window
         IYouTubeApiService youtubeApi,
         IBrowserLauncher browser,
         IUserSettings userSettings,
+        IUpdateService updateService,
         ILogger<MainWindow> logger) : base("ytpt - YouTube Playlist Tracker")
     {
         _playlistRepo = playlistRepo;
@@ -60,6 +66,7 @@ public class MainWindow : Window
         _youtubeApi = youtubeApi;
         _browser = browser;
         _userSettings = userSettings;
+        _updateService = updateService;
         _logger = logger;
 
         // Left pane: Profiles
@@ -173,6 +180,7 @@ public class MainWindow : Window
             case 'e': _ = OnExport(); return true;
             case 'H': _ = OnShowHistory(); return true;
             case 'o': ShowSortMenu(); return true;
+            case 'u': OnUpdateCheck(); return true;
             case 'q': global::Terminal.Gui.Application.RequestStop(); return true;
             case '/': ShowSearch(); return true;
             case '?':
@@ -229,6 +237,13 @@ public class MainWindow : Window
             });
             return true;
         }
+
+        if (keyEvent.Key == (Key.U | Key.CtrlMask))
+        {
+            OnUpdateCheck();
+            return true;
+        }
+
         return base.ProcessKey(keyEvent);
     }
 
@@ -282,6 +297,24 @@ public class MainWindow : Window
                         }
                     }
                     catch (Exception ex) { _logger.LogWarning(ex, "Failed to fetch channel info"); }
+                }
+
+                // Check for updates in background
+                if (_userSettings.CheckForUpdatesOnStartup)
+                {
+                    try
+                    {
+                        _latestUpdate = await _updateService.CheckForUpdateAsync();
+                        if (_latestUpdate.IsUpdateAvailable)
+                        {
+                            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                            {
+                                Title = $"ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!)";
+                                SetNeedsDisplay();
+                            });
+                        }
+                    }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Update check failed"); }
                 }
 
                 if (_userSettings.AutoSyncOnStartup && capturedProfile is not null)
@@ -982,5 +1015,50 @@ public class MainWindow : Window
     {
         var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist, _userSettings);
         global::Terminal.Gui.Application.Run(settingsDialog);
+    }
+
+    private void OnUpdateCheck()
+    {
+        if (_latestUpdate is { IsUpdateAvailable: true })
+        {
+            var confirm = MessageBox.Query("Update Available",
+                $"Update to v{_latestUpdate.LatestVersion}?\nThe app will need to restart after updating.",
+                "Update", "Cancel");
+
+            if (confirm == 0)
+            {
+                ShowSpinner("Downloading update...");
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var message = await _updateService.ApplyUpdateAsync(_latestUpdate);
+                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                        {
+                            HideSpinner();
+                            MessageBox.Query("Update Complete", message, "OK");
+                            if (OperatingSystem.IsWindows())
+                                global::Terminal.Gui.Application.RequestStop();
+                        });
+                    }
+                    catch (UpdateException ex)
+                    {
+                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                        {
+                            HideSpinner();
+                            var msg = ex.ManualDownloadUrl is not null
+                                ? $"{ex.Message}\n\nDownload manually:\n{ex.ManualDownloadUrl}"
+                                : ex.Message;
+                            MessageBox.Query("Update Failed", msg, "OK");
+                        });
+                    }
+                });
+            }
+        }
+        else
+        {
+            var currentVersion = UpdateService.GetCurrentVersion();
+            MessageBox.Query("Up to Date", $"You're on the latest version (v{currentVersion}).", "OK");
+        }
     }
 }

@@ -229,6 +229,7 @@ async Task RunUi()
             s.GetRequiredService<IYouTubeApiService>(),
             sp.GetRequiredService<IBrowserLauncher>(),
             sp.GetRequiredService<IUserSettings>(),
+            sp.GetRequiredService<IUpdateService>(),
             s.GetRequiredService<ILogger<MainWindow>>());
         await mainWindow.InitializeAsync();
         Application.Run(mainWindow);
