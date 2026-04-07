@@ -5,6 +5,7 @@ using Terminal.Gui;
 using YTPlaylistTracker.Application.Helpers;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
+using YTPlaylistTracker.Domain.Models;
 
 namespace YTPlaylistTracker.UI.Views;
 
@@ -39,6 +40,8 @@ public partial class MainWindow
             Profile = _selectedProfile,
             ProfileId = _selectedProfile.Id,
             YouTubePlaylistId = playlistId,
+            Kind = PlaylistPolicy.DetectKind(playlistId),
+            IsManuallyAdded = true,
             IsTracked = true
         };
 
@@ -79,14 +82,10 @@ public partial class MainWindow
     {
         if (_selectedPlaylist is null) return;
 
-        // Warn when enabling tracking on Liked Videos (can be very large)
-        if (!_selectedPlaylist.IsTracked
-            && _selectedPlaylist.YouTubePlaylistId.StartsWith("LL", StringComparison.Ordinal))
+        var policy = PlaylistPolicy.For(_selectedPlaylist.Kind);
+        if (!_selectedPlaylist.IsTracked && policy.TrackingWarning is not null)
         {
-            var result = MessageBox.Query("Large Playlist",
-                "Liked Videos can contain thousands of videos.\n" +
-                "Initial sync may take a while.\n\n" +
-                "Enable tracking?", "Yes", "Cancel");
+            var result = MessageBox.Query("Large Playlist", policy.TrackingWarning, "Yes", "Cancel");
             if (result != 0) return;
         }
 

@@ -11,21 +11,15 @@ public class SyncService(
     IPlaylistRepository playlistRepo,
     ILogger<SyncService> logger) : ISyncService
 {
-    // --- Tunable cooldowns ---
-    public static readonly TimeSpan LikedManualCooldown = TimeSpan.FromDays(1);
     public static readonly TimeSpan AutoSyncCooldown = TimeSpan.FromHours(6);
     private const int MaxConcurrentFetches = 4;
 
-    // --- Helpers ---
-
-    public static bool IsLikedPlaylist(string youtubePlaylistId)
-        => youtubePlaylistId.StartsWith("LL", StringComparison.Ordinal);
-
     public static TimeSpan? GetRemainingCooldown(Playlist playlist)
     {
-        if (!IsLikedPlaylist(playlist.YouTubePlaylistId) || playlist.LastSyncedAt is null)
+        var policy = PlaylistPolicy.For(playlist.Kind);
+        if (policy.ManualCooldown is not { } cooldown || playlist.LastSyncedAt is null)
             return null;
-        var remaining = LikedManualCooldown - (DateTime.UtcNow - playlist.LastSyncedAt.Value);
+        var remaining = cooldown - (DateTime.UtcNow - playlist.LastSyncedAt.Value);
         return remaining > TimeSpan.Zero ? remaining : null;
     }
 
@@ -43,8 +37,8 @@ public class SyncService(
     private static bool IsAutoSyncCooldownActive(Playlist playlist)
     {
         if (playlist.LastSyncedAt is null) return false;
-        // Liked playlists are never auto-synced
-        if (IsLikedPlaylist(playlist.YouTubePlaylistId)) return true;
+        var policy = PlaylistPolicy.For(playlist.Kind);
+        if (!policy.AllowAutoSync) return true;
         return DateTime.UtcNow - playlist.LastSyncedAt.Value < AutoSyncCooldown;
     }
 

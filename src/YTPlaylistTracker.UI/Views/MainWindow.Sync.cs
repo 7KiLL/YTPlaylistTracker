@@ -5,6 +5,7 @@ using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
+using YTPlaylistTracker.Domain.Models;
 
 namespace YTPlaylistTracker.UI.Views;
 
@@ -32,6 +33,7 @@ public partial class MainWindow
                     ProfileId = profile.Id,
                     YouTubePlaylistId = meta.PlaylistId,
                     Title = meta.Title,
+                    Kind = PlaylistPolicy.DetectKind(meta.PlaylistId),
                     IsTracked = false,
                     Description = meta.Description,
                     ThumbnailUrl = meta.ThumbnailUrl,
@@ -56,6 +58,7 @@ public partial class MainWindow
                             ProfileId = profile.Id,
                             YouTubePlaylistId = channel.LikedVideosPlaylistId,
                             Title = likedMeta.Title ?? "Liked Videos",
+                            Kind = PlaylistPolicy.DetectKind(channel.LikedVideosPlaylistId),
                             IsTracked = false,
                             Description = likedMeta.Description,
                             ThumbnailUrl = likedMeta.ThumbnailUrl,
@@ -97,14 +100,14 @@ public partial class MainWindow
             return;
         }
 
-        // Liked Videos: enforce daily manual cooldown
         var remaining = SyncService.GetRemainingCooldown(_selectedPlaylist);
         if (remaining.HasValue)
         {
             var r = remaining.Value;
             var timeLeft = r.TotalHours >= 1 ? $"{(int)r.TotalHours}h {r.Minutes}m" : $"{r.Minutes}m";
+            var title = _selectedPlaylist.Title ?? _selectedPlaylist.YouTubePlaylistId;
             MessageBox.Query("Cooldown",
-                "Liked Videos can only be synced once per day.\n" +
+                $"{title} can only be synced once per day.\n" +
                 $"Last synced: {SyncService.FormatLastSynced(_selectedPlaylist)}\n" +
                 $"Next sync available in {timeLeft}.", "OK");
             return;
