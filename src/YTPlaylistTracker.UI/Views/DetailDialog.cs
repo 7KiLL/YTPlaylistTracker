@@ -6,7 +6,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class DetailDialog : Dialog
 {
-    public DetailDialog(string title, IBrowserLauncher? browser, params (string label, string value)[] fields)
+    public DetailDialog(string title, ISystemLauncher? browser, params (string label, string value)[] fields)
         : base(title, 75, Math.Min(fields.Length + 5, 22))
     {
         string? url = null;
@@ -29,7 +29,7 @@ public class DetailDialog : Dialog
                         HotFocus = global::Terminal.Gui.Application.Driver.MakeAttribute(Color.Black, Color.Cyan),
                     }
                 };
-                link.Clicked += () => browser.Open(linkUrl);
+                link.Clicked += () => browser.OpenUrl(linkUrl);
                 Add(link);
             }
             else
@@ -45,7 +45,7 @@ public class DetailDialog : Dialog
         {
             var captured = url;
             var openBtn = new Button("Open in Browser");
-            openBtn.Clicked += () => browser.Open(captured);
+            openBtn.Clicked += () => browser.OpenUrl(captured);
             AddButton(openBtn);
         }
 
@@ -57,7 +57,7 @@ public class DetailDialog : Dialog
     private static bool IsLink(string label) =>
         label is "URL" or "Thumbnail";
 
-    public static DetailDialog ForProfile(Profile profile, int playlistCount, int trackedCount, IBrowserLauncher? browser = null)
+    public static DetailDialog ForProfile(Profile profile, int playlistCount, int trackedCount, ISystemLauncher? browser = null)
     {
         return new DetailDialog("Profile Details", browser,
             ("Name", profile.Name),
@@ -70,7 +70,7 @@ public class DetailDialog : Dialog
             ("Tracked", trackedCount.ToString()));
     }
 
-    public static DetailDialog ForPlaylist(Playlist playlist, int activeCount, int removedCount, IBrowserLauncher? browser = null)
+    public static DetailDialog ForPlaylist(Playlist playlist, int activeCount, int removedCount, ISystemLauncher? browser = null)
     {
         var fields = new List<(string, string)>
         {
@@ -89,7 +89,7 @@ public class DetailDialog : Dialog
         return new DetailDialog("Playlist Details", browser, fields.ToArray());
     }
 
-    public static DetailDialog ForVideo(Video video, IBrowserLauncher? browser = null)
+    public static DetailDialog ForVideo(Video video, ISystemLauncher? browser = null)
     {
         var fields = new List<(string, string)>
         {

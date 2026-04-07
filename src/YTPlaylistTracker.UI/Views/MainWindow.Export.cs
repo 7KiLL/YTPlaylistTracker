@@ -81,7 +81,7 @@ public partial class MainWindow
 
     private void OnSettings()
     {
-        var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService);
+        var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService, browser);
         global::Terminal.Gui.Application.Run(settingsDialog);
     }
 

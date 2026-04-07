@@ -40,7 +40,7 @@ services.AddDbContext<AppDbContext>(opts => opts.UseSqlite($"Data Source={AppSet
 services.AddScoped<IProfileRepository, ProfileRepository>();
 services.AddScoped<IPlaylistRepository, PlaylistRepository>();
 services.AddScoped<ISyncService, SyncService>();
-services.AddSingleton<IBrowserLauncher, BrowserLauncher>();
+services.AddSingleton<ISystemLauncher, SystemLauncher>();
 services.AddSingleton<IUserSettings>(UserSettings.Load());
 services.AddSingleton<IBinaryUpdater>(sp =>
     OperatingSystem.IsWindows()

@@ -14,7 +14,7 @@ public partial class MainWindow(
     IProfileRepository profileRepo,
     ISyncService syncService,
     IYouTubeApiService youtubeApi,
-    IBrowserLauncher browser,
+    ISystemLauncher browser,
     IUserSettings userSettings,
     IUpdateService updateService,
     ILogger<MainWindow> logger) : Window("ytpt - YouTube Playlist Tracker")

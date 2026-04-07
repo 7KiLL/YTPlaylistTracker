@@ -64,7 +64,7 @@ Domain (no deps) ← Application (Domain) ← Infrastructure (Domain+App) ← UI
 - **Infrastructure** (`src/YTPlaylistTracker.Infrastructure/`)
   - Data: EF Core SQLite (AppDbContext), repositories (PlaylistRepository, ProfileRepository)
   - YouTube: YouTubeApiService (OAuth2, API key, lazy-init)
-  - Platform: IBrowserLauncher (cross-platform URL opener)
+  - Platform: ISystemLauncher (cross-platform URL/path opener)
   - Configuration: AppSettings, build-time constants
 - **UI** (`src/YTPlaylistTracker.UI/`): Terminal.Gui TUI (MainWindow, dialogs), System.CommandLine CLI
 
@@ -101,7 +101,7 @@ Legacy v0.1.0 databases (created with `EnsureCreated`) are auto-detected and upg
 - **Build-time secrets**: OAuth client ID/secret injected via `-p:OAuthClientId=xxx` MSBuild properties, compiled into `BuildConstants.cs` — never in source code.
 - **Shared build config**: `src/Directory.Build.props` (TargetFramework, MinVer), `tests/Directory.Build.props` (shared test packages).
 - **File permissions**: All data dirs set to `700`, DB file to `600` on Linux/macOS.
-- **Cross-platform browser opening**: IBrowserLauncher.Open() handles Windows (cmd /c start), macOS (open), Linux (xdg-open).
+- **Cross-platform system launcher**: ISystemLauncher.OpenUrl() for URLs, OpenPath() for files/directories. Uses Windows (cmd /c start), macOS (open), Linux (xdg-open).
 
 ## Tests
 

@@ -4,6 +4,7 @@ using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Domain.Models;
 using YTPlaylistTracker.Infrastructure.Configuration;
+using YTPlaylistTracker.Infrastructure.Platform;
 using YTPlaylistTracker.Infrastructure.Update;
 
 namespace YTPlaylistTracker.UI.Views;
@@ -11,7 +12,7 @@ namespace YTPlaylistTracker.UI.Views;
 public class SettingsDialog : Dialog
 {
     public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist,
-        IUserSettings userSettings, IUpdateService updateService)
+        IUserSettings userSettings, IUpdateService updateService, ISystemLauncher? launcher = null)
         : base("Settings", 70, 28)
     {
         int y = 0;
@@ -51,9 +52,15 @@ public class SettingsDialog : Dialog
         Add(new Label("── Data ────────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Colors.Menu });
         y += 1;
 
-        Add(new Label($"  Database:  {AppSettings.DbPath}") { X = 1, Y = y });
+        Add(new Label("  Database:") { X = 1, Y = y });
+        var dbBtn = new Button(AppSettings.DbPath) { X = 14, Y = y, ColorScheme = Colors.Menu };
+        dbBtn.Clicked += () => launcher?.OpenPath(AppSettings.DbPath);
+        Add(dbBtn);
         y += 1;
-        Add(new Label($"  Logs:      {AppSettings.LogDir}") { X = 1, Y = y });
+        Add(new Label("  Logs:") { X = 1, Y = y });
+        var logBtn = new Button(AppSettings.LogDir) { X = 14, Y = y, ColorScheme = Colors.Menu };
+        logBtn.Clicked += () => launcher?.OpenPath(AppSettings.LogDir);
+        Add(logBtn);
         y += 1;
 
         var purgeBtn = new Button("Purge Deleted Videos") { X = 2, Y = y };
@@ -110,7 +117,8 @@ public class SettingsDialog : Dialog
         y += 1;
 
         Add(new Label($"  Version:  {UpdateService.GetCurrentVersion()}") { X = 1, Y = y });
-        var checkNowBtn = new Button("Check for Updates") { X = 28, Y = y };
+        y += 1;
+        var checkNowBtn = new Button("Check for Updates") { X = 2, Y = y };
         checkNowBtn.Clicked += () =>
         {
             Task.Run(async () =>

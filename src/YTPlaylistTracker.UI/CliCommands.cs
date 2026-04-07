@@ -27,7 +27,7 @@ internal static class CliCommands
                 s.GetRequiredService<IProfileRepository>(),
                 s.GetRequiredService<ISyncService>(),
                 s.GetRequiredService<IYouTubeApiService>(),
-                sp.GetRequiredService<IBrowserLauncher>(),
+                sp.GetRequiredService<ISystemLauncher>(),
                 sp.GetRequiredService<IUserSettings>(),
                 sp.GetRequiredService<IUpdateService>(),
                 s.GetRequiredService<ILogger<MainWindow>>());
