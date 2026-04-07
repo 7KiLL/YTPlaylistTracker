@@ -118,6 +118,14 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
         if (!update.IsUpdateAvailable || string.IsNullOrEmpty(update.DownloadUrl))
             throw new UpdateException("No update available.");
 
+        if (!Uri.TryCreate(update.DownloadUrl, UriKind.Absolute, out var downloadUri) ||
+            downloadUri.Scheme != Uri.UriSchemeHttps ||
+            !downloadUri.Host.EndsWith("github.com", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new UpdateException("Download URL is not a valid GitHub HTTPS URL.",
+                ReleasePageUrl);
+        }
+
         var tempDir = Path.Combine(Path.GetTempPath(), "ytpt-update-" + Path.GetRandomFileName());
         Directory.CreateDirectory(tempDir);
 
@@ -145,12 +153,32 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
 
             if (OperatingSystem.IsWindows())
             {
-                ZipFile.ExtractToDirectory(archivePath, tempDir);
+                using var archive = ZipFile.OpenRead(archivePath);
+                var fullTargetPath = Path.GetFullPath(tempDir);
+                foreach (var entry in archive.Entries)
+                {
+                    var destinationPath = Path.GetFullPath(Path.Combine(tempDir, entry.FullName));
+                    if (!destinationPath.StartsWith(fullTargetPath + Path.DirectorySeparatorChar))
+                        throw new UpdateException("Archive contains path traversal.", ReleasePageUrl);
+
+                    // Create directory if needed
+                    var dir = Path.GetDirectoryName(destinationPath);
+                    if (dir != null) Directory.CreateDirectory(dir);
+
+                    if (!string.IsNullOrEmpty(entry.Name)) // Skip directories
+                        entry.ExtractToFile(destinationPath, overwrite: true);
+                }
             }
             else
             {
                 await using var gzipStream = new GZipStream(File.OpenRead(archivePath), CompressionMode.Decompress);
                 await TarFile.ExtractToDirectoryAsync(gzipStream, tempDir, overwriteFiles: true);
+
+                // Verify extracted binary is within temp directory
+                var fullTarget = Path.GetFullPath(tempDir);
+                var fullBinary = Path.GetFullPath(extractedBinaryPath);
+                if (!fullBinary.StartsWith(fullTarget + Path.DirectorySeparatorChar))
+                    throw new UpdateException("Extracted binary path is outside temp directory.", ReleasePageUrl);
             }
 
             if (!File.Exists(extractedBinaryPath))

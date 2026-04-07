@@ -50,6 +50,10 @@ public class MainWindow : Window
     private bool _sortAscending = true;
     private ColumnWidths _lastLayout;
 
+    private string DefaultTitle => _latestUpdate is { IsUpdateAvailable: true }
+        ? $"ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!)"
+        : "ytpt - YouTube Playlist Tracker";
+
     public MainWindow(
         IPlaylistRepository playlistRepo,
         IProfileRepository profileRepo,
@@ -231,7 +235,7 @@ public class MainWindow : Window
             SetNeedsDisplay();
             global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(2), _ =>
             {
-                Title = "ytpt - YouTube Playlist Tracker";
+                Title = DefaultTitle;
                 SetNeedsDisplay();
                 return false;
             });
@@ -304,15 +308,16 @@ public class MainWindow : Window
                 {
                     try
                     {
-                        _latestUpdate = await _updateService.CheckForUpdateAsync();
-                        if (_latestUpdate.IsUpdateAvailable)
+                        var updateResult = await _updateService.CheckForUpdateAsync();
+                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                         {
-                            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                            _latestUpdate = updateResult;
+                            if (updateResult.IsUpdateAvailable)
                             {
-                                Title = $"ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!)";
+                                Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
                                 SetNeedsDisplay();
-                            });
-                        }
+                            }
+                        });
                     }
                     catch (Exception ex) { _logger.LogWarning(ex, "Update check failed"); }
                 }
@@ -337,7 +342,7 @@ public class MainWindow : Window
                             SetNeedsDisplay();
                             global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(5), _ =>
                             {
-                                Title = "ytpt - YouTube Playlist Tracker";
+                                Title = DefaultTitle;
                                 SetNeedsDisplay();
                                 return false;
                             });
@@ -584,7 +589,7 @@ public class MainWindow : Window
             global::Terminal.Gui.Application.MainLoop.RemoveTimeout(_spinnerTimer);
             _spinnerTimer = null;
         }
-        Title = "ytpt - YouTube Playlist Tracker";
+        Title = DefaultTitle;
         SetNeedsDisplay();
     }
 

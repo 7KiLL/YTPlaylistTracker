@@ -11,6 +11,10 @@ public class UnixBinaryUpdater(ILogger<UnixBinaryUpdater> logger) : IBinaryUpdat
         if (!File.Exists(newBinaryPath) || new FileInfo(newBinaryPath).Length == 0)
             throw new UpdateException("Downloaded binary is missing or empty.");
 
+        // Reject symlinks to prevent symlink-based attacks
+        if ((File.GetAttributes(currentBinaryPath) & FileAttributes.ReparsePoint) != 0)
+            throw new UpdateException("Binary path is a symbolic link. Update manually.");
+
         var backupPath = currentBinaryPath + ".old";
 
         try

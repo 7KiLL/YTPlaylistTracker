@@ -11,15 +11,20 @@ public class WindowsBinaryUpdater(ILogger<WindowsBinaryUpdater> logger) : IBinar
         if (!File.Exists(newBinaryPath) || new FileInfo(newBinaryPath).Length == 0)
             throw new UpdateException("Downloaded binary is missing or empty.");
 
-        var scriptPath = Path.Combine(Path.GetTempPath(), "ytpt-update.cmd");
+        var scriptPath = Path.Combine(Path.GetTempPath(), $"ytpt-update-{Path.GetRandomFileName()}.cmd");
 
         try
         {
             var tempDir = Path.GetDirectoryName(newBinaryPath);
             var script = $"""
                 @echo off
+                setlocal
                 timeout /t 2 /nobreak >nul
                 copy /y "{newBinaryPath}" "{currentBinaryPath}"
+                if errorlevel 1 (
+                    echo Update failed: could not copy new binary
+                    exit /b 1
+                )
                 start "" "{currentBinaryPath}"
                 rmdir /s /q "{tempDir}"
                 del "%~f0"
