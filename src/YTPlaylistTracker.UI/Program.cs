@@ -9,6 +9,7 @@ using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Configuration;
 using YTPlaylistTracker.Infrastructure.Data;
 using YTPlaylistTracker.Infrastructure.Platform;
+using YTPlaylistTracker.Infrastructure.Update;
 using YTPlaylistTracker.Infrastructure.YouTube;
 using YTPlaylistTracker.UI;
 using YTPlaylistTracker.UI.Views;
@@ -44,6 +45,14 @@ services.AddScoped<IPlaylistRepository, PlaylistRepository>();
 services.AddScoped<ISyncService, SyncService>();
 services.AddSingleton<IBrowserLauncher, BrowserLauncher>();
 services.AddSingleton<IUserSettings>(UserSettings.Load());
+services.AddSingleton<IBinaryUpdater>(sp =>
+    OperatingSystem.IsWindows()
+        ? new WindowsBinaryUpdater(sp.GetRequiredService<ILogger<WindowsBinaryUpdater>>())
+        : new UnixBinaryUpdater(sp.GetRequiredService<ILogger<UnixBinaryUpdater>>()));
+services.AddSingleton<IUpdateService>(sp =>
+    new UpdateService(
+        sp.GetRequiredService<IBinaryUpdater>(),
+        sp.GetRequiredService<ILogger<UpdateService>>()));
 services.AddSingleton<Lazy<IYouTubeApiService>>(sp =>
     new Lazy<IYouTubeApiService>(() =>
     {
@@ -179,6 +188,11 @@ exportCmd.SetAction(async (result, _) =>
     await RunExport(format, output);
 });
 root.Add(exportCmd);
+
+// update
+var updateCmd = new CliCommand("update", "Check for and apply updates");
+updateCmd.SetAction(async (_, _) => await RunUpdate());
+root.Add(updateCmd);
 
 // Default: launch TUI
 root.SetAction(async (_, _) => await RunUi());
@@ -375,4 +389,32 @@ void RunLogout()
         Console.WriteLine("Logged out. OAuth tokens removed.");
     }
     else Console.WriteLine("Not logged in.");
+}
+
+async Task RunUpdate()
+{
+    var updateService = sp.GetRequiredService<IUpdateService>();
+    var currentVersion = UpdateService.GetCurrentVersion();
+    Console.WriteLine($"Current version: {currentVersion}");
+    Console.WriteLine("Checking for updates...");
+
+    var update = await updateService.CheckForUpdateAsync();
+    if (!update.IsUpdateAvailable)
+    {
+        Console.WriteLine("You're on the latest version.");
+        return;
+    }
+
+    Console.WriteLine($"New version available: {update.LatestVersion}");
+    try
+    {
+        var message = await updateService.ApplyUpdateAsync(update);
+        Console.WriteLine(message);
+    }
+    catch (UpdateException ex)
+    {
+        Console.Error.WriteLine($"Update failed: {ex.Message}");
+        if (ex.ManualDownloadUrl is not null)
+            Console.Error.WriteLine($"Download manually: {ex.ManualDownloadUrl}");
+    }
 }
