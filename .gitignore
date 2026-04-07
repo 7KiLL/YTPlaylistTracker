@@ -11,8 +11,9 @@ publish/
 .vs/
 *.sln.DotSettings
 
-# Claude Code local settings
-.claude/
+# Claude Code — track shared config/rules, ignore personal settings
+.claude/settings.local.json
+.claude/plans/
 
 # Internal planning docs (not for public)
 docs/superpowers/
