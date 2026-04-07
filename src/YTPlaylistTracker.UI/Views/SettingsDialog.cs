@@ -9,7 +9,7 @@ using YTPlaylistTracker.Infrastructure.Update;
 
 namespace YTPlaylistTracker.UI.Views;
 
-public class SettingsDialog : Dialog
+public sealed class SettingsDialog : Dialog
 {
     public bool UpdateRequested { get; private set; }
     public UpdateInfo? UpdateInfo { get; private set; }
@@ -27,11 +27,6 @@ public class SettingsDialog : Dialog
         var autoSyncCheck = new CheckBox("Auto-sync on startup", userSettings.AutoSyncOnStartup) { X = 2, Y = y };
         autoSyncCheck.Toggled += (_) => { userSettings.AutoSyncOnStartup = autoSyncCheck.Checked; userSettings.Save(); };
         Add(autoSyncCheck);
-        y += 1;
-
-        var updatesCheck = new CheckBox("Check for updates on startup", userSettings.CheckForUpdatesOnStartup) { X = 2, Y = y };
-        updatesCheck.Toggled += (_) => { userSettings.CheckForUpdatesOnStartup = updatesCheck.Checked; userSettings.Save(); };
-        Add(updatesCheck);
         y += 1;
 
         var autoInstallCheck = new CheckBox("Auto-install updates on startup", userSettings.AutoInstallUpdates) { X = 2, Y = y };

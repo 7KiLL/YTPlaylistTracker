@@ -9,7 +9,6 @@ public class UserSettings : IUserSettings
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public bool AutoSyncOnStartup { get; set; } = true;
-    public bool CheckForUpdatesOnStartup { get; set; } = true;
     public bool AutoInstallUpdates { get; set; }
     public bool SortTrackedFirst { get; set; } = true;
 
@@ -19,7 +18,6 @@ public class UserSettings : IUserSettings
         var json = JsonSerializer.Serialize(new
         {
             autoSyncOnStartup = AutoSyncOnStartup,
-            checkForUpdatesOnStartup = CheckForUpdatesOnStartup,
             autoInstallUpdates = AutoInstallUpdates,
             sortTrackedFirst = SortTrackedFirst,
         }, JsonOptions);
@@ -39,8 +37,6 @@ public class UserSettings : IUserSettings
             var doc = JsonDocument.Parse(File.ReadAllText(SettingsPath));
             if (doc.RootElement.TryGetProperty("autoSyncOnStartup", out var val))
                 settings.AutoSyncOnStartup = val.GetBoolean();
-            if (doc.RootElement.TryGetProperty("checkForUpdatesOnStartup", out var val2))
-                settings.CheckForUpdatesOnStartup = val2.GetBoolean();
             if (doc.RootElement.TryGetProperty("autoInstallUpdates", out var val4))
                 settings.AutoInstallUpdates = val4.GetBoolean();
             if (doc.RootElement.TryGetProperty("sortTrackedFirst", out var val3))

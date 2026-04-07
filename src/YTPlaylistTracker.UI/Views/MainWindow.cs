@@ -200,52 +200,49 @@ public partial class MainWindow(
                     catch (Exception ex) { logger.LogWarning(ex, "Failed to fetch channel info"); }
                 }
 
-                // Check for updates in background
-                if (userSettings.CheckForUpdatesOnStartup)
+                // Always check for updates in background
+                try
                 {
-                    try
+                    var updateResult = await updateService.CheckForUpdateAsync();
+                    if (updateResult.IsUpdateAvailable && userSettings.AutoInstallUpdates)
                     {
-                        var updateResult = await updateService.CheckForUpdateAsync();
-                        if (updateResult.IsUpdateAvailable && userSettings.AutoInstallUpdates)
+                        logger.LogInformation("[Update] Auto-installing v{Version}", updateResult.LatestVersion);
+                        try
                         {
-                            logger.LogInformation("[Update] Auto-installing v{Version}", updateResult.LatestVersion);
-                            try
-                            {
-                                await updateService.ApplyUpdateAsync(updateResult);
-                                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                                {
-                                    _latestUpdate = updateResult;
-                                    _updateInstalled = true;
-                                    Title = $"ytpt — v{updateResult.LatestVersion} installed, restart to apply";
-                                    SetNeedsDisplay();
-                                });
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
-                                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                                {
-                                    _latestUpdate = updateResult;
-                                    Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
-                                    SetNeedsDisplay();
-                                });
-                            }
-                        }
-                        else
-                        {
+                            await updateService.ApplyUpdateAsync(updateResult);
                             global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                             {
                                 _latestUpdate = updateResult;
-                                if (updateResult.IsUpdateAvailable)
-                                {
-                                    Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
-                                    SetNeedsDisplay();
-                                }
+                                _updateInstalled = true;
+                                Title = $"ytpt — v{updateResult.LatestVersion} installed, restart to apply";
+                                SetNeedsDisplay();
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
+                            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                            {
+                                _latestUpdate = updateResult;
+                                Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
+                                SetNeedsDisplay();
                             });
                         }
                     }
-                    catch (Exception ex) { logger.LogWarning(ex, "Update check failed"); }
+                    else
+                    {
+                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                        {
+                            _latestUpdate = updateResult;
+                            if (updateResult.IsUpdateAvailable)
+                            {
+                                Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
+                                SetNeedsDisplay();
+                            }
+                        });
+                    }
                 }
+                catch (Exception ex) { logger.LogWarning(ex, "Update check failed"); }
 
                 if (userSettings.AutoSyncOnStartup && capturedProfile is not null)
                 {
@@ -315,7 +312,7 @@ public partial class MainWindow(
         _playlists = (await playlistRepo.GetByProfileAsync(_selectedProfile.Id))
             .OrderBy(p => PlaylistPolicy.For(p.Kind).SortOrder)
             .ThenByDescending(p => sortTracked && p.IsTracked)
-            .ThenBy(p => p.Title ?? p.YouTubePlaylistId)
+            .ThenBy(p => p.Title ?? p.YouTubePlaylistId, StringComparer.OrdinalIgnoreCase)
             .ToList();
         var names = _playlists.Select(p =>
         {
