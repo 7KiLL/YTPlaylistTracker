@@ -111,7 +111,8 @@ public class MainWindow : Window
                 ShowHorizontalHeaderOverline = false,
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = true,
-                AlwaysShowHeaders = true
+                AlwaysShowHeaders = true,
+                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>()
             }
         };
         _videoTable.CellActivated += (args) => ShowDetail();
@@ -414,6 +415,13 @@ public class MainWindow : Window
 
         _filteredVideos = filtered;
         _videoTable.Table = dt;
+
+        _videoTable.Style.ColumnStyles.Clear();
+        _videoTable.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle { MinWidth = 3, MaxWidth = 5 };
+        _videoTable.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle { MinWidth = 8, MaxWidth = 25 };
+        _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle { MinWidth = 10, MaxWidth = 12 };
+        _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle { MinWidth = 6, MaxWidth = 16 };
+
         var sortIndicator = string.IsNullOrEmpty(_sortColumn) ? ""
             : " " + (_sortAscending ? "^" : "v") + _sortColumn;
         _videoFrame.Title = _showDeletedOnly

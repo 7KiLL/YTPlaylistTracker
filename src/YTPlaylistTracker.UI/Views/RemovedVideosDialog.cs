@@ -33,7 +33,23 @@ public class RemovedVideosDialog : Dialog
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
             FullRowSelect = true,
-            Table = dt
+            Table = dt,
+            Style = new TableView.TableStyle
+            {
+                ShowVerticalCellLines = false,
+                ShowVerticalHeaderLines = false,
+                ShowHorizontalHeaderOverline = false,
+                ShowHorizontalHeaderUnderline = true,
+                ExpandLastColumn = true,
+                AlwaysShowHeaders = true,
+                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>
+                {
+                    [dt.Columns[0]] = new() { MinWidth = 3, MaxWidth = 5 },
+                    [dt.Columns[2]] = new() { MinWidth = 8, MaxWidth = 20 },
+                    [dt.Columns[3]] = new() { MinWidth = 7, MaxWidth = 14 },
+                    [dt.Columns[4]] = new() { MinWidth = 10, MaxWidth = 18 },
+                }
+            }
         };
 
         var closeBtn = new Button("Close", true);
