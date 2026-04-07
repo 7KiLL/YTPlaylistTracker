@@ -169,12 +169,12 @@ root.Add(resetCmd);
 
 // export [--format csv|json] [--output path]
 var exportFormatOpt = new System.CommandLine.Option<string>("--format", "-f") { Description = "Output format: csv or json (default: csv)" };
-exportFormatOpt.SetDefaultValue("csv");
 var exportOutputOpt = new System.CommandLine.Option<string?>("--output", "-o") { Description = "Output file path (default: stdout)" };
 var exportCmd = new CliCommand("export", "Export removed videos report") { exportFormatOpt, exportOutputOpt };
 exportCmd.SetAction(async (result, _) =>
 {
-    var format = result.GetValue(exportFormatOpt) ?? "csv";
+    var format = result.GetValue(exportFormatOpt);
+    if (string.IsNullOrEmpty(format)) format = "csv";
     var output = result.GetValue(exportOutputOpt);
     await RunExport(format, output);
 });
