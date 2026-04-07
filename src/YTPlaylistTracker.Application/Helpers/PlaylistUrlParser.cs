@@ -6,7 +6,7 @@ namespace YTPlaylistTracker.Application.Helpers;
 public static partial class PlaylistUrlParser
 {
     // YouTube playlist IDs: PL, UU, LL, FL, OL, RD, UL, TL, OLAK5uy_ prefixes + alphanumeric/dash/underscore
-    [GeneratedRegex("""^(PL|UU|LL|FL|OL|RD|UL|TL|OLAK5uy_)[a-zA-Z0-9_-]{10,}$""")]
+    [GeneratedRegex("""^(?:PL|UU|LL|FL|OL|RD|UL|TL|OLAK5uy_)[a-zA-Z0-9_-]{10,}$""", RegexOptions.ExplicitCapture, 1000)]
     private static partial Regex PlaylistIdPattern();
 
     public static string ExtractPlaylistId(string input)

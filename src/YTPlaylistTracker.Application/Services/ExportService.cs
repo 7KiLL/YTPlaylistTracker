@@ -6,6 +6,8 @@ namespace YTPlaylistTracker.Application.Services;
 
 public static class ExportService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
     public record ExportEntry(
         string PlaylistTitle,
         string VideoId,
@@ -39,7 +41,7 @@ public static class ExportService
 
     public static string ToJson(List<ExportEntry> entries)
     {
-        return JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(entries, JsonOptions);
     }
 
     private static string Escape(string value)

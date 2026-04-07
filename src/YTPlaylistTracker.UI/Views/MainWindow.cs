@@ -41,7 +41,7 @@ public partial class MainWindow(
     private TextField? _searchField;
     private string _searchQuery = "";
     private string _sortColumn = "Added Date";
-    private bool _sortAscending = false;
+    private bool _sortAscending;
     private bool _isSyncing;
     private ColumnWidths _lastLayout;
 

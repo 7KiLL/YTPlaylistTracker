@@ -283,5 +283,6 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
     public void Dispose()
     {
         _youtube.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

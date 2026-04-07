@@ -158,7 +158,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
                 foreach (var entry in archive.Entries)
                 {
                     var destinationPath = Path.GetFullPath(Path.Combine(tempDir, entry.FullName));
-                    if (!destinationPath.StartsWith(fullTargetPath + Path.DirectorySeparatorChar))
+                    if (!destinationPath.StartsWith(fullTargetPath + Path.DirectorySeparatorChar, StringComparison.Ordinal))
                         throw new UpdateException("Archive contains path traversal.", ReleasePageUrl);
 
                     // Create directory if needed
@@ -177,7 +177,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
                 // Verify extracted binary is within temp directory
                 var fullTarget = Path.GetFullPath(tempDir);
                 var fullBinary = Path.GetFullPath(extractedBinaryPath);
-                if (!fullBinary.StartsWith(fullTarget + Path.DirectorySeparatorChar))
+                if (!fullBinary.StartsWith(fullTarget + Path.DirectorySeparatorChar, StringComparison.Ordinal))
                     throw new UpdateException("Extracted binary path is outside temp directory.", ReleasePageUrl);
             }
 

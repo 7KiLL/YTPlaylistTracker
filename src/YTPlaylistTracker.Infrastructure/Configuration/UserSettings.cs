@@ -6,6 +6,7 @@ namespace YTPlaylistTracker.Infrastructure.Configuration;
 public class UserSettings : IUserSettings
 {
     private static string SettingsPath => Path.Combine(AppSettings.AppDataDir, "settings.json");
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public bool AutoSyncOnStartup { get; set; } = true;
     public bool CheckForUpdatesOnStartup { get; set; } = true;
@@ -14,7 +15,7 @@ public class UserSettings : IUserSettings
     {
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
         var json = JsonSerializer.Serialize(new { autoSyncOnStartup = AutoSyncOnStartup, checkForUpdatesOnStartup = CheckForUpdatesOnStartup },
-            new JsonSerializerOptions { WriteIndented = true });
+            JsonOptions);
         File.WriteAllText(SettingsPath, json);
 
         if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())

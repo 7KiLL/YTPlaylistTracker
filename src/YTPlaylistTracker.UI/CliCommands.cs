@@ -166,7 +166,7 @@ internal static class CliCommands
         if (removedVideos.Count == 0) { Console.WriteLine("No removed videos found."); return; }
 
         var entries = ExportService.BuildEntries(removedVideos);
-        var content = format.ToLower() switch
+        var content = format.ToLowerInvariant() switch
         {
             "json" => ExportService.ToJson(entries),
             _ => ExportService.ToCsv(entries)

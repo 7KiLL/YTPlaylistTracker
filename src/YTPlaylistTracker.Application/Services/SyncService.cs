@@ -78,7 +78,7 @@ public class SyncService(
 
         // Phase 1: Fetch all API data in parallel (up to MaxConcurrentFetches at a time)
         var fetchResults = new ConcurrentDictionary<int, (IReadOnlyList<YouTubeVideoSnapshot> Videos, YouTubePlaylistSnapshot? Meta)>();
-        var semaphore = new SemaphoreSlim(MaxConcurrentFetches);
+        using var semaphore = new SemaphoreSlim(MaxConcurrentFetches);
         int fetched = 0;
 
         var fetchTasks = playlists.Select(async playlist =>
@@ -169,10 +169,9 @@ public class SyncService(
         var newVideos = new List<Video>();
         foreach (var apiVideo in apiVideoIds.Values)
         {
-            if (activeDbVideoIds.ContainsKey(apiVideo.VideoId))
+            if (activeDbVideoIds.TryGetValue(apiVideo.VideoId, out var dbVideo))
             {
                 // Update existing active video if title/channel/metadata changed
-                var dbVideo = activeDbVideoIds[apiVideo.VideoId];
                 bool changed = false;
 
                 if (dbVideo.Title != apiVideo.Title)

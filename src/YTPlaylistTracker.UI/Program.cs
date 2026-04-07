@@ -94,7 +94,7 @@ using (var scope = sp.CreateScope())
             {
                 // Legacy DB from v0.1.0 — stamp InitialCreate as already applied
                 var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
-                var initialMigration = pendingMigrations.FirstOrDefault(m => m.EndsWith("_InitialCreate"));
+                var initialMigration = pendingMigrations.FirstOrDefault(m => m.EndsWith("_InitialCreate", StringComparison.Ordinal));
                 if (initialMigration != null)
                 {
                     await db.Database.ExecuteSqlRawAsync(
@@ -159,7 +159,7 @@ resetCmd.SetAction((result, _) =>
     if (!yes)
     {
         Console.Write($"Delete {AppSettings.DbPath}? [y/N] ");
-        var key = Console.ReadLine()?.Trim().ToLower();
+        var key = Console.ReadLine()?.Trim().ToLowerInvariant();
         if (key is not "y" and not "yes") { Console.WriteLine("Cancelled."); return Task.CompletedTask; }
     }
     if (File.Exists(AppSettings.DbPath))

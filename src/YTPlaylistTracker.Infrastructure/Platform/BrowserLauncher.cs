@@ -11,7 +11,7 @@ public class BrowserLauncher : IBrowserLauncher
 {
     public void Open(string url)
     {
-        if (!url.StartsWith("http")) url = "https://" + url;
+        if (!url.StartsWith("http", StringComparison.Ordinal)) url = "https://" + url;
 
         try
         {
