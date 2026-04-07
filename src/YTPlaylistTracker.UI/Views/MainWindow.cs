@@ -6,7 +6,6 @@ using YTPlaylistTracker.Application.Helpers;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
-using YTPlaylistTracker.Infrastructure.Configuration;
 using YTPlaylistTracker.Infrastructure.Platform;
 using Microsoft.Extensions.Logging;
 
@@ -19,6 +18,7 @@ public class MainWindow : Window
     private readonly ISyncService _syncService;
     private readonly IYouTubeApiService _youtubeApi;
     private readonly IBrowserLauncher _browser;
+    private readonly IUserSettings _userSettings;
     private readonly ILogger _logger;
 
     private readonly ListView _profileList;
@@ -49,6 +49,7 @@ public class MainWindow : Window
         ISyncService syncService,
         IYouTubeApiService youtubeApi,
         IBrowserLauncher browser,
+        IUserSettings userSettings,
         ILogger<MainWindow> logger) : base("ytpt - YouTube Playlist Tracker")
     {
         _playlistRepo = playlistRepo;
@@ -56,6 +57,7 @@ public class MainWindow : Window
         _syncService = syncService;
         _youtubeApi = youtubeApi;
         _browser = browser;
+        _userSettings = userSettings;
         _logger = logger;
 
         // Left pane: Profiles
@@ -260,7 +262,7 @@ public class MainWindow : Window
                     _logger.LogError(ex, "Background playlist fetch failed");
                 }
 
-                if (AppSettings.AutoSyncOnStartup && capturedProfile is not null)
+                if (_userSettings.AutoSyncOnStartup && capturedProfile is not null)
                 {
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                         ShowSpinner("Auto-syncing all playlists..."));
@@ -909,7 +911,7 @@ public class MainWindow : Window
 
     private void OnSettings()
     {
-        var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist);
+        var settingsDialog = new SettingsDialog(_playlistRepo, _selectedPlaylist, _userSettings);
         global::Terminal.Gui.Application.Run(settingsDialog);
     }
 }

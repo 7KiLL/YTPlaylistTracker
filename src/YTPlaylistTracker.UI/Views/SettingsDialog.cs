@@ -7,7 +7,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public class SettingsDialog : Dialog
 {
-    public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist)
+    public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist, IUserSettings userSettings)
         : base("Settings", 60, 18)
     {
         var dbPathLabel = new Label("Database path:") { X = 1, Y = 1 };
@@ -16,11 +16,11 @@ public class SettingsDialog : Dialog
         var logPathLabel = new Label("Log directory:") { X = 1, Y = 4 };
         var logPathValue = new Label(AppSettings.LogDir) { X = 1, Y = 5 };
 
-        var autoSyncCheck = new CheckBox("Auto-sync on startup", AppSettings.AutoSyncOnStartup) { X = 1, Y = 7 };
+        var autoSyncCheck = new CheckBox("Auto-sync on startup", userSettings.AutoSyncOnStartup) { X = 1, Y = 7 };
         autoSyncCheck.Toggled += (prev) =>
         {
-            AppSettings.AutoSyncOnStartup = autoSyncCheck.Checked;
-            AppSettings.SaveSettings();
+            userSettings.AutoSyncOnStartup = autoSyncCheck.Checked;
+            userSettings.Save();
         };
 
         var purgeBtn = new Button("Purge Deleted Videos") { X = 1, Y = 9 };

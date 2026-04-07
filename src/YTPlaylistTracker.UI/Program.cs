@@ -21,7 +21,6 @@ AppSettings.OAuthClientId = BuildConstants.OAuthClientId;
 AppSettings.OAuthClientSecret = BuildConstants.OAuthClientSecret;
 AppSettings.EnsureDirectories();
 AppSettings.LoadCredentials();
-AppSettings.LoadSettings();
 
 var isVerbose = args.Contains("--verbose") || args.Contains("-v");
 Log.Logger = new LoggerConfiguration()
@@ -44,6 +43,7 @@ services.AddScoped<IProfileRepository, ProfileRepository>();
 services.AddScoped<IPlaylistRepository, PlaylistRepository>();
 services.AddScoped<ISyncService, SyncService>();
 services.AddSingleton<IBrowserLauncher, BrowserLauncher>();
+services.AddSingleton<IUserSettings>(UserSettings.Load());
 services.AddSingleton<Lazy<IYouTubeApiService>>(sp =>
     new Lazy<IYouTubeApiService>(() =>
     {
@@ -214,6 +214,7 @@ async Task RunUi()
             s.GetRequiredService<ISyncService>(),
             s.GetRequiredService<IYouTubeApiService>(),
             sp.GetRequiredService<IBrowserLauncher>(),
+            sp.GetRequiredService<IUserSettings>(),
             s.GetRequiredService<ILogger<MainWindow>>());
         await mainWindow.InitializeAsync();
         Application.Run(mainWindow);

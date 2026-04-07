@@ -1,0 +1,40 @@
+using System.Text.Json;
+using YTPlaylistTracker.Domain.Interfaces;
+
+namespace YTPlaylistTracker.Infrastructure.Configuration;
+
+public class UserSettings : IUserSettings
+{
+    private static string SettingsPath => Path.Combine(AppSettings.AppDataDir, "settings.json");
+
+    public bool AutoSyncOnStartup { get; set; } = true;
+
+    public void Save()
+    {
+        var json = JsonSerializer.Serialize(new { autoSyncOnStartup = AutoSyncOnStartup },
+            new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(SettingsPath, json);
+
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            File.SetUnixFileMode(SettingsPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+    }
+
+    public static UserSettings Load()
+    {
+        var settings = new UserSettings();
+        if (!File.Exists(SettingsPath)) return settings;
+
+        try
+        {
+            var doc = JsonDocument.Parse(File.ReadAllText(SettingsPath));
+            if (doc.RootElement.TryGetProperty("autoSyncOnStartup", out var val))
+                settings.AutoSyncOnStartup = val.GetBoolean();
+        }
+        catch
+        {
+            // Malformed settings — use defaults
+        }
+
+        return settings;
+    }
+}
