@@ -61,8 +61,10 @@ public class DetailDialog : Dialog
     {
         return new DetailDialog("Profile Details", browser,
             ("Name", profile.Name),
+            ("Channel", profile.ChannelTitle ?? "-"),
             ("Default", profile.IsDefault ? "Yes" : "No"),
             ("Channel ID", profile.YouTubeChannelId ?? "-"),
+            ("Thumbnail", profile.ChannelThumbnailUrl ?? "-"),
             ("Created", profile.CreatedAt.ToString("yyyy-MM-dd HH:mm")),
             ("Playlists", playlistCount.ToString()),
             ("Tracked", trackedCount.ToString()));

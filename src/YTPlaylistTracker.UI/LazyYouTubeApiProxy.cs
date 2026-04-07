@@ -23,4 +23,7 @@ internal class LazyYouTubeApiProxy(Lazy<IYouTubeApiService> lazy) : IYouTubeApiS
 
     public Task<RemovalReason> CheckVideoStatusAsync(string videoId)
         => lazy.Value.CheckVideoStatusAsync(videoId);
+
+    public Task<YouTubeChannelSnapshot?> GetMyChannelAsync()
+        => lazy.Value.GetMyChannelAsync();
 }

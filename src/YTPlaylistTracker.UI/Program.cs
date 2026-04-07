@@ -237,6 +237,24 @@ async Task RunSync(string? playlistId)
     var profile = await profileRepo.GetDefaultAsync();
     if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
 
+    // Backfill channel info if not yet populated
+    if (profile.ChannelTitle is null && YouTubeApiService.HasStoredToken("default"))
+    {
+        try
+        {
+            var ytService = s.GetRequiredService<IYouTubeApiService>();
+            var channel = await ytService.GetMyChannelAsync();
+            if (channel is not null)
+            {
+                profile.YouTubeChannelId = channel.ChannelId;
+                profile.ChannelTitle = channel.Title;
+                profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
+                await profileRepo.UpdateAsync(profile);
+            }
+        }
+        catch (Exception ex) { Log.Warning(ex, "Failed to fetch channel info during sync"); }
+    }
+
     if (playlistId is not null)
     {
         var playlists = await playlistRepo.GetByProfileAsync(profile.Id);
@@ -294,6 +312,24 @@ async Task RunLogin()
         var playlists = await service.GetUserPlaylistsAsync();
         Console.WriteLine($"Login successful! Found {playlists.Count} playlists on your account.");
         Console.WriteLine($"Credentials saved to {AppSettings.CredentialsPath}");
+
+        // Enrich profile with channel info
+        using var scope = sp.CreateScope();
+        var profileRepo = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
+        var profile = await profileRepo.GetDefaultAsync();
+        if (profile is not null)
+        {
+            var channel = await service.GetMyChannelAsync();
+            if (channel is not null)
+            {
+                profile.YouTubeChannelId = channel.ChannelId;
+                profile.ChannelTitle = channel.Title;
+                profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
+                await profileRepo.UpdateAsync(profile);
+                Console.WriteLine($"Profile updated: {channel.Title}");
+            }
+        }
+
         service.Dispose();
     }
     catch (Exception ex) { Console.Error.WriteLine($"Login failed: {ex.Message}"); }

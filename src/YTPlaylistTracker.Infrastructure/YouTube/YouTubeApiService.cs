@@ -234,6 +234,27 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         return results;
     }
 
+    public async Task<YouTubeChannelSnapshot?> GetMyChannelAsync()
+    {
+        _logger.LogInformation("[API] GET channels.list mine=true");
+        var request = _youtube.Channels.List("snippet");
+        request.Mine = true;
+
+        var response = await request.ExecuteAsync();
+        var item = response.Items.FirstOrDefault();
+        if (item is null)
+        {
+            _logger.LogWarning("[API] No channel found for authenticated user");
+            return null;
+        }
+
+        var thumbnailUrl = item.Snippet.Thumbnails?.Medium?.Url
+                        ?? item.Snippet.Thumbnails?.Default__?.Url;
+
+        _logger.LogInformation("[API] Channel: {Title} ({Id})", item.Snippet.Title, item.Id);
+        return new YouTubeChannelSnapshot(item.Id, item.Snippet.Title, thumbnailUrl);
+    }
+
     public async Task<RemovalReason> CheckVideoStatusAsync(string videoId)
     {
         _logger.LogInformation("[API] GET videos.list id={VideoId}", videoId);

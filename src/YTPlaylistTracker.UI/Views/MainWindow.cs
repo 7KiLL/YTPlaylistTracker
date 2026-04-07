@@ -266,6 +266,24 @@ public class MainWindow : Window
                     _logger.LogError(ex, "Background playlist fetch failed");
                 }
 
+                // Backfill channel info if not yet populated
+                if (capturedProfile is not null && capturedProfile.ChannelTitle is null)
+                {
+                    try
+                    {
+                        var channel = await _youtubeApi.GetMyChannelAsync();
+                        if (channel is not null)
+                        {
+                            capturedProfile.YouTubeChannelId = channel.ChannelId;
+                            capturedProfile.ChannelTitle = channel.Title;
+                            capturedProfile.ChannelThumbnailUrl = channel.ThumbnailUrl;
+                            await _profileRepo.UpdateAsync(capturedProfile);
+                            global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshProfileList());
+                        }
+                    }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Failed to fetch channel info"); }
+                }
+
                 if (_userSettings.AutoSyncOnStartup && capturedProfile is not null)
                 {
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
@@ -313,7 +331,7 @@ public class MainWindow : Window
 
     private void RefreshProfileList()
     {
-        var names = _profiles.Select(p => p.IsDefault ? "> " + p.Name : "  " + p.Name).ToList();
+        var names = _profiles.Select(p => p.IsDefault ? "> " + (p.ChannelTitle ?? p.Name) : "  " + (p.ChannelTitle ?? p.Name)).ToList();
         _profileList.SetSource(names);
         var idx = _profiles.IndexOf(_selectedProfile!);
         if (idx >= 0) _profileList.SelectedItem = idx;
