@@ -26,9 +26,9 @@ public class RemovalHistoryDialog : Dialog
 
             dt.Rows.Add(
                 displayDate,
-                Truncate(playlist.Title ?? playlist.YouTubePlaylistId, 20),
-                Truncate(video.Title, 30),
-                Truncate(video.ChannelTitle ?? "", 15),
+                UnicodeWidth.Truncate(playlist.Title ?? playlist.YouTubePlaylistId, 20),
+                UnicodeWidth.Truncate(video.Title, 30),
+                UnicodeWidth.Truncate(video.ChannelTitle ?? "", 15),
                 video.RemovalReason?.ToString() ?? "Unknown");
         }
 
@@ -67,6 +67,4 @@ public class RemovalHistoryDialog : Dialog
         AddButton(closeBtn);
     }
 
-    private static string Truncate(string s, int max) =>
-        s.Length > max ? s[..(max - 2)] + ".." : s;
 }

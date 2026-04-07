@@ -18,7 +18,7 @@ public class DetailDialog : Dialog
             if (browser is not null && IsLink(label))
             {
                 var linkUrl = value;
-                var link = new Button(Truncate(value, 50))
+                var link = new Button(UnicodeWidth.Truncate(value, 50))
                 {
                     X = 20, Y = y,
                     ColorScheme = new ColorScheme
@@ -34,7 +34,7 @@ public class DetailDialog : Dialog
             }
             else
             {
-                Add(new Label(Truncate(value, 52)) { X = 20, Y = y });
+                Add(new Label(UnicodeWidth.Truncate(value, 52)) { X = 20, Y = y });
             }
 
             if (label == "URL") url = value;
@@ -56,9 +56,6 @@ public class DetailDialog : Dialog
 
     private static bool IsLink(string label) =>
         label is "URL" or "Thumbnail";
-
-    private static string Truncate(string s, int max) =>
-        s.Length > max ? s[..(max - 2)] + ".." : s;
 
     public static DetailDialog ForProfile(Profile profile, int playlistCount, int trackedCount, IBrowserLauncher? browser = null)
     {
