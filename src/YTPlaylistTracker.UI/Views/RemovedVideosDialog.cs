@@ -16,13 +16,14 @@ public class RemovedVideosDialog : Dialog
         dt.Columns.Add("Reason", typeof(string));
         dt.Columns.Add("Removed At", typeof(string));
 
+        var initialLayout = ColumnLayout.Compute(80);
         for (int i = 0; i < removedVideos.Count; i++)
         {
             var v = removedVideos[i];
             dt.Rows.Add(
                 i + 1,
-                v.Title,
-                v.ChannelTitle ?? "",
+                UnicodeWidth.Truncate(v.Title ?? "", initialLayout.TitleWidth),
+                UnicodeWidth.Truncate(v.ChannelTitle ?? "", initialLayout.ChannelWidth),
                 v.RemovalReason?.ToString() ?? "Unknown",
                 v.DeletedAt?.ToString("yyyy-MM-dd HH:mm") ?? "");
         }
@@ -42,13 +43,7 @@ public class RemovedVideosDialog : Dialog
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = true,
                 AlwaysShowHeaders = true,
-                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>
-                {
-                    [dt.Columns[0]] = new() { MinWidth = 3, MaxWidth = 5 },
-                    [dt.Columns[2]] = new() { MinWidth = 8, MaxWidth = 20 },
-                    [dt.Columns[3]] = new() { MinWidth = 7, MaxWidth = 14 },
-                    [dt.Columns[4]] = new() { MinWidth = 10, MaxWidth = 18 },
-                }
+                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>()
             }
         };
 
@@ -56,6 +51,25 @@ public class RemovedVideosDialog : Dialog
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
 
         Add(table);
+
+        table.LayoutComplete += (_) =>
+        {
+            if (table.Table == null) return;
+            var layout = ColumnLayout.Compute(table.Bounds.Width);
+            table.Style.ColumnStyles.Clear();
+            table.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
+                { MinWidth = 3, MaxWidth = layout.NumberWidth };
+            table.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
+                { MinWidth = 20, MaxWidth = layout.TitleWidth };
+            table.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
+                { MinWidth = 10, MaxWidth = layout.ChannelWidth };
+            table.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
+                { MinWidth = 7, MaxWidth = 14 };
+            table.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
+                { MinWidth = 10, MaxWidth = 18 };
+            table.SetNeedsDisplay();
+        };
+
         AddButton(closeBtn);
     }
 }
