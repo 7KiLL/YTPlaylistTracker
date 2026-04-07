@@ -358,12 +358,10 @@ public class MainWindow : Window
         }
         else
         {
-            int titleMax = Math.Max(20, (_videoFrame.Bounds.Width - 2) / 2);
             for (int i = 0; i < filtered.Count; i++)
             {
                 var v = filtered[i];
                 var t = (v.Title ?? "").Trim();
-                if (t.Length > titleMax) t = t[..(titleMax - 2)] + "..";
                 dt.Rows.Add(
                     (i + 1).ToString(),
                     t,
