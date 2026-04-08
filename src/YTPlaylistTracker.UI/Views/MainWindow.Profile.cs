@@ -122,10 +122,9 @@ public partial class MainWindow
                 {
                     global::Terminal.Gui.Application.Invoke(() =>
                     {
-                        urlDialog = new Dialog() { Title = "Login with Google", Width = 78, Height = 10, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
-                        urlDialog.Add(new Label() { Text = "If the browser didn't open:", X = 1, Y = 0 });
-                        var urlField = new TextField() { Text = authUrl, X = 1, Y = 2, Width = 72, ReadOnly = true };
-                        urlField.SelectAll();
+                        urlDialog = new Dialog() { Title = "Login with Google", Width = Dim.Percent(80), Height = 10, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
+                        urlDialog.Add(new Label() { Text = "A browser window should open. If not, copy this URL:", X = 1, Y = 0 });
+                        var urlField = new TextField() { Text = authUrl, X = 1, Y = 2, Width = Dim.Fill(2), ReadOnly = true };
                         urlDialog.Add(urlField);
                         var copyBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Copy URL", X = 1, Y = 4 };
                         copyBtn.Accepting += (sender, e) =>
