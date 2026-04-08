@@ -54,21 +54,21 @@ public partial class MainWindow(
     public async Task InitializeAsync()
     {
         SetupUI();
-        _profiles = (await profileRepo.GetAllAsync()).ToList();
+        _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
         if (_profiles.Count == 0)
         {
             var defaultProfile = new Profile { Name = "Default", IsDefault = true };
-            await profileRepo.AddAsync(defaultProfile);
-            _profiles = (await profileRepo.GetAllAsync()).ToList();
+            await profileRepo.AddAsync(defaultProfile).ConfigureAwait(false);
+            _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
         }
 
-        _selectedProfile = _profiles.FirstOrDefault(p => p.IsDefault) ?? _profiles.First();
+        _selectedProfile = _profiles.FirstOrDefault(p => p.IsDefault) ?? _profiles[0];
         RefreshProfileList();
-        await RefreshPlaylistsAsync();
+        await RefreshPlaylistsAsync().ConfigureAwait(false);
 
         // Load videos for the initially selected playlist
         if (_selectedPlaylist is not null)
-            await RefreshVideosAsync();
+            await RefreshVideosAsync().ConfigureAwait(false);
 
         // Check if user is logged in before starting background work
         if (!YouTubeApiService.HasStoredToken("default") &&
@@ -101,7 +101,7 @@ public partial class MainWindow(
             {
                 try
                 {
-                    await FetchAndImportAllPlaylists(capturedProfile);
+                    await FetchAndImportAllPlaylists(capturedProfile).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -113,23 +113,23 @@ public partial class MainWindow(
                 {
                     try
                     {
-                        var channel = await youtubeApi.GetMyChannelAsync();
+                        var channel = await youtubeApi.GetMyChannelAsync().ConfigureAwait(false);
                         if (channel is not null)
                         {
                             capturedProfile.YouTubeChannelId = channel.ChannelId;
                             capturedProfile.ChannelTitle = channel.Title;
                             capturedProfile.ChannelThumbnailUrl = channel.ThumbnailUrl;
-                            await profileRepo.UpdateAsync(capturedProfile);
+                            await profileRepo.UpdateAsync(capturedProfile).ConfigureAwait(false);
                             global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshProfileList());
                         }
                     }
                     catch (Exception ex) { logger.LogWarning(ex, "Failed to fetch channel info"); }
                 }
 
-                await CheckForUpdatesAsync();
+                await CheckForUpdatesAsync().ConfigureAwait(false);
 
                 if (userSettings.AutoSyncOnStartup && capturedProfile is not null)
-                    await AutoSyncAllAsync(capturedProfile);
+                    await AutoSyncAllAsync(capturedProfile).ConfigureAwait(false);
                 else
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                     {
@@ -145,13 +145,13 @@ public partial class MainWindow(
     {
         try
         {
-            var updateResult = await updateService.CheckForUpdateAsync();
+            var updateResult = await updateService.CheckForUpdateAsync().ConfigureAwait(false);
             if (updateResult.IsUpdateAvailable && userSettings.AutoInstallUpdates)
             {
                 logger.LogInformation("[Update] Auto-installing v{Version}", updateResult.LatestVersion);
                 try
                 {
-                    await updateService.ApplyUpdateAsync(updateResult);
+                    await updateService.ApplyUpdateAsync(updateResult).ConfigureAwait(false);
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                     {
                         _latestUpdate = updateResult;
@@ -199,7 +199,7 @@ public partial class MainWindow(
         {
             var syncProgress = new Progress<string>(msg =>
                 global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
-            var results = await syncService.SyncAllTrackedAsync(profile.Id, syncProgress);
+            var results = await syncService.SyncAllTrackedAsync(profile.Id, syncProgress).ConfigureAwait(false);
             int totalAdded = results.Values.Sum(r => r.Added);
             int totalRemoved = results.Values.Sum(r => r.Removed);
             logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
@@ -243,7 +243,7 @@ public partial class MainWindow(
         if (_selectedProfile is null) return;
         var prevIdx = _playlistList.SelectedItem;
         var sortTracked = userSettings.SortTrackedFirst;
-        _playlists = (await playlistRepo.GetByProfileAsync(_selectedProfile.Id))
+        _playlists = (await playlistRepo.GetByProfileAsync(_selectedProfile.Id).ConfigureAwait(false))
             .OrderBy(p => PlaylistPolicy.For(p.Kind).SortOrder)
             .ThenByDescending(p => sortTracked && p.IsTracked)
             .ThenBy(p => p.Title ?? p.YouTubePlaylistId, StringComparer.OrdinalIgnoreCase)
@@ -256,7 +256,7 @@ public partial class MainWindow(
             return prefix + icon + (p.Title ?? p.YouTubePlaylistId);
         }).ToList();
         _suppressEvents = true;
-        _playlistList.SetSource(names);
+        await _playlistList.SetSourceAsync(names);
         if (prevIdx >= 0 && prevIdx < _playlists.Count)
         {
             _playlistList.SelectedItem = prevIdx;

@@ -6,5 +6,5 @@ public enum RemovalReason
     Deleted,
     Private,
     Unlisted,
-    RemovedByOwner
+    RemovedByOwner,
 }

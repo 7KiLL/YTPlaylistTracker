@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace YTPlaylistTracker.Infrastructure.Configuration;
 
-public class AppSettings
+public static class AppSettings
 {
     public static string AppDataDir
     {

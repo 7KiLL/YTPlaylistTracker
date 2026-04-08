@@ -12,14 +12,14 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
         return await db.Playlists
             .Where(p => p.ProfileId == profileId)
             .OrderBy(p => p.Title)
-            .ToListAsync(ct);
+            .ToListAsync(ct).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<Playlist>> GetTrackedByProfileAsync(int profileId, CancellationToken ct = default)
     {
         return await db.Playlists
             .Where(p => p.ProfileId == profileId && p.IsTracked)
-            .ToListAsync(ct);
+            .ToListAsync(ct).ConfigureAwait(false);
     }
 
     public async Task AddAsync(Playlist playlist, CancellationToken ct = default)
@@ -58,7 +58,7 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
             .Where(v => v.PlaylistId == playlistId)
             .OrderBy(v => v.DeletedAt.HasValue)
             .ThenBy(v => v.Title)
-            .ToListAsync(ct);
+            .ToListAsync(ct).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<Video>> GetDeletedVideosAsync(int playlistId, CancellationToken ct = default)
@@ -66,7 +66,7 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
         return await db.Videos
             .Where(v => v.PlaylistId == playlistId && v.DeletedAt != null)
             .OrderByDescending(v => v.DeletedAt)
-            .ToListAsync(ct);
+            .ToListAsync(ct).ConfigureAwait(false);
     }
 
     public async Task AddVideosAsync(IEnumerable<Video> videos, CancellationToken ct = default)
@@ -85,7 +85,7 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
     {
         var count = await db.Videos
             .Where(v => v.PlaylistId == playlistId && v.DeletedAt != null)
-            .ExecuteDeleteAsync(ct);
+            .ExecuteDeleteAsync(ct).ConfigureAwait(false);
 
         logger.LogInformation("Purging {Count} deleted videos from playlist {PlaylistId}", count, playlistId);
     }
@@ -96,7 +96,7 @@ public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> log
             .Include(v => v.Playlist)
             .Where(v => v.Playlist.ProfileId == profileId && v.DeletedAt != null)
             .OrderByDescending(v => v.DeletedAt)
-            .ToListAsync(ct);
+            .ToListAsync(ct).ConfigureAwait(false);
 
         return results.Select(v => (v.Playlist, v)).ToList();
     }

@@ -107,7 +107,7 @@ public sealed class SettingsDialog : Dialog
             {
                 try
                 {
-                    await playlistRepo.PurgeDeletedVideosAsync(selectedPlaylist.Id);
+                    await playlistRepo.PurgeDeletedVideosAsync(selectedPlaylist.Id).ConfigureAwait(false);
                     MessageBox.Query("Done", "Deleted videos purged.", "OK");
                 }
                 catch (Exception ex)
@@ -154,7 +154,7 @@ public sealed class SettingsDialog : Dialog
             {
                 try
                 {
-                    var update = await updateService.CheckForUpdateAsync();
+                    var update = await updateService.CheckForUpdateAsync().ConfigureAwait(false);
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                     {
                         if (update.IsUpdateAvailable)
@@ -178,7 +178,7 @@ public sealed class SettingsDialog : Dialog
         };
         Add(updateNowBtn);
 
-        var closeBtn = new Button("Close", true);
+        var closeBtn = new Button("Close", is_default: true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
     }

@@ -5,5 +5,5 @@ public enum PlaylistKind
     Regular,
     Liked,
     WatchLater,
-    Uploads
+    Uploads,
 }

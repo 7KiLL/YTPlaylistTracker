@@ -44,8 +44,8 @@ public class ProfileRepository(AppDbContext db, ILogger<ProfileRepository> logge
 
     public async Task SetDefaultAsync(int id, CancellationToken ct = default)
     {
-        await db.Profiles.ExecuteUpdateAsync(p => p.SetProperty(x => x.IsDefault, false), ct).ConfigureAwait(false);
-        await db.Profiles.Where(x => x.Id == id).ExecuteUpdateAsync(p => p.SetProperty(x => x.IsDefault, true), ct).ConfigureAwait(false);
+        await db.Profiles.ExecuteUpdateAsync(p => p.SetProperty(x => x.IsDefault, valueExpression: false), ct).ConfigureAwait(false);
+        await db.Profiles.Where(x => x.Id == id).ExecuteUpdateAsync(p => p.SetProperty(x => x.IsDefault, valueExpression: true), ct).ConfigureAwait(false);
         logger.LogInformation("Set default profile to ID {Id}", id);
     }
 }

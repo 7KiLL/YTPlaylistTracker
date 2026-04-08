@@ -25,7 +25,7 @@ public static class ExportService
             pv.Video.ChannelTitle ?? "",
             pv.Video.RemovalReason?.ToString() ?? "Unknown",
             pv.Video.DeletedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""
-        ))];
+        )),];
     }
 
     public static string ToCsv(List<ExportEntry> entries)

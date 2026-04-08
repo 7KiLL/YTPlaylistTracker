@@ -21,7 +21,7 @@ public partial class MainWindow
 
             _videos = (_showDeletedOnly
                 ? await playlistRepo.GetDeletedVideosAsync(_selectedPlaylist.Id)
-                : await playlistRepo.GetVideosAsync(_selectedPlaylist.Id)).ToList();
+.ConfigureAwait(false) : await playlistRepo.GetVideosAsync(_selectedPlaylist.Id).ConfigureAwait(false)).ToList();
 
             ApplyFilterAndSort();
         }
@@ -51,22 +51,22 @@ public partial class MainWindow
             filtered = _sortColumn switch
             {
                 "Title" => _sortAscending
-                    ? filtered.OrderBy(v => v.Title).ToList()
-                    : filtered.OrderByDescending(v => v.Title).ToList(),
+                    ? filtered.OrderBy(v => v.Title, StringComparer.Ordinal).ToList()
+                    : filtered.OrderByDescending(v => v.Title, StringComparer.Ordinal).ToList(),
                 "Channel" => _sortAscending
-                    ? filtered.OrderBy(v => v.ChannelTitle).ToList()
-                    : filtered.OrderByDescending(v => v.ChannelTitle).ToList(),
+                    ? filtered.OrderBy(v => v.ChannelTitle, StringComparer.Ordinal).ToList()
+                    : filtered.OrderByDescending(v => v.ChannelTitle, StringComparer.Ordinal).ToList(),
                 "Added Date" => _sortAscending
                     ? filtered.OrderBy(v => v.AddedAt).ToList()
                     : filtered.OrderByDescending(v => v.AddedAt).ToList(),
                 "Status" => _sortAscending
                     ? filtered.OrderBy(v => v.DeletedAt.HasValue).ToList()
                     : filtered.OrderByDescending(v => v.DeletedAt.HasValue).ToList(),
-                _ => filtered
+                _ => filtered,
             };
         }
 
-        string Arrow(string col) => _sortColumn == col ? (_sortAscending ? " ▲" : " ▼") : "";
+        string Arrow(string col) => string.Equals(_sortColumn, col, StringComparison.Ordinal) ? (_sortAscending ? " ▲" : " ▼") : "";
 
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(string));
@@ -152,9 +152,9 @@ public partial class MainWindow
             {
                 var val = args.CellValue?.ToString() ?? "";
                 if (val.StartsWith("X ", StringComparison.Ordinal)) return Theme.StatusRemoved;
-                if (val == "Active") return Theme.StatusActive;
+                if (string.Equals(val, "Active", StringComparison.Ordinal)) return Theme.StatusActive;
                 return null;
-            }
+            },
         };
     }
 
@@ -169,7 +169,7 @@ public partial class MainWindow
                 _selectedPlaylist = null;
                 _videoTable.Table = null;
                 _videoFrame.Title = "Videos";
-                await RefreshPlaylistsAsync();
+                await RefreshPlaylistsAsync().ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -193,7 +193,7 @@ public partial class MainWindow
             {
                 var videos = (_showDeletedOnly
                     ? await playlistRepo.GetDeletedVideosAsync(playlist.Id)
-                    : await playlistRepo.GetVideosAsync(playlist.Id)).ToList();
+.ConfigureAwait(false) : await playlistRepo.GetVideosAsync(playlist.Id).ConfigureAwait(false)).ToList();
 
                 global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                 {

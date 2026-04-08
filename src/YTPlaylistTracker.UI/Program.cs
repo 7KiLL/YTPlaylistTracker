@@ -79,38 +79,39 @@ using (var scope = sp.CreateScope())
 
     // Handle upgrade from v0.1.0 (EnsureCreated) to migrations
     var conn = db.Database.GetDbConnection();
-    await conn.OpenAsync();
-    await using (var cmd = conn.CreateCommand())
+    await conn.OpenAsync().ConfigureAwait(false);
+    var cmd = conn.CreateCommand();
+        await using (cmd.ConfigureAwait(false))
     {
         cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
-        var hasMigrationHistory = await cmd.ExecuteScalarAsync() != null;
+        var hasMigrationHistory = await cmd.ExecuteScalarAsync().ConfigureAwait(false) != null;
 
         if (!hasMigrationHistory)
         {
             cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='Profiles'";
-            var hasExistingTables = await cmd.ExecuteScalarAsync() != null;
+            var hasExistingTables = await cmd.ExecuteScalarAsync().ConfigureAwait(false) != null;
 
             if (hasExistingTables)
             {
                 // Legacy DB from v0.1.0 — stamp InitialCreate as already applied
-                var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
+                var pendingMigrations = await db.Database.GetPendingMigrationsAsync().ConfigureAwait(false);
                 var initialMigration = pendingMigrations.FirstOrDefault(m => m.EndsWith("_InitialCreate", StringComparison.Ordinal));
                 if (initialMigration != null)
                 {
                     await db.Database.ExecuteSqlRawAsync(
-                        "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (\"MigrationId\" TEXT NOT NULL, \"ProductVersion\" TEXT NOT NULL, PRIMARY KEY(\"MigrationId\"))");
+                        "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (\"MigrationId\" TEXT NOT NULL, \"ProductVersion\" TEXT NOT NULL, PRIMARY KEY(\"MigrationId\"))").ConfigureAwait(false);
 
                     var efVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "10.0.5";
                     await db.Database.ExecuteSqlRawAsync(
                         "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1})",
-                        initialMigration, efVersion);
+                        initialMigration, efVersion).ConfigureAwait(false);
                     Log.Information("Upgraded legacy database: stamped {Migration}", initialMigration);
                 }
             }
         }
     }
 
-    await db.Database.MigrateAsync();
+    await db.Database.MigrateAsync().ConfigureAwait(false);
     AppSettings.SecureDbFile();
 }
 
@@ -122,7 +123,7 @@ root.Add(verboseOpt);
 
 // ui
 var uiCmd = new CliCommand("ui", "Launch the interactive TUI");
-uiCmd.SetAction(async (_, _) => await CliCommands.RunUi(sp));
+uiCmd.SetAction(async (_, _) => await CliCommands.RunUi(sp).ConfigureAwait(false));
 root.Add(uiCmd);
 
 // sync [playlist-id]
@@ -131,18 +132,18 @@ var syncCmd = new CliCommand("sync", "Sync playlists from YouTube") { syncArg };
 syncCmd.SetAction(async (result, _) =>
 {
     var playlistId = result.GetValue(syncArg);
-    await CliCommands.RunSync(sp, playlistId);
+    await CliCommands.RunSync(sp, playlistId).ConfigureAwait(false);
 });
 root.Add(syncCmd);
 
 // status
 var statusCmd = new CliCommand("status", "Show tracking summary");
-statusCmd.SetAction(async (_, _) => await CliCommands.RunStatus(sp));
+statusCmd.SetAction(async (_, _) => await CliCommands.RunStatus(sp).ConfigureAwait(false));
 root.Add(statusCmd);
 
 // login
 var loginCmd = new CliCommand("login", "Sign in with Google (opens browser)");
-loginCmd.SetAction(async (_, _) => await CliCommands.RunLogin(sp));
+loginCmd.SetAction(async (_, _) => await CliCommands.RunLogin(sp).ConfigureAwait(false));
 root.Add(loginCmd);
 
 // logout
@@ -184,19 +185,19 @@ exportCmd.SetAction(async (result, _) =>
     var format = result.GetValue(exportFormatOpt);
     if (string.IsNullOrEmpty(format)) format = "csv";
     var output = result.GetValue(exportOutputOpt);
-    await CliCommands.RunExport(sp, format, output);
+    await CliCommands.RunExport(sp, format, output).ConfigureAwait(false);
 });
 root.Add(exportCmd);
 
 // update
 var updateCmd = new CliCommand("update", "Check for and apply updates");
-updateCmd.SetAction(async (_, _) => await CliCommands.RunUpdate(sp));
+updateCmd.SetAction(async (_, _) => await CliCommands.RunUpdate(sp).ConfigureAwait(false));
 root.Add(updateCmd);
 
 // Default: launch TUI
-root.SetAction(async (_, _) => await CliCommands.RunUi(sp));
+root.SetAction(async (_, _) => await CliCommands.RunUi(sp).ConfigureAwait(false));
 
-return await root.Parse(args).InvokeAsync();
+return await root.Parse(args).InvokeAsync().ConfigureAwait(false);
 }
 catch (Exception ex)
 {
@@ -208,5 +209,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }

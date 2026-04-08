@@ -38,7 +38,7 @@ public sealed class HelpDialog : Dialog
             y++;
         }
 
-        var closeBtn = new Button("Close", true);
+        var closeBtn = new Button("Close", is_default: true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
     }

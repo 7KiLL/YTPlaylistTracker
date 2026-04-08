@@ -8,6 +8,8 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
     /// <inheritdoc />
     public partial class InitialCreate : Migration
     {
+        private static readonly string[] columns = new[] { "ProfileId", "YouTubePlaylistId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -16,12 +18,12 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Sqlite:Autoincrement", value: true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     YouTubeChannelId = table.Column<string>(type: "TEXT", nullable: true),
                     OAuthTokenPath = table.Column<string>(type: "TEXT", nullable: true),
                     IsDefault = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -33,7 +35,7 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Sqlite:Autoincrement", value: true),
                     ProfileId = table.Column<int>(type: "INTEGER", nullable: false),
                     YouTubePlaylistId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Title = table.Column<string>(type: "TEXT", nullable: true),
@@ -42,7 +44,7 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
                     JsonMetadata = table.Column<string>(type: "TEXT", nullable: true),
                     Description = table.Column<string>(type: "TEXT", nullable: true),
                     ThumbnailUrl = table.Column<string>(type: "TEXT", nullable: true),
-                    PublishedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    PublishedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
                 },
                 constraints: table =>
                 {
@@ -60,7 +62,7 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Sqlite:Autoincrement", value: true),
                     PlaylistId = table.Column<int>(type: "INTEGER", nullable: false),
                     YouTubeVideoId = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Title = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
@@ -71,7 +73,7 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
                     Description = table.Column<string>(type: "TEXT", nullable: true),
                     ThumbnailUrl = table.Column<string>(type: "TEXT", nullable: true),
                     Position = table.Column<int>(type: "INTEGER", nullable: false),
-                    JsonMetadata = table.Column<string>(type: "TEXT", nullable: true)
+                    JsonMetadata = table.Column<string>(type: "TEXT", nullable: true),
                 },
                 constraints: table =>
                 {
@@ -87,7 +89,7 @@ namespace YTPlaylistTracker.Infrastructure.Data.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Playlists_ProfileId_YouTubePlaylistId",
                 table: "Playlists",
-                columns: new[] { "ProfileId", "YouTubePlaylistId" },
+                columns: columns,
                 unique: true);
 
             migrationBuilder.CreateIndex(

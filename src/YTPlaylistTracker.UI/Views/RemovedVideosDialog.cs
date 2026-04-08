@@ -43,11 +43,11 @@ public sealed class RemovedVideosDialog : Dialog
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = false,
                 AlwaysShowHeaders = true,
-                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>()
-            }
+                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>(),
+            },
         };
 
-        var closeBtn = new Button("Close", true);
+        var closeBtn = new Button("Close", is_default: true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
 
         Add(table);
@@ -66,7 +66,7 @@ public sealed class RemovedVideosDialog : Dialog
             table.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
             {
                 MinWidth = 14, MaxWidth = 14,
-                ColorGetter = args => Theme.StatusRemoved
+                ColorGetter = args => Theme.StatusRemoved,
             };
             table.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
                 { MinWidth = 18, MaxWidth = 18 };

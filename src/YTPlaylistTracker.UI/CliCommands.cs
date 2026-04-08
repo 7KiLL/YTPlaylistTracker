@@ -31,7 +31,7 @@ internal static class CliCommands
                 sp.GetRequiredService<IUserSettings>(),
                 sp.GetRequiredService<IUpdateService>(),
                 s.GetRequiredService<ILogger<MainWindow>>());
-            await mainWindow.InitializeAsync();
+            await mainWindow.InitializeAsync().ConfigureAwait(false);
             App.Run(mainWindow);
             mainWindow.Dispose();
         }
@@ -49,7 +49,7 @@ internal static class CliCommands
         var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
         var profileRepo = s.GetRequiredService<IProfileRepository>();
 
-        var profile = await profileRepo.GetDefaultAsync();
+        var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
         if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
 
         // Backfill channel info if not yet populated
@@ -58,13 +58,13 @@ internal static class CliCommands
             try
             {
                 var ytService = s.GetRequiredService<IYouTubeApiService>();
-                var channel = await ytService.GetMyChannelAsync();
+                var channel = await ytService.GetMyChannelAsync().ConfigureAwait(false);
                 if (channel is not null)
                 {
                     profile.YouTubeChannelId = channel.ChannelId;
                     profile.ChannelTitle = channel.Title;
                     profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
-                    await profileRepo.UpdateAsync(profile);
+                    await profileRepo.UpdateAsync(profile).ConfigureAwait(false);
                 }
             }
             catch (Exception ex) { Log.Warning(ex, "Failed to fetch channel info during sync"); }
@@ -72,15 +72,15 @@ internal static class CliCommands
 
         if (playlistId is not null)
         {
-            var playlists = await playlistRepo.GetByProfileAsync(profile.Id);
-            var playlist = playlists.FirstOrDefault(p => p.YouTubePlaylistId == playlistId);
+            var playlists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
+            var playlist = playlists.FirstOrDefault(p => string.Equals(p.YouTubePlaylistId, playlistId, StringComparison.Ordinal));
             if (playlist is null) { Console.Error.WriteLine($"Playlist {playlistId} not found."); return; }
-            var result = await syncService.SyncPlaylistAsync(playlist);
+            var result = await syncService.SyncPlaylistAsync(playlist).ConfigureAwait(false);
             Console.WriteLine($"Synced: +{result.Added} added, -{result.Removed} removed, ~{result.Updated} updated");
         }
         else
         {
-            var results = await syncService.SyncAllTrackedAsync(profile.Id);
+            var results = await syncService.SyncAllTrackedAsync(profile.Id).ConfigureAwait(false);
             foreach (var (id, result) in results)
                 Console.WriteLine($"Playlist {id}: +{result.Added} -{result.Removed} ~{result.Updated}");
             Console.WriteLine($"Total: {results.Count} playlists synced");
@@ -94,14 +94,14 @@ internal static class CliCommands
         var profileRepo = s.GetRequiredService<IProfileRepository>();
         var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
 
-        var profiles = await profileRepo.GetAllAsync();
+        var profiles = await profileRepo.GetAllAsync().ConfigureAwait(false);
         foreach (var profile in profiles)
         {
             Console.WriteLine($"Profile: {profile.Name}{(profile.IsDefault ? " (default)" : "")}");
-            var playlists = await playlistRepo.GetByProfileAsync(profile.Id);
+            var playlists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
             foreach (var pl in playlists)
             {
-                var videos = await playlistRepo.GetVideosAsync(pl.Id);
+                var videos = await playlistRepo.GetVideosAsync(pl.Id).ConfigureAwait(false);
                 var active = videos.Count(v => v.DeletedAt == null);
                 var deleted = videos.Count(v => v.DeletedAt != null);
                 Console.WriteLine($"  {(pl.IsTracked ? "✓" : " ")} {pl.Title ?? pl.YouTubePlaylistId} — {active} active, {deleted} removed, last sync: {pl.LastSyncedAt?.ToString("g") ?? "never"}");
@@ -125,24 +125,24 @@ internal static class CliCommands
         try
         {
             var logger = sp.GetRequiredService<ILogger<YouTubeApiService>>();
-            var service = await YouTubeApiService.CreateWithEmbeddedOAuthAsync("default", logger);
-            var playlists = await service.GetUserPlaylistsAsync();
+            var service = await YouTubeApiService.CreateWithEmbeddedOAuthAsync("default", logger).ConfigureAwait(false);
+            var playlists = await service.GetUserPlaylistsAsync().ConfigureAwait(false);
             Console.WriteLine($"Login successful! Found {playlists.Count} playlists on your account.");
             Console.WriteLine($"Credentials saved to {AppSettings.CredentialsPath}");
 
             // Enrich profile with channel info
             using var scope = sp.CreateScope();
             var profileRepo = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
-            var profile = await profileRepo.GetDefaultAsync();
+            var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
             if (profile is not null)
             {
-                var channel = await service.GetMyChannelAsync();
+                var channel = await service.GetMyChannelAsync().ConfigureAwait(false);
                 if (channel is not null)
                 {
                     profile.YouTubeChannelId = channel.ChannelId;
                     profile.ChannelTitle = channel.Title;
                     profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
-                    await profileRepo.UpdateAsync(profile);
+                    await profileRepo.UpdateAsync(profile).ConfigureAwait(false);
                     Console.WriteLine($"Profile updated: {channel.Title}");
                 }
             }
@@ -159,22 +159,22 @@ internal static class CliCommands
         var profileRepo = s.GetRequiredService<IProfileRepository>();
         var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
 
-        var profile = await profileRepo.GetDefaultAsync();
+        var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
         if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
 
-        var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(profile.Id);
+        var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(profile.Id).ConfigureAwait(false);
         if (removedVideos.Count == 0) { Console.WriteLine("No removed videos found."); return; }
 
         var entries = ExportService.BuildEntries(removedVideos);
         var content = format.ToLowerInvariant() switch
         {
             "json" => ExportService.ToJson(entries),
-            _ => ExportService.ToCsv(entries)
+            _ => ExportService.ToCsv(entries),
         };
 
         if (outputPath is not null)
         {
-            await File.WriteAllTextAsync(outputPath, content);
+            await File.WriteAllTextAsync(outputPath, content).ConfigureAwait(false);
             Console.WriteLine($"Exported {entries.Count} removed videos to {outputPath}");
         }
         else
@@ -188,7 +188,7 @@ internal static class CliCommands
         var tokenDir = Path.Combine(AppSettings.OAuthTokenDir, "default");
         if (Directory.Exists(tokenDir))
         {
-            Directory.Delete(tokenDir, true);
+            Directory.Delete(tokenDir, recursive: true);
             Console.WriteLine("Logged out. OAuth tokens removed.");
         }
         else Console.WriteLine("Not logged in.");
@@ -201,7 +201,7 @@ internal static class CliCommands
         Console.WriteLine($"Current version: {currentVersion}");
         Console.WriteLine("Checking for updates...");
 
-        var update = await updateService.CheckForUpdateAsync();
+        var update = await updateService.CheckForUpdateAsync().ConfigureAwait(false);
         if (!update.IsUpdateAvailable)
         {
             Console.WriteLine("You're on the latest version.");
@@ -211,7 +211,7 @@ internal static class CliCommands
         Console.WriteLine($"New version available: {update.LatestVersion}");
         try
         {
-            var message = await updateService.ApplyUpdateAsync(update);
+            var message = await updateService.ApplyUpdateAsync(update).ConfigureAwait(false);
             Console.WriteLine(message);
         }
         catch (UpdateException ex)

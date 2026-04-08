@@ -29,7 +29,7 @@ public partial class MainWindow
         {
             (true, _) => (View)_profileList,
             (_, true) => (View)_playlistList,
-            _ => (View)_videoTable
+            _ => (View)_videoTable,
         };
 
         // Shift+Arrow: fast scroll (5 rows at a time)

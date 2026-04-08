@@ -36,7 +36,7 @@ public record PlaylistPolicy(
             SortOrder: 10,
             ManualCooldown: null,
             AllowAutoSync: true,
-            TrackingWarning: null)
+            TrackingWarning: null),
     };
 
     public static PlaylistKind DetectKind(string youtubePlaylistId) => youtubePlaylistId switch
@@ -44,6 +44,6 @@ public record PlaylistPolicy(
         _ when youtubePlaylistId.StartsWith("LL", StringComparison.Ordinal) => PlaylistKind.Liked,
         _ when youtubePlaylistId.StartsWith("WL", StringComparison.Ordinal) => PlaylistKind.WatchLater,
         _ when youtubePlaylistId.StartsWith("UU", StringComparison.Ordinal) => PlaylistKind.Uploads,
-        _ => PlaylistKind.Regular
+        _ => PlaylistKind.Regular,
     };
 }

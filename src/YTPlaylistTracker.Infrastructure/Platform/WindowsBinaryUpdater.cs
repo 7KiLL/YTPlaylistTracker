@@ -38,7 +38,7 @@ public class WindowsBinaryUpdater(ILogger<WindowsBinaryUpdater> logger) : IBinar
                 FileName = "cmd.exe",
                 Arguments = $"/c \"{scriptPath}\"",
                 CreateNoWindow = true,
-                UseShellExecute = false
+                UseShellExecute = false,
             });
 
             return "App will close and restart automatically.";

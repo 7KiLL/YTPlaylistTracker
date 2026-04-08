@@ -21,8 +21,8 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
         DefaultRequestHeaders =
         {
             { "User-Agent", "ytpt-updater" },
-            { "Accept", "application/vnd.github+json" }
-        }
+            { "Accept", "application/vnd.github+json" },
+        },
     };
 
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(15);
@@ -64,13 +64,13 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             {
                 logger.LogWarning("[Update] Could not parse versions: current={Current}, latest={Latest}",
                     currentVersion, latestVersion);
-                return new UpdateInfo(currentVersion, latestVersion, "", false);
+                return new UpdateInfo(currentVersion, latestVersion, "", IsUpdateAvailable: false);
             }
 
             if (latest <= current)
             {
                 logger.LogInformation("[Update] Already on latest version");
-                return new UpdateInfo(currentVersion, latestVersion, "", false);
+                return new UpdateInfo(currentVersion, latestVersion, "", IsUpdateAvailable: false);
             }
 
             var expectedAsset = GetExpectedAssetName();
@@ -79,7 +79,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             foreach (var asset in root.GetProperty("assets").EnumerateArray())
             {
                 var name = asset.GetProperty("name").GetString();
-                if (name == expectedAsset)
+                if (string.Equals(name, expectedAsset, StringComparison.Ordinal))
                 {
                     downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
                     break;
@@ -90,26 +90,26 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             {
                 logger.LogWarning("[Update] No asset found for RID {Rid} (expected: {Asset})",
                     RuntimeInformation.RuntimeIdentifier, expectedAsset);
-                return new UpdateInfo(currentVersion, latestVersion, "", false);
+                return new UpdateInfo(currentVersion, latestVersion, "", IsUpdateAvailable: false);
             }
 
             logger.LogInformation("[Update] Update available: {Latest} (asset: {Asset})", latestVersion, expectedAsset);
-            return new UpdateInfo(currentVersion, latestVersion, downloadUrl, true);
+            return new UpdateInfo(currentVersion, latestVersion, downloadUrl, IsUpdateAvailable: true);
         }
         catch (HttpRequestException ex)
         {
             logger.LogWarning(ex, "[Update] Network error checking for updates");
-            return new UpdateInfo(currentVersion, "", "", false);
+            return new UpdateInfo(currentVersion, "", "", IsUpdateAvailable: false);
         }
         catch (JsonException ex)
         {
             logger.LogWarning(ex, "[Update] Failed to parse GitHub API response");
-            return new UpdateInfo(currentVersion, "", "", false);
+            return new UpdateInfo(currentVersion, "", "", IsUpdateAvailable: false);
         }
         catch (TaskCanceledException ex)
         {
             logger.LogWarning(ex, "[Update] Update check timed out");
-            return new UpdateInfo(currentVersion, "", "", false);
+            return new UpdateInfo(currentVersion, "", "", IsUpdateAvailable: false);
         }
     }
 
@@ -119,7 +119,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             throw new UpdateException("No update available.");
 
         if (!Uri.TryCreate(update.DownloadUrl, UriKind.Absolute, out var downloadUri) ||
-            downloadUri.Scheme != Uri.UriSchemeHttps ||
+!string.Equals(downloadUri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) ||
             !downloadUri.Host.EndsWith("github.com", StringComparison.OrdinalIgnoreCase))
         {
             throw new UpdateException("Download URL is not a valid GitHub HTTPS URL.",
@@ -139,7 +139,8 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             var response = await Http.GetAsync(update.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, downloadCts.Token).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
-            await using (var fileStream = File.Create(archivePath))
+            var fileStream = File.Create(archivePath);
+            await using (fileStream.ConfigureAwait(false))
             {
                 await response.Content.CopyToAsync(fileStream, downloadCts.Token).ConfigureAwait(false);
             }
@@ -153,7 +154,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
 
             if (OperatingSystem.IsWindows())
             {
-                using var archive = ZipFile.OpenRead(archivePath);
+                await using var archive = await ZipFile.OpenReadAsync(archivePath, downloadCts.Token);
                 var fullTargetPath = Path.GetFullPath(tempDir);
                 foreach (var entry in archive.Entries)
                 {
@@ -166,19 +167,22 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
                     if (dir != null) Directory.CreateDirectory(dir);
 
                     if (!string.IsNullOrEmpty(entry.Name)) // Skip directories
-                        entry.ExtractToFile(destinationPath, overwrite: true);
+                        await entry.ExtractToFileAsync(destinationPath, overwrite: true, cancellationToken: downloadCts.Token);
                 }
             }
             else
             {
-                await using var gzipStream = new GZipStream(File.OpenRead(archivePath), CompressionMode.Decompress);
-                await TarFile.ExtractToDirectoryAsync(gzipStream, tempDir, overwriteFiles: true).ConfigureAwait(false);
+                var gzipStream = new GZipStream(File.OpenRead(archivePath), CompressionMode.Decompress);
+                await using (gzipStream.ConfigureAwait(false))
+                {
+                    await TarFile.ExtractToDirectoryAsync(gzipStream, tempDir, overwriteFiles: true, downloadCts.Token).ConfigureAwait(false);
 
                 // Verify extracted binary is within temp directory
                 var fullTarget = Path.GetFullPath(tempDir);
                 var fullBinary = Path.GetFullPath(extractedBinaryPath);
                 if (!fullBinary.StartsWith(fullTarget + Path.DirectorySeparatorChar, StringComparison.Ordinal))
                     throw new UpdateException("Extracted binary path is outside temp directory.", ReleasePageUrl);
+                }
             }
 
             if (!File.Exists(extractedBinaryPath))

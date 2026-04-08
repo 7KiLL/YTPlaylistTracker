@@ -17,13 +17,13 @@ public partial class MainWindow
             X = 0, Y = 0,
             Width = 18,
             Height = Dim.Fill(2),
-            ColorScheme = Theme.Frame
+            ColorScheme = Theme.Frame,
         };
         _profileList = new ListView
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            ColorScheme = Colors.Base
+            ColorScheme = Colors.Base,
         };
         _profileList.SelectedItemChanged += OnProfileSelected;
         _profileFrame.Add(_profileList);
@@ -34,13 +34,13 @@ public partial class MainWindow
             Y = 0,
             Width = 28,
             Height = Dim.Fill(2),
-            ColorScheme = Theme.Frame
+            ColorScheme = Theme.Frame,
         };
         _playlistList = new ListView
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            ColorScheme = Colors.Base
+            ColorScheme = Colors.Base,
         };
         _playlistList.SelectedItemChanged += OnPlaylistSelected;
         _playlistFrame.Add(_playlistList);
@@ -51,7 +51,7 @@ public partial class MainWindow
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
-            ColorScheme = Theme.Frame
+            ColorScheme = Theme.Frame,
         };
         _videoTable = new TableView
         {
@@ -67,8 +67,8 @@ public partial class MainWindow
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = false,
                 AlwaysShowHeaders = true,
-                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>()
-            }
+                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>(),
+            },
         };
         _videoTable.CellActivated += (args) => ShowDetail();
         _videoFrame.Add(_videoTable);
@@ -83,13 +83,13 @@ public partial class MainWindow
         {
             Y = Pos.AnchorEnd(2),
             Width = Dim.Fill(),
-            ColorScheme = Theme.HintKey
+            ColorScheme = Theme.HintKey,
         };
         _hintBar2 = new Label(" a F1 add │ t F2 track │ s F5 sync │ S F6 all │ e F7 export │ F8 deleted │ F9 set │ H F11 hist │ ? F12 help │ q quit")
         {
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
-            ColorScheme = Theme.HintKey
+            ColorScheme = Theme.HintKey,
         };
         Add(_hintBar1, _hintBar2);
     }

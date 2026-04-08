@@ -48,15 +48,15 @@ public class SyncService(
     {
         logger.LogInformation("Syncing playlist: {PlaylistId} ({Title})", playlist.YouTubePlaylistId, playlist.Title);
 
-        var apiVideos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId);
-        var metadata = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId);
+        var apiVideos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
+        var metadata = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
 
-        return await ApplyPlaylistDiff(playlist, apiVideos, metadata);
+        return await ApplyPlaylistDiff(playlist, apiVideos, metadata).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyDictionary<int, SyncResult>> SyncAllTrackedAsync(int profileId, IProgress<string>? progress = null)
     {
-        var allPlaylists = await playlistRepo.GetTrackedByProfileAsync(profileId);
+        var allPlaylists = await playlistRepo.GetTrackedByProfileAsync(profileId).ConfigureAwait(false);
 
         // Filter out playlists on cooldown (Liked never auto-syncs, others skip if <6h)
         List<Playlist> playlists = [..allPlaylists.Where(p => !IsAutoSyncCooldownActive(p))];
@@ -77,13 +77,13 @@ public class SyncService(
 
         var fetchTasks = playlists.Select(async playlist =>
         {
-            await semaphore.WaitAsync();
+            await semaphore.WaitAsync().ConfigureAwait(false);
             try
             {
                 progress?.Report($"Fetching {Interlocked.Increment(ref fetched)}/{playlists.Count}: {playlist.Title}...");
 
-                var videos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId);
-                var meta = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId);
+                var videos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
+                var meta = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
                 fetchResults[playlist.Id] = (videos, meta);
             }
             catch (Exception ex)
@@ -98,7 +98,7 @@ public class SyncService(
             }
         }).ToArray();
 
-        await Task.WhenAll(fetchTasks);
+        await Task.WhenAll(fetchTasks).ConfigureAwait(false);
 
         // Phase 2: Apply diffs sequentially (SQLite single-writer)
         var results = new Dictionary<int, SyncResult>();
@@ -116,7 +116,7 @@ public class SyncService(
 
             try
             {
-                results[playlist.Id] = await ApplyPlaylistDiff(playlist, data.Videos, data.Meta);
+                results[playlist.Id] = await ApplyPlaylistDiff(playlist, data.Videos, data.Meta).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -135,14 +135,14 @@ public class SyncService(
         YouTubePlaylistSnapshot? metadata)
     {
         // YouTube allows duplicate videos in a playlist — deduplicate, keeping first occurrence
-        var apiVideoIds = apiVideos.DistinctBy(v => v.VideoId).ToDictionary(v => v.VideoId);
+        var apiVideoIds = apiVideos.DistinctBy(v => v.VideoId).ToDictionary(v => v.VideoId, StringComparer.Ordinal);
 
         logger.LogDebug("API returned {Count} videos for playlist {PlaylistId}", apiVideos.Count, playlist.YouTubePlaylistId);
 
-        var dbVideos = await playlistRepo.GetVideosAsync(playlist.Id);
-        List<Video> activeDbVideos = [..dbVideos.Where(v => v.DeletedAt is null)];
-        var deletedDbVideos = dbVideos.Where(v => v.DeletedAt is not null).ToDictionary(v => v.YouTubeVideoId);
-        var activeDbVideoIds = activeDbVideos.ToDictionary(v => v.YouTubeVideoId);
+        var dbVideos = await playlistRepo.GetVideosAsync(playlist.Id).ConfigureAwait(false);
+        List<Video> activeDbVideos = [.. dbVideos.Where(v => v.DeletedAt is null)];
+        var deletedDbVideos = dbVideos.Where(v => v.DeletedAt is not null).ToDictionary(v => v.YouTubeVideoId, StringComparer.Ordinal);
+        var activeDbVideoIds = activeDbVideos.ToDictionary(v => v.YouTubeVideoId, StringComparer.Ordinal);
 
         int added = 0, removed = 0, updated = 0;
 
@@ -153,8 +153,8 @@ public class SyncService(
             {
                 logger.LogWarning("Video removed: {VideoId} ({Title})", dbVideo.YouTubeVideoId, dbVideo.Title);
                 dbVideo.DeletedAt = DateTime.UtcNow;
-                dbVideo.RemovalReason = await youtube.CheckVideoStatusAsync(dbVideo.YouTubeVideoId);
-                await playlistRepo.UpdateVideoAsync(dbVideo);
+                dbVideo.RemovalReason = await youtube.CheckVideoStatusAsync(dbVideo.YouTubeVideoId).ConfigureAwait(false);
+                await playlistRepo.UpdateVideoAsync(dbVideo).ConfigureAwait(false);
                 removed++;
             }
         }
@@ -168,23 +168,23 @@ public class SyncService(
                 // Update existing active video if title/channel/metadata changed
                 bool changed = false;
 
-                if (dbVideo.Title != apiVideo.Title)
+                if (!string.Equals(dbVideo.Title, apiVideo.Title, StringComparison.Ordinal))
                 {
                     logger.LogDebug("Video title changed: {Old} → {New}", dbVideo.Title, apiVideo.Title);
                     dbVideo.Title = apiVideo.Title;
                     changed = true;
                 }
-                if (dbVideo.ChannelTitle != apiVideo.ChannelTitle)
+                if (!string.Equals(dbVideo.ChannelTitle, apiVideo.ChannelTitle, StringComparison.Ordinal))
                 {
                     dbVideo.ChannelTitle = apiVideo.ChannelTitle;
                     changed = true;
                 }
-                if (dbVideo.Description != apiVideo.Description)
+                if (!string.Equals(dbVideo.Description, apiVideo.Description, StringComparison.Ordinal))
                 {
                     dbVideo.Description = apiVideo.Description;
                     changed = true;
                 }
-                if (dbVideo.ThumbnailUrl != apiVideo.ThumbnailUrl)
+                if (!string.Equals(dbVideo.ThumbnailUrl, apiVideo.ThumbnailUrl, StringComparison.Ordinal))
                 {
                     dbVideo.ThumbnailUrl = apiVideo.ThumbnailUrl;
                     changed = true;
@@ -194,7 +194,7 @@ public class SyncService(
                     dbVideo.Position = apiVideo.Position;
                     changed = true;
                 }
-                if (dbVideo.JsonMetadata != apiVideo.JsonMetadata)
+                if (!string.Equals(dbVideo.JsonMetadata, apiVideo.JsonMetadata, StringComparison.Ordinal))
                 {
                     dbVideo.JsonMetadata = apiVideo.JsonMetadata;
                     changed = true;
@@ -202,7 +202,7 @@ public class SyncService(
 
                 if (changed)
                 {
-                    await playlistRepo.UpdateVideoAsync(dbVideo);
+                    await playlistRepo.UpdateVideoAsync(dbVideo).ConfigureAwait(false);
                     updated++;
                 }
             }
@@ -219,7 +219,7 @@ public class SyncService(
                 deletedVideo.Position = apiVideo.Position;
                 deletedVideo.JsonMetadata = apiVideo.JsonMetadata;
                 deletedVideo.AddedAt = apiVideo.AddedAt;
-                await playlistRepo.UpdateVideoAsync(deletedVideo);
+                await playlistRepo.UpdateVideoAsync(deletedVideo).ConfigureAwait(false);
                 added++;
             }
             else
@@ -245,14 +245,14 @@ public class SyncService(
         // Batch insert new videos
         if (newVideos.Count > 0)
         {
-            await playlistRepo.AddVideosAsync(newVideos);
+            await playlistRepo.AddVideosAsync(newVideos).ConfigureAwait(false);
             logger.LogDebug("Batch inserted {Count} new videos for {PlaylistId}", newVideos.Count, playlist.YouTubePlaylistId);
         }
 
         // Update playlist metadata
         if (metadata is not null)
         {
-            if (playlist.Title is null || playlist.Title != metadata.Title)
+            if (playlist.Title is null || !string.Equals(playlist.Title, metadata.Title, StringComparison.Ordinal))
                 playlist.Title = metadata.Title;
             playlist.Description = metadata.Description;
             playlist.ThumbnailUrl = metadata.ThumbnailUrl;
@@ -262,7 +262,7 @@ public class SyncService(
         }
 
         playlist.LastSyncedAt = DateTime.UtcNow;
-        await playlistRepo.UpdateAsync(playlist);
+        await playlistRepo.UpdateAsync(playlist).ConfigureAwait(false);
 
         var result = new SyncResult(added, removed, updated);
         logger.LogInformation("Sync complete for {PlaylistId}: +{Added} -{Removed} ~{Updated}",

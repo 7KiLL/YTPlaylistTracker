@@ -15,7 +15,7 @@ public partial class MainWindow
         if (_selectedProfile is null) return;
         try
         {
-            var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
+            var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id).ConfigureAwait(false);
             var dialog = new RemovalHistoryDialog(removedVideos);
             global::Terminal.Gui.Application.Run(dialog);
         }
@@ -32,7 +32,7 @@ public partial class MainWindow
 
         try
         {
-            var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id);
+            var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id).ConfigureAwait(false);
             if (removedVideos.Count == 0)
             {
                 MessageBox.Query("Export", "No removed videos to export.", "OK");
@@ -47,7 +47,7 @@ public partial class MainWindow
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "ytpt-removed-videos");
             var pathField = new TextField(defaultPath) { X = 12, Y = 3, Width = Dim.Fill(2) };
-            var okBtn = new Button("Export", true);
+            var okBtn = new Button("Export", is_default: true);
             var cancelBtn = new Button("Cancel");
 
             string? resultPath = null;
@@ -71,7 +71,7 @@ public partial class MainWindow
                 ? ExportService.ToJson(entries)
                 : ExportService.ToCsv(entries);
 
-            await File.WriteAllTextAsync(resultPath, content);
+            await File.WriteAllTextAsync(resultPath, content).ConfigureAwait(false);
             MessageBox.Query("Export Complete", $"Exported {entries.Count} removed videos to:\n{resultPath}", "OK");
         }
         catch (Exception ex)
@@ -93,7 +93,7 @@ public partial class MainWindow
         }
 
         ReapplyTheme();
-        await RefreshPlaylistsAsync();
+        await RefreshPlaylistsAsync().ConfigureAwait(false);
         ApplyFilterAndSort();
     }
 
@@ -128,7 +128,7 @@ public partial class MainWindow
         {
             try
             {
-                await updateService.ApplyUpdateAsync(update);
+                await updateService.ApplyUpdateAsync(update).ConfigureAwait(false);
                 global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                 {
                     HideSpinner();
@@ -159,7 +159,7 @@ public partial class MainWindow
             Process.Start(new ProcessStartInfo
             {
                 FileName = binaryPath,
-                UseShellExecute = false
+                UseShellExecute = false,
             });
         }
 

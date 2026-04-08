@@ -21,7 +21,7 @@ public sealed class DetailDialog : Dialog
                 var link = new Button(UnicodeWidth.Truncate(value, 50))
                 {
                     X = 20, Y = y,
-                    ColorScheme = Theme.Link
+                    ColorScheme = Theme.Link,
                 };
                 link.Clicked += () => browser.OpenUrl(linkUrl);
                 Add(link);
@@ -29,12 +29,12 @@ public sealed class DetailDialog : Dialog
             else
             {
                 var valueLabel = new Label(UnicodeWidth.Truncate(value, 52)) { X = 20, Y = y };
-                if (label == "Status")
-                    valueLabel.ColorScheme = value == "Active" ? Theme.StatusActive : Theme.StatusRemoved;
+                if (string.Equals(label, "Status", StringComparison.Ordinal))
+                    valueLabel.ColorScheme = string.Equals(value, "Active", StringComparison.Ordinal) ? Theme.StatusActive : Theme.StatusRemoved;
                 Add(valueLabel);
             }
 
-            if (label == "URL") url = value;
+            if (string.Equals(label, "URL", StringComparison.Ordinal)) url = value;
             y++;
         }
 
@@ -46,7 +46,7 @@ public sealed class DetailDialog : Dialog
             AddButton(openBtn);
         }
 
-        var closeBtn = new Button("Close", true);
+        var closeBtn = new Button("Close", is_default: true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
     }

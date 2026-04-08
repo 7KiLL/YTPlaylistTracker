@@ -10,7 +10,7 @@ namespace YTPlaylistTracker.UI;
 /// This prevents OAuth token refresh from blocking startup for commands
 /// that don't need the YouTube API (status, logout, --help).
 /// </summary>
-internal class LazyYouTubeApiProxy(Lazy<IYouTubeApiService> lazy) : IYouTubeApiService
+internal sealed class LazyYouTubeApiProxy(Lazy<IYouTubeApiService> lazy) : IYouTubeApiService
 {
     public Task<IReadOnlyList<YouTubeVideoSnapshot>> GetPlaylistVideosAsync(string playlistId)
         => lazy.Value.GetPlaylistVideosAsync(playlistId);

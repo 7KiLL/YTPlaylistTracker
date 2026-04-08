@@ -29,19 +29,19 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         logger.LogInformation("Authenticating with OAuth2 (file) for profile: {Profile}", profileName);
 
         var tokenDir = Path.Combine(AppSettings.OAuthTokenDir, profileName);
-        using var stream = new FileStream(clientSecretsPath, FileMode.Open, FileAccess.Read);
+        await using var stream = new FileStream(clientSecretsPath, FileMode.Open, FileAccess.Read);
 
         var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-            GoogleClientSecrets.FromStream(stream).Secrets,
+(await GoogleClientSecrets.FromStreamAsync(stream)).Secrets,
             [YouTubeService.Scope.YoutubeReadonly],
             "user",
             CancellationToken.None,
-            new FileDataStore(tokenDir, true));
+            new FileDataStore(tokenDir, fullPath: true)).ConfigureAwait(false);
 
         var youtube = new YouTubeService(new BaseClientService.Initializer
         {
             HttpClientInitializer = credential,
-            ApplicationName = "ytpt"
+            ApplicationName = "ytpt",
         });
 
         logger.LogInformation("OAuth2 authentication successful");
@@ -76,12 +76,12 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             [YouTubeService.Scope.YoutubeReadonly],
             "user",
             CancellationToken.None,
-            new FileDataStore(tokenDir, true));
+            new FileDataStore(tokenDir, fullPath: true)).ConfigureAwait(false);
 
         var youtube = new YouTubeService(new BaseClientService.Initializer
         {
             HttpClientInitializer = credential,
-            ApplicationName = "ytpt"
+            ApplicationName = "ytpt",
         });
 
         logger.LogInformation("OAuth2 authentication successful");
@@ -104,7 +104,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         var youtube = new YouTubeService(new BaseClientService.Initializer
         {
             ApiKey = apiKey,
-            ApplicationName = "ytpt"
+            ApplicationName = "ytpt",
         });
         return new YouTubeApiService(youtube, logger);
     }
@@ -268,7 +268,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             {
                 "private" => RemovalReason.Private,
                 "unlisted" => RemovalReason.Unlisted,
-                _ => RemovalReason.RemovedByOwner
+                _ => RemovalReason.RemovedByOwner,
             };
         }
         catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)

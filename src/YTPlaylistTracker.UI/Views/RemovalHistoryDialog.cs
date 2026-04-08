@@ -21,7 +21,7 @@ public sealed class RemovalHistoryDialog : Dialog
         foreach (var (playlist, video) in removedVideos)
         {
             var dateStr = video.DeletedAt?.ToString("yyyy-MM-dd") ?? "";
-            var displayDate = dateStr == lastDate ? "" : dateStr;
+            var displayDate = string.Equals(dateStr, lastDate, StringComparison.Ordinal) ? "" : dateStr;
             lastDate = dateStr;
 
             dt.Rows.Add(
@@ -39,7 +39,7 @@ public sealed class RemovalHistoryDialog : Dialog
 
         var countLabel = new Label($"{removedVideos.Count} removed videos across all tracked playlists")
         {
-            X = 0, Y = 0, Width = Dim.Fill()
+            X = 0, Y = 0, Width = Dim.Fill(),
         };
 
         var table = new TableView
@@ -69,11 +69,11 @@ public sealed class RemovalHistoryDialog : Dialog
                                 : null;
                         }
                     }
-                }
-            }
+                },
+            },
         };
 
-        var closeBtn = new Button("Close", true);
+        var closeBtn = new Button("Close", is_default: true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
 
         Add(countLabel, table);

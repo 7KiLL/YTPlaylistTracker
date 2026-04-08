@@ -17,10 +17,10 @@ public partial class MainWindow
 
         try
         {
-            var userPlaylists = await youtubeApi.GetUserPlaylistsAsync();
+            var userPlaylists = await youtubeApi.GetUserPlaylistsAsync().ConfigureAwait(false);
 
-            var dbPlaylists = await playlistRepo.GetByProfileAsync(profile.Id);
-            var existingIds = dbPlaylists.Select(p => p.YouTubePlaylistId).ToHashSet();
+            var dbPlaylists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
+            var existingIds = dbPlaylists.Select(p => p.YouTubePlaylistId).ToHashSet(StringComparer.Ordinal);
 
             var newPlaylists = new List<Playlist>();
             foreach (var meta in userPlaylists)
@@ -38,18 +38,18 @@ public partial class MainWindow
                     Description = meta.Description,
                     ThumbnailUrl = meta.ThumbnailUrl,
                     PublishedAt = meta.PublishedAt,
-                    JsonMetadata = meta.JsonMetadata
+                    JsonMetadata = meta.JsonMetadata,
                 });
             }
 
             // Import Liked Videos playlist if not already in DB
             try
             {
-                var channel = await youtubeApi.GetMyChannelAsync();
+                var channel = await youtubeApi.GetMyChannelAsync().ConfigureAwait(false);
                 if (channel?.LikedVideosPlaylistId is not null
                     && !existingIds.Contains(channel.LikedVideosPlaylistId))
                 {
-                    var likedMeta = await youtubeApi.GetPlaylistMetadataAsync(channel.LikedVideosPlaylistId);
+                    var likedMeta = await youtubeApi.GetPlaylistMetadataAsync(channel.LikedVideosPlaylistId).ConfigureAwait(false);
                     if (likedMeta is not null)
                     {
                         newPlaylists.Add(new Playlist
@@ -63,7 +63,7 @@ public partial class MainWindow
                             Description = likedMeta.Description,
                             ThumbnailUrl = likedMeta.ThumbnailUrl,
                             PublishedAt = likedMeta.PublishedAt,
-                            JsonMetadata = likedMeta.JsonMetadata
+                            JsonMetadata = likedMeta.JsonMetadata,
                         });
                         logger.LogInformation("Imported Liked Videos playlist ({Id})", channel.LikedVideosPlaylistId);
                     }
@@ -76,7 +76,7 @@ public partial class MainWindow
 
             if (newPlaylists.Count > 0)
             {
-                await playlistRepo.AddPlaylistsAsync(newPlaylists);
+                await playlistRepo.AddPlaylistsAsync(newPlaylists).ConfigureAwait(false);
                 logger.LogInformation("Imported {Count} new playlists from YouTube", newPlaylists.Count);
                 global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshPlaylistsAsync().GetAwaiter().GetResult());
             }
@@ -117,9 +117,9 @@ public partial class MainWindow
         ShowSpinner($"Syncing {_selectedPlaylist.Title}...");
         try
         {
-            var result = await Task.Run(() => syncService.SyncPlaylistAsync(_selectedPlaylist));
+            var result = await Task.Run(() => syncService.SyncPlaylistAsync(_selectedPlaylist)).ConfigureAwait(false);
             HideSpinner();
-            await RefreshVideosAsync();
+            await RefreshVideosAsync().ConfigureAwait(false);
             MessageBox.Query("Sync Complete",
                 "+" + result.Added + " added, -" + result.Removed + " removed, ~" + result.Updated + " updated", "OK");
         }
@@ -163,10 +163,10 @@ public partial class MainWindow
         {
             var syncProgress = new Progress<string>(msg =>
                 global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
-            var results = await Task.Run(() => syncService.SyncAllTrackedAsync(_selectedProfile.Id, syncProgress));
+            var results = await Task.Run(() => syncService.SyncAllTrackedAsync(_selectedProfile.Id, syncProgress)).ConfigureAwait(false);
             HideSpinner();
-            await RefreshPlaylistsAsync();
-            await RefreshVideosAsync();
+            await RefreshPlaylistsAsync().ConfigureAwait(false);
+            await RefreshVideosAsync().ConfigureAwait(false);
             _videoFrame.SetNeedsDisplay();
             SetNeedsDisplay();
 

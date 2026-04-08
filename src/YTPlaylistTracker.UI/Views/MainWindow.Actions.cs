@@ -18,7 +18,7 @@ public partial class MainWindow
         var dialog = new Dialog("Add Playlist", 60, 8);
         var label = new Label("YouTube Playlist URL or ID:") { X = 1, Y = 1 };
         var input = new TextField("") { X = 1, Y = 2, Width = Dim.Fill(2) };
-        var okBtn = new Button("Add", true);
+        var okBtn = new Button("Add", is_default: true);
         var cancelBtn = new Button("Cancel");
 
         string? inputValue = null;
@@ -41,12 +41,12 @@ public partial class MainWindow
             ProfileId = _selectedProfile.Id,
             YouTubePlaylistId = playlistId,
             IsManuallyAdded = true,
-            IsTracked = true
+            IsTracked = true,
         };
 
         try
         {
-            var meta = await youtubeApi.GetPlaylistMetadataAsync(playlistId);
+            var meta = await youtubeApi.GetPlaylistMetadataAsync(playlistId).ConfigureAwait(false);
             if (meta is not null)
             {
                 playlist.Title = meta.Title;
@@ -56,8 +56,8 @@ public partial class MainWindow
                 playlist.JsonMetadata = meta.JsonMetadata;
             }
 
-            await playlistRepo.AddAsync(playlist);
-            await RefreshPlaylistsAsync();
+            await playlistRepo.AddAsync(playlist).ConfigureAwait(false);
+            await RefreshPlaylistsAsync().ConfigureAwait(false);
             MessageBox.Query("Success", "Added playlist: " + (playlist.Title ?? playlistId), "OK");
         }
         catch (GoogleApiException ex)
@@ -91,8 +91,8 @@ public partial class MainWindow
         try
         {
             _selectedPlaylist.IsTracked = !_selectedPlaylist.IsTracked;
-            await playlistRepo.UpdateAsync(_selectedPlaylist);
-            await RefreshPlaylistsAsync();
+            await playlistRepo.UpdateAsync(_selectedPlaylist).ConfigureAwait(false);
+            await RefreshPlaylistsAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -108,13 +108,13 @@ public partial class MainWindow
         try
         {
             // If any are untracked, track all. Otherwise untrack all.
-            bool newState = _playlists.Any(p => !p.IsTracked);
+            bool newState = _playlists.Exists(p => !p.IsTracked);
             foreach (var p in _playlists)
             {
                 p.IsTracked = newState;
-                await playlistRepo.UpdateAsync(p);
+                await playlistRepo.UpdateAsync(p).ConfigureAwait(false);
             }
-            await RefreshPlaylistsAsync();
+            await RefreshPlaylistsAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -126,7 +126,7 @@ public partial class MainWindow
     private async void OnToggleDeleted()
     {
         _showDeletedOnly = !_showDeletedOnly;
-        try { await RefreshVideosAsync(); }
+        try { await RefreshVideosAsync().ConfigureAwait(false); }
         catch (Exception ex) { logger.LogError(ex, "Failed to toggle deleted view"); }
     }
 
@@ -136,14 +136,14 @@ public partial class MainWindow
         {
             if (_profileList.HasFocus && _selectedProfile is not null)
             {
-                var playlists = await playlistRepo.GetByProfileAsync(_selectedProfile.Id);
+                var playlists = await playlistRepo.GetByProfileAsync(_selectedProfile.Id).ConfigureAwait(false);
                 var tracked = playlists.Count(p => p.IsTracked);
                 var dialog = DetailDialog.ForProfile(_selectedProfile, playlists.Count, tracked, browser);
                 global::Terminal.Gui.Application.Run(dialog);
             }
             else if (_playlistList.HasFocus && _selectedPlaylist is not null)
             {
-                var videos = await playlistRepo.GetVideosAsync(_selectedPlaylist.Id);
+                var videos = await playlistRepo.GetVideosAsync(_selectedPlaylist.Id).ConfigureAwait(false);
                 var active = videos.Count(v => v.DeletedAt == null);
                 var removed = videos.Count(v => v.DeletedAt != null);
                 var dialog = DetailDialog.ForPlaylist(_selectedPlaylist, active, removed, browser);
@@ -168,12 +168,12 @@ public partial class MainWindow
         string[] options = ["Title", "Channel", "Added Date", "Status"];
         var list = new ListView(options)
         {
-            Width = Dim.Fill(), Height = Dim.Fill()
+            Width = Dim.Fill(), Height = Dim.Fill(),
         };
         list.OpenSelectedItem += (args) =>
         {
             var selected = options[args.Item];
-            if (_sortColumn == selected)
+            if (string.Equals(_sortColumn, selected, StringComparison.Ordinal))
                 _sortAscending = !_sortAscending;
             else
             {
