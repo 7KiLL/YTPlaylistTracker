@@ -47,12 +47,12 @@ public sealed class DetailDialog : Dialog
         if (browser is not null && url is not null)
         {
             var captured = url;
-            var openBtn = new Button() { Text = "Open in Browser" };
+            var openBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Open in Browser" };
             openBtn.Accepting += (sender, e) => browser.OpenUrl(captured);
             AddButton(openBtn);
         }
 
-        var closeBtn = new Button() { Text = "Close", IsDefault = true };
+        var closeBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
     }

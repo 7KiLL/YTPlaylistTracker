@@ -47,8 +47,8 @@ public partial class MainWindow
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "ytpt-removed-videos");
             var pathField = new TextField() { Text = defaultPath, X = 12, Y = 3, Width = Dim.Fill(2) };
-            var okBtn = new Button() { Text = "Export", IsDefault = true };
-            var cancelBtn = new Button() { Text = "Cancel" };
+            var okBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Export", IsDefault = true };
+            var cancelBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Cancel" };
 
             string? resultPath = null;
             int selectedFormat = 0;

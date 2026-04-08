@@ -23,14 +23,14 @@ public sealed class WelcomeDialog : Dialog
         Add(new Label() { Text = "Track YouTube playlists and detect removed videos.", X = 1, Y = 0 });
         Add(new Label() { Text = "How do you want to start?", X = 1, Y = 2 });
 
-        var signInBtn = new Button() { Text = "Sign in with Google", X = 2, Y = 4, IsDefault = true };
+        var signInBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Sign in with Google", X = 2, Y = 4, IsDefault = true };
         signInBtn.Accepting += (sender, e) =>
         {
             Choice = WelcomeChoice.SignIn;
             global::Terminal.Gui.Application.RequestStop();
         };
 
-        var offlineBtn = new Button() { Text = "Start offline", X = 26, Y = 4 };
+        var offlineBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Start offline", X = 26, Y = 4 };
         offlineBtn.Accepting += (sender, e) =>
         {
             Choice = WelcomeChoice.Offline;
