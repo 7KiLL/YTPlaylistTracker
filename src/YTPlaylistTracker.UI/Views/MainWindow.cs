@@ -272,7 +272,7 @@ public partial class MainWindow(
         var names = _profiles.Select(p =>
         {
             var name = p.ChannelTitle ?? p.Name;
-            var prefix = p.IsDefault ? "★ " : "  ";
+            var prefix = p.IsDefault ? "▸ " : "  ";
             var suffix = p.IsOffline && !youtubeApiFactory.IsAuthenticated(p) ? " (offline)" : "";
             return prefix + name + suffix;
         }).ToList();

@@ -17,13 +17,11 @@ public partial class MainWindow
 
         _profileFrame = new FrameView()
         {
-            Title = "Profiles",
             X = 0, Y = 0,
             Width = 18,
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
-            SuperViewRendersLineCanvas = true,
         };
         _profileList = new ListView
         {
@@ -36,14 +34,12 @@ public partial class MainWindow
 
         _playlistFrame = new FrameView()
         {
-            Title = "Playlists",
             X = Pos.Right(_profileFrame),
             Y = 0,
             Width = 28,
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
-            SuperViewRendersLineCanvas = true,
         };
         _playlistList = new ListView
         {
@@ -56,14 +52,12 @@ public partial class MainWindow
 
         _videoFrame = new FrameView()
         {
-            Title = "Videos",
             X = Pos.Right(_playlistFrame),
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
-            SuperViewRendersLineCanvas = true,
         };
         _videoTable = new TableView
         {
