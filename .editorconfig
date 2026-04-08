@@ -24,23 +24,27 @@ dotnet_diagnostic.CA1861.severity = suggestion  # Constant arrays in auto-genera
 # --- Roslyn analyzer rules ---
 [*.{cs,csx}]
 
-# Roslyn: latest-recommended with minimal suppressions
-dotnet_diagnostic.CA1305.severity = suggestion  # IFormatProvider — no i18n needed
-dotnet_diagnostic.CA1848.severity = suggestion  # LoggerMessage delegates — overkill for TUI app
-dotnet_diagnostic.CA1873.severity = suggestion  # Log argument cost — low-throughput app
+# Roslyn: suppress noise, keep what catches real bugs
+dotnet_diagnostic.CA1305.severity = none        # IFormatProvider — no i18n needed
+dotnet_diagnostic.CA1848.severity = none        # LoggerMessage delegates — overkill for TUI app
+dotnet_diagnostic.CA1859.severity = none        # Concrete type for perf — marginal, not worth interface churn
+dotnet_diagnostic.CA1873.severity = none        # Log argument cost — low-throughput app
+
+# Culture-sensitive ToString — TUI displays local data only, no i18n
+dotnet_diagnostic.MA0011.severity = none
+dotnet_diagnostic.MA0075.severity = none
+dotnet_diagnostic.MA0076.severity = none
 
 # Terminal.Gui patterns that can't be avoided
 dotnet_diagnostic.MA0056.severity = suggestion  # Overridable members in ctor — Dialog.Add() requires this
 dotnet_diagnostic.MA0134.severity = suggestion  # Observe async result — fire-and-forget intentional in UI
-dotnet_diagnostic.MA0008.severity = suggestion  # StructLayoutAttribute — not needed for our record structs
+dotnet_diagnostic.MA0008.severity = none        # StructLayoutAttribute — not needed for our record structs
 
-# Meziantou: default all to suggestion (visible in IDE, don't block build).
-# Promote specific rules to warning where they catch real bugs.
+# Meziantou: keep rules that catch real bugs
 dotnet_diagnostic.MA0002.severity = suggestion
 dotnet_diagnostic.MA0004.severity = suggestion
 dotnet_diagnostic.MA0006.severity = suggestion
 dotnet_diagnostic.MA0009.severity = warning    # Regex DoS — real security issue
-dotnet_diagnostic.MA0011.severity = suggestion
 dotnet_diagnostic.MA0016.severity = suggestion
 dotnet_diagnostic.MA0048.severity = suggestion
 dotnet_diagnostic.MA0051.severity = suggestion
