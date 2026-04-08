@@ -15,7 +15,7 @@ public partial class MainWindow
             if (_selectedPlaylist is null)
             {
                 _videoTable.Table = null;
-                _videoFrame.Title = "Videos";
+                _videoStatusLabel.Text = "Videos";
                 return;
             }
 
@@ -105,7 +105,7 @@ public partial class MainWindow
         ApplyColumnStyles(dt);
 
         var syncedLabel = " | synced: " + SyncService.FormatLastSynced(_selectedPlaylist);
-        _videoFrame.Title = _showDeletedOnly
+        _videoStatusLabel.Text = _showDeletedOnly
             ? $"Removed ({title}) [{filtered.Count}]{syncedLabel}"
             : $"Videos ({title}) [{filtered.Count}]{syncedLabel}";
     }
@@ -171,7 +171,7 @@ public partial class MainWindow
                 _selectedProfile = profile;
                 _selectedPlaylist = null;
                 _videoTable.Table = null;
-                _videoFrame.Title = "Videos";
+                _videoStatusLabel.Text = "Videos";
                 await SwitchProfileApiService().ConfigureAwait(false);
                 await RefreshPlaylistsAsync().ConfigureAwait(false);
             }

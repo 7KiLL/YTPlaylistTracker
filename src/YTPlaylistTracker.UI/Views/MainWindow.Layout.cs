@@ -7,6 +7,7 @@ public partial class MainWindow
 {
     private FrameView _profileFrame = null!;
     private FrameView _playlistFrame = null!;
+    private Label _videoStatusLabel = null!;
     private Label _hintBar1 = null!;
     private Label _hintBar2 = null!;
 
@@ -14,6 +15,7 @@ public partial class MainWindow
     {
         Title = "ytpt - YouTube Playlist Tracker";
         BorderStyle = LineStyle.Rounded;
+        Border!.Settings &= ~BorderSettings.Title;
 
         _profileFrame = new FrameView()
         {
@@ -23,6 +25,7 @@ public partial class MainWindow
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
         };
+        _profileFrame.Border!.Settings &= ~BorderSettings.Title;
         _profileList = new ListView
         {
             Width = Dim.Fill(),
@@ -41,6 +44,7 @@ public partial class MainWindow
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
         };
+        _playlistFrame.Border!.Settings &= ~BorderSettings.Title;
         _playlistList = new ListView
         {
             Width = Dim.Fill(),
@@ -59,8 +63,17 @@ public partial class MainWindow
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
         };
+        _videoFrame.Border!.Settings &= ~BorderSettings.Title;
+        _videoStatusLabel = new Label()
+        {
+            Text = "Videos",
+            X = 0, Y = 0,
+            Width = Dim.Fill(),
+            ColorScheme = Theme.Frame,
+        };
         _videoTable = new TableView
         {
+            X = 0, Y = 1,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             FullRowSelect = true,
@@ -77,7 +90,7 @@ public partial class MainWindow
             },
         };
         _videoTable.CellActivated += (sender, e) => ShowDetail();
-        _videoFrame.Add(_videoTable);
+        _videoFrame.Add(_videoStatusLabel, _videoTable);
         _videoTable.DrawComplete += (sender, e) => OnVideoTableResized();
 
         _playlistList.OpenSelectedItem += (sender, e) => ShowDetail();
