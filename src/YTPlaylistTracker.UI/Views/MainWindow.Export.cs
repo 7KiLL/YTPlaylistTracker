@@ -124,7 +124,7 @@ public partial class MainWindow
     internal void PerformUpdateAndRestart(UpdateInfo update)
     {
         ShowSpinner("Downloading update...");
-        Task.Run(async () =>
+        _ = Task.Run(async () =>
         {
             try
             {

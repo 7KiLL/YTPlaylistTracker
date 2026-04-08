@@ -69,8 +69,8 @@ public sealed class DetailDialog : Dialog
 
     public static DetailDialog ForPlaylist(Playlist playlist, int activeCount, int removedCount, ISystemLauncher? browser = null)
     {
-        var fields = new List<(string, string)>
-        {
+        List<(string, string)> fields =
+        [
             ("Title", playlist.Title ?? "-"),
             ("YouTube ID", playlist.YouTubePlaylistId),
             ("URL", "youtube.com/playlist?list=" + playlist.YouTubePlaylistId),
@@ -81,15 +81,15 @@ public sealed class DetailDialog : Dialog
             ("Description", playlist.Description ?? "-"),
             ("Active Videos", activeCount.ToString()),
             ("Removed", removedCount.ToString()),
-        };
+        ];
 
-        return new DetailDialog("Playlist Details", browser, fields.ToArray());
+        return new DetailDialog("Playlist Details", browser, [.. fields]);
     }
 
     public static DetailDialog ForVideo(Video video, ISystemLauncher? browser = null)
     {
-        var fields = new List<(string, string)>
-        {
+        List<(string, string)> fields =
+        [
             ("Title", video.Title),
             ("Channel", video.ChannelTitle ?? "-"),
             ("YouTube ID", video.YouTubeVideoId),
@@ -97,7 +97,7 @@ public sealed class DetailDialog : Dialog
             ("Thumbnail", video.ThumbnailUrl ?? "i.ytimg.com/vi/" + video.YouTubeVideoId + "/mqdefault.jpg"),
             ("Added", video.AddedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-"),
             ("Description", video.Description ?? "-"),
-        };
+        ];
 
         if (video.DeletedAt.HasValue)
         {
@@ -110,6 +110,6 @@ public sealed class DetailDialog : Dialog
             fields.Add(("Status", "Active"));
         }
 
-        return new DetailDialog("Video Details", browser, fields.ToArray());
+        return new DetailDialog("Video Details", browser, [.. fields]);
     }
 }

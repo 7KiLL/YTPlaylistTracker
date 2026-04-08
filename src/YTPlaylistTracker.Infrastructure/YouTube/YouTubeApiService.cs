@@ -29,9 +29,10 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         logger.LogInformation("Authenticating with OAuth2 (file) for profile: {Profile}", profileName);
 
         var tokenDir = Path.Combine(AppSettings.OAuthTokenDir, profileName);
-        await using var stream = new FileStream(clientSecretsPath, FileMode.Open, FileAccess.Read);
-
-        var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+        var stream = new FileStream(clientSecretsPath, FileMode.Open, FileAccess.Read);
+        await using (stream.ConfigureAwait(false))
+        {
+            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
 (await GoogleClientSecrets.FromStreamAsync(stream)).Secrets,
             [YouTubeService.Scope.YoutubeReadonly],
             "user",
@@ -46,6 +47,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
 
         logger.LogInformation("OAuth2 authentication successful");
         return new YouTubeApiService(youtube, logger);
+        }
     }
 
     /// <summary>

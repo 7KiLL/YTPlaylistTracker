@@ -94,10 +94,10 @@ public partial class MainWindow(
     private void StartBackgroundWork()
     {
         var capturedProfile = _selectedProfile;
-        global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _ =>
+        global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _token =>
         {
             ShowSpinner("Fetching playlists...");
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -256,7 +256,7 @@ public partial class MainWindow(
             return prefix + icon + (p.Title ?? p.YouTubePlaylistId);
         }).ToList();
         _suppressEvents = true;
-        await _playlistList.SetSourceAsync(names);
+        await _playlistList.SetSourceAsync(names).ConfigureAwait(false);
         if (prevIdx >= 0 && prevIdx < _playlists.Count)
         {
             _playlistList.SelectedItem = prevIdx;

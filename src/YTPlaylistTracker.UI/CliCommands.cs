@@ -16,95 +16,104 @@ internal static class CliCommands
 {
     internal static async Task RunUi(ServiceProvider sp)
     {
-        using var scope = sp.CreateScope();
-        var s = scope.ServiceProvider;
-        App.Init();
-        Theme.Apply(sp.GetRequiredService<IUserSettings>().ThemeName);
-        try
+        var scope = sp.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
         {
-            var mainWindow = new MainWindow(
-                s.GetRequiredService<IPlaylistRepository>(),
-                s.GetRequiredService<IProfileRepository>(),
-                s.GetRequiredService<ISyncService>(),
-                s.GetRequiredService<IYouTubeApiService>(),
-                sp.GetRequiredService<ISystemLauncher>(),
-                sp.GetRequiredService<IUserSettings>(),
-                sp.GetRequiredService<IUpdateService>(),
-                s.GetRequiredService<ILogger<MainWindow>>());
-            await mainWindow.InitializeAsync().ConfigureAwait(false);
-            App.Run(mainWindow);
-            mainWindow.Dispose();
-        }
-        finally
-        {
-            App.Shutdown();
+            var s = scope.ServiceProvider;
+            App.Init();
+            Theme.Apply(sp.GetRequiredService<IUserSettings>().ThemeName);
+            try
+            {
+                var mainWindow = new MainWindow(
+                    s.GetRequiredService<IPlaylistRepository>(),
+                    s.GetRequiredService<IProfileRepository>(),
+                    s.GetRequiredService<ISyncService>(),
+                    s.GetRequiredService<IYouTubeApiService>(),
+                    sp.GetRequiredService<ISystemLauncher>(),
+                    sp.GetRequiredService<IUserSettings>(),
+                    sp.GetRequiredService<IUpdateService>(),
+                    s.GetRequiredService<ILogger<MainWindow>>());
+                await mainWindow.InitializeAsync().ConfigureAwait(false);
+                App.Run(mainWindow);
+                mainWindow.Dispose();
+            }
+            finally
+            {
+                App.Shutdown();
+            }
         }
     }
 
     internal static async Task RunSync(ServiceProvider sp, string? playlistId)
     {
-        using var scope = sp.CreateScope();
-        var s = scope.ServiceProvider;
-        var syncService = s.GetRequiredService<ISyncService>();
-        var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
-        var profileRepo = s.GetRequiredService<IProfileRepository>();
-
-        var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
-        if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
-
-        // Backfill channel info if not yet populated
-        if (profile.ChannelTitle is null && YouTubeApiService.HasStoredToken("default"))
+        var scope = sp.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
         {
-            try
+            var s = scope.ServiceProvider;
+            var syncService = s.GetRequiredService<ISyncService>();
+            var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
+            var profileRepo = s.GetRequiredService<IProfileRepository>();
+
+            var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
+            if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
+
+            // Backfill channel info if not yet populated
+            if (profile.ChannelTitle is null && YouTubeApiService.HasStoredToken("default"))
             {
-                var ytService = s.GetRequiredService<IYouTubeApiService>();
-                var channel = await ytService.GetMyChannelAsync().ConfigureAwait(false);
-                if (channel is not null)
+                try
                 {
-                    profile.YouTubeChannelId = channel.ChannelId;
-                    profile.ChannelTitle = channel.Title;
-                    profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
-                    await profileRepo.UpdateAsync(profile).ConfigureAwait(false);
+                    var ytService = s.GetRequiredService<IYouTubeApiService>();
+                    var channel = await ytService.GetMyChannelAsync().ConfigureAwait(false);
+                    if (channel is not null)
+                    {
+                        profile.YouTubeChannelId = channel.ChannelId;
+                        profile.ChannelTitle = channel.Title;
+                        profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
+                        await profileRepo.UpdateAsync(profile).ConfigureAwait(false);
+                    }
                 }
+                catch (Exception ex) { Log.Warning(ex, "Failed to fetch channel info during sync"); }
             }
-            catch (Exception ex) { Log.Warning(ex, "Failed to fetch channel info during sync"); }
-        }
 
-        if (playlistId is not null)
-        {
-            var playlists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
-            var playlist = playlists.FirstOrDefault(p => string.Equals(p.YouTubePlaylistId, playlistId, StringComparison.Ordinal));
-            if (playlist is null) { Console.Error.WriteLine($"Playlist {playlistId} not found."); return; }
-            var result = await syncService.SyncPlaylistAsync(playlist).ConfigureAwait(false);
-            Console.WriteLine($"Synced: +{result.Added} added, -{result.Removed} removed, ~{result.Updated} updated");
-        }
-        else
-        {
-            var results = await syncService.SyncAllTrackedAsync(profile.Id).ConfigureAwait(false);
-            foreach (var (id, result) in results)
-                Console.WriteLine($"Playlist {id}: +{result.Added} -{result.Removed} ~{result.Updated}");
-            Console.WriteLine($"Total: {results.Count} playlists synced");
+            if (playlistId is not null)
+            {
+                var playlists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
+                var playlist = playlists.FirstOrDefault(p => string.Equals(p.YouTubePlaylistId, playlistId, StringComparison.Ordinal));
+                if (playlist is null) { Console.Error.WriteLine($"Playlist {playlistId} not found."); return; }
+                var result = await syncService.SyncPlaylistAsync(playlist).ConfigureAwait(false);
+                Console.WriteLine($"Synced: +{result.Added} added, -{result.Removed} removed, ~{result.Updated} updated");
+            }
+            else
+            {
+                var results = await syncService.SyncAllTrackedAsync(profile.Id).ConfigureAwait(false);
+                foreach (var (id, result) in results)
+                    Console.WriteLine($"Playlist {id}: +{result.Added} -{result.Removed} ~{result.Updated}");
+                Console.WriteLine($"Total: {results.Count} playlists synced");
+            }
         }
     }
 
     internal static async Task RunStatus(ServiceProvider sp)
     {
-        using var scope = sp.CreateScope();
-        var s = scope.ServiceProvider;
-        var profileRepo = s.GetRequiredService<IProfileRepository>();
-        var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
-
-        var profiles = await profileRepo.GetAllAsync().ConfigureAwait(false);
-        foreach (var profile in profiles)
+        var scope = sp.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
         {
-            Console.WriteLine($"Profile: {profile.Name}{(profile.IsDefault ? " (default)" : "")}");
-            var playlists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
-            foreach (var pl in playlists)
+            var s = scope.ServiceProvider;
+            var profileRepo = s.GetRequiredService<IProfileRepository>();
+            var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
+
+            var profiles = await profileRepo.GetAllAsync().ConfigureAwait(false);
+            foreach (var profile in profiles)
             {
-                var videos = await playlistRepo.GetVideosAsync(pl.Id).ConfigureAwait(false);
-                var active = videos.Count(v => v.DeletedAt == null);
-                var deleted = videos.Count(v => v.DeletedAt != null);
-                Console.WriteLine($"  {(pl.IsTracked ? "✓" : " ")} {pl.Title ?? pl.YouTubePlaylistId} — {active} active, {deleted} removed, last sync: {pl.LastSyncedAt?.ToString("g") ?? "never"}");
+                Console.WriteLine($"Profile: {profile.Name}{(profile.IsDefault ? " (default)" : "")}");
+                var playlists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
+                foreach (var pl in playlists)
+                {
+                    var videos = await playlistRepo.GetVideosAsync(pl.Id).ConfigureAwait(false);
+                    var active = videos.Count(v => v.DeletedAt == null);
+                    var deleted = videos.Count(v => v.DeletedAt != null);
+                    Console.WriteLine($"  {(pl.IsTracked ? "✓" : " ")} {pl.Title ?? pl.YouTubePlaylistId} — {active} active, {deleted} removed, last sync: {pl.LastSyncedAt?.ToString("g") ?? "never"}");
+                }
             }
         }
     }
@@ -131,55 +140,61 @@ internal static class CliCommands
             Console.WriteLine($"Credentials saved to {AppSettings.CredentialsPath}");
 
             // Enrich profile with channel info
-            using var scope = sp.CreateScope();
-            var profileRepo = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
-            var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
-            if (profile is not null)
+            var scope = sp.CreateAsyncScope();
+            await using (scope.ConfigureAwait(false))
             {
-                var channel = await service.GetMyChannelAsync().ConfigureAwait(false);
-                if (channel is not null)
+                var profileRepo = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
+                var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
+                if (profile is not null)
                 {
-                    profile.YouTubeChannelId = channel.ChannelId;
-                    profile.ChannelTitle = channel.Title;
-                    profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
-                    await profileRepo.UpdateAsync(profile).ConfigureAwait(false);
-                    Console.WriteLine($"Profile updated: {channel.Title}");
+                    var channel = await service.GetMyChannelAsync().ConfigureAwait(false);
+                    if (channel is not null)
+                    {
+                        profile.YouTubeChannelId = channel.ChannelId;
+                        profile.ChannelTitle = channel.Title;
+                        profile.ChannelThumbnailUrl = channel.ThumbnailUrl;
+                        await profileRepo.UpdateAsync(profile).ConfigureAwait(false);
+                        Console.WriteLine($"Profile updated: {channel.Title}");
+                    }
                 }
-            }
 
-            service.Dispose();
+                service.Dispose();
+            }
         }
         catch (Exception ex) { Console.Error.WriteLine($"Login failed: {ex.Message}"); }
     }
 
     internal static async Task RunExport(ServiceProvider sp, string format, string? outputPath)
     {
-        using var scope = sp.CreateScope();
-        var s = scope.ServiceProvider;
-        var profileRepo = s.GetRequiredService<IProfileRepository>();
-        var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
-
-        var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
-        if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
-
-        var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(profile.Id).ConfigureAwait(false);
-        if (removedVideos.Count == 0) { Console.WriteLine("No removed videos found."); return; }
-
-        var entries = ExportService.BuildEntries(removedVideos);
-        var content = format.ToLowerInvariant() switch
+        var scope = sp.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
         {
-            "json" => ExportService.ToJson(entries),
-            _ => ExportService.ToCsv(entries),
-        };
+            var s = scope.ServiceProvider;
+            var profileRepo = s.GetRequiredService<IProfileRepository>();
+            var playlistRepo = s.GetRequiredService<IPlaylistRepository>();
 
-        if (outputPath is not null)
-        {
-            await File.WriteAllTextAsync(outputPath, content).ConfigureAwait(false);
-            Console.WriteLine($"Exported {entries.Count} removed videos to {outputPath}");
-        }
-        else
-        {
-            Console.Write(content);
+            var profile = await profileRepo.GetDefaultAsync().ConfigureAwait(false);
+            if (profile is null) { Console.Error.WriteLine("No profile configured. Run 'ytpt ui' first."); return; }
+
+            var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(profile.Id).ConfigureAwait(false);
+            if (removedVideos.Count == 0) { Console.WriteLine("No removed videos found."); return; }
+
+            var entries = ExportService.BuildEntries(removedVideos);
+            var content = format.ToLowerInvariant() switch
+            {
+                "json" => ExportService.ToJson(entries),
+                _ => ExportService.ToCsv(entries),
+            };
+
+            if (outputPath is not null)
+            {
+                await File.WriteAllTextAsync(outputPath, content).ConfigureAwait(false);
+                Console.WriteLine($"Exported {entries.Count} removed videos to {outputPath}");
+            }
+            else
+            {
+                Console.Write(content);
+            }
         }
     }
 

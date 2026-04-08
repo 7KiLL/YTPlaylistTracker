@@ -73,7 +73,8 @@ services.AddSingleton<IYouTubeApiService>(sp =>
 
 sp = services.BuildServiceProvider();
 
-using (var scope = sp.CreateScope())
+var scope = sp.CreateAsyncScope();
+await using (scope.ConfigureAwait(false))
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -81,7 +82,7 @@ using (var scope = sp.CreateScope())
     var conn = db.Database.GetDbConnection();
     await conn.OpenAsync().ConfigureAwait(false);
     var cmd = conn.CreateCommand();
-        await using (cmd.ConfigureAwait(false))
+    await using (cmd.ConfigureAwait(false))
     {
         cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
         var hasMigrationHistory = await cmd.ExecuteScalarAsync().ConfigureAwait(false) != null;
@@ -209,5 +210,5 @@ catch (Exception ex)
 }
 finally
 {
-    await Log.CloseAndFlushAsync();
+    await Log.CloseAndFlushAsync().ConfigureAwait(false);
 }

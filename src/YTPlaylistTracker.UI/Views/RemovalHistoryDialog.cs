@@ -68,7 +68,7 @@ public sealed class RemovalHistoryDialog : Dialog
                                 ? Theme.StatusRemoved
                                 : null;
                         }
-                    }
+                    },
                 },
             },
         };

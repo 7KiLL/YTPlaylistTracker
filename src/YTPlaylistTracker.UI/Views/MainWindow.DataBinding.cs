@@ -187,7 +187,7 @@ public partial class MainWindow
 
         // Load videos in background to avoid UI stutter on large playlists
         var playlist = _selectedPlaylist;
-        Task.Run(async () =>
+        _ = Task.Run(async () =>
         {
             try
             {

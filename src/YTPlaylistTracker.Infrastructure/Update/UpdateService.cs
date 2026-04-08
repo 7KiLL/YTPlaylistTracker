@@ -118,13 +118,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
         if (!update.IsUpdateAvailable || string.IsNullOrEmpty(update.DownloadUrl))
             throw new UpdateException("No update available.");
 
-        if (!Uri.TryCreate(update.DownloadUrl, UriKind.Absolute, out var downloadUri) ||
-!string.Equals(downloadUri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) ||
-            !downloadUri.Host.EndsWith("github.com", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new UpdateException("Download URL is not a valid GitHub HTTPS URL.",
-                ReleasePageUrl);
-        }
+        ValidateDownloadUrl(update.DownloadUrl);
 
         var tempDir = Path.Combine(Path.GetTempPath(), "ytpt-update-" + Path.GetRandomFileName());
         Directory.CreateDirectory(tempDir);
@@ -136,54 +130,12 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
             logger.LogInformation("[Update] Downloading {Url}", update.DownloadUrl);
 
             using var downloadCts = new CancellationTokenSource(DownloadTimeout);
-            var response = await Http.GetAsync(update.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, downloadCts.Token).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-
-            var fileStream = File.Create(archivePath);
-            await using (fileStream.ConfigureAwait(false))
-            {
-                await response.Content.CopyToAsync(fileStream, downloadCts.Token).ConfigureAwait(false);
-            }
-
-            if (new FileInfo(archivePath).Length == 0)
-                throw new UpdateException("Downloaded file is empty. Try again or download manually.",
-                    ReleasePageUrl);
+            await DownloadArchiveAsync(update.DownloadUrl, archivePath, downloadCts.Token).ConfigureAwait(false);
 
             var binaryName = OperatingSystem.IsWindows() ? "ytpt.exe" : "ytpt";
             var extractedBinaryPath = Path.Combine(tempDir, binaryName);
 
-            if (OperatingSystem.IsWindows())
-            {
-                await using var archive = await ZipFile.OpenReadAsync(archivePath, downloadCts.Token);
-                var fullTargetPath = Path.GetFullPath(tempDir);
-                foreach (var entry in archive.Entries)
-                {
-                    var destinationPath = Path.GetFullPath(Path.Combine(tempDir, entry.FullName));
-                    if (!destinationPath.StartsWith(fullTargetPath + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-                        throw new UpdateException("Archive contains path traversal.", ReleasePageUrl);
-
-                    // Create directory if needed
-                    var dir = Path.GetDirectoryName(destinationPath);
-                    if (dir != null) Directory.CreateDirectory(dir);
-
-                    if (!string.IsNullOrEmpty(entry.Name)) // Skip directories
-                        await entry.ExtractToFileAsync(destinationPath, overwrite: true, cancellationToken: downloadCts.Token);
-                }
-            }
-            else
-            {
-                var gzipStream = new GZipStream(File.OpenRead(archivePath), CompressionMode.Decompress);
-                await using (gzipStream.ConfigureAwait(false))
-                {
-                    await TarFile.ExtractToDirectoryAsync(gzipStream, tempDir, overwriteFiles: true, downloadCts.Token).ConfigureAwait(false);
-
-                // Verify extracted binary is within temp directory
-                var fullTarget = Path.GetFullPath(tempDir);
-                var fullBinary = Path.GetFullPath(extractedBinaryPath);
-                if (!fullBinary.StartsWith(fullTarget + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-                    throw new UpdateException("Extracted binary path is outside temp directory.", ReleasePageUrl);
-                }
-            }
+            await ExtractArchiveAsync(archivePath, tempDir, extractedBinaryPath, downloadCts.Token).ConfigureAwait(false);
 
             if (!File.Exists(extractedBinaryPath))
                 throw new UpdateException(
@@ -195,15 +147,10 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
 
             return await binaryUpdater.ApplyAsync(extractedBinaryPath, currentBinaryPath).ConfigureAwait(false);
         }
-        catch (UpdateException)
-        {
-            throw;
-        }
+        catch (UpdateException) { throw; }
         catch (HttpRequestException ex)
         {
-            throw new UpdateException(
-                $"Failed to download update: {ex.Message}",
-                ReleasePageUrl);
+            throw new UpdateException($"Failed to download update: {ex.Message}", ReleasePageUrl);
         }
         catch (IOException ex)
         {
@@ -211,12 +158,72 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
         }
         finally
         {
-            // On Windows, the update script runs after the process exits and needs
-            // the temp directory. On Unix, we can clean up immediately.
             if (!OperatingSystem.IsWindows())
             {
                 try { Directory.Delete(tempDir, recursive: true); }
                 catch { /* non-fatal */ }
+            }
+        }
+    }
+
+    private static void ValidateDownloadUrl(string downloadUrl)
+    {
+        if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out var downloadUri) ||
+            !string.Equals(downloadUri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) ||
+            !downloadUri.Host.EndsWith("github.com", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new UpdateException("Download URL is not a valid GitHub HTTPS URL.", ReleasePageUrl);
+        }
+    }
+
+    private static async Task DownloadArchiveAsync(string url, string archivePath, CancellationToken ct)
+    {
+        var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        var fileStream = File.Create(archivePath);
+        await using (fileStream.ConfigureAwait(false))
+        {
+            await response.Content.CopyToAsync(fileStream, ct).ConfigureAwait(false);
+        }
+
+        if (new FileInfo(archivePath).Length == 0)
+            throw new UpdateException("Downloaded file is empty. Try again or download manually.", ReleasePageUrl);
+    }
+
+    private static async Task ExtractArchiveAsync(string archivePath, string tempDir, string extractedBinaryPath, CancellationToken ct)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var archive = await ZipFile.OpenReadAsync(archivePath, ct).ConfigureAwait(false);
+            await using (archive.ConfigureAwait(false))
+            {
+                var fullTargetPath = Path.GetFullPath(tempDir);
+                foreach (var entry in archive.Entries)
+                {
+                    var destinationPath = Path.GetFullPath(Path.Combine(tempDir, entry.FullName));
+                    if (!destinationPath.StartsWith(fullTargetPath + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                        throw new UpdateException("Archive contains path traversal.", ReleasePageUrl);
+
+                    var dir = Path.GetDirectoryName(destinationPath);
+                    if (dir != null) Directory.CreateDirectory(dir);
+
+                    if (!string.IsNullOrEmpty(entry.Name))
+                        await entry.ExtractToFileAsync(destinationPath, overwrite: true, cancellationToken: ct);
+                }
+            }
+        }
+        else
+        {
+            var gzipStream = new GZipStream(File.OpenRead(archivePath), CompressionMode.Decompress);
+            await using (gzipStream.ConfigureAwait(false))
+            {
+                await TarFile.ExtractToDirectoryAsync(gzipStream, tempDir, overwriteFiles: true, ct).ConfigureAwait(false);
+
+                var fullTarget = Path.GetFullPath(tempDir);
+                var fullBinary = Path.GetFullPath(extractedBinaryPath);
+                if (!fullBinary.StartsWith(fullTarget + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                    throw new UpdateException("Extracted binary path is outside temp directory.", ReleasePageUrl);
             }
         }
     }

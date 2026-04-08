@@ -144,9 +144,32 @@ public class SyncService(
         var deletedDbVideos = dbVideos.Where(v => v.DeletedAt is not null).ToDictionary(v => v.YouTubeVideoId, StringComparer.Ordinal);
         var activeDbVideoIds = activeDbVideos.ToDictionary(v => v.YouTubeVideoId, StringComparer.Ordinal);
 
-        int added = 0, removed = 0, updated = 0;
+        int removed = await DetectRemovals(activeDbVideos, apiVideoIds).ConfigureAwait(false);
+        var (added, updated, newVideos) = await DetectAdditionsAndUpdates(
+            apiVideoIds, activeDbVideoIds, deletedDbVideos, playlist).ConfigureAwait(false);
 
-        // Detect removals: in DB (active) but not in API
+        if (newVideos.Count > 0)
+        {
+            await playlistRepo.AddVideosAsync(newVideos).ConfigureAwait(false);
+            logger.LogDebug("Batch inserted {Count} new videos for {PlaylistId}", newVideos.Count, playlist.YouTubePlaylistId);
+        }
+
+        UpdatePlaylistMetadata(playlist, metadata);
+        playlist.LastSyncedAt = DateTime.UtcNow;
+        await playlistRepo.UpdateAsync(playlist).ConfigureAwait(false);
+
+        var result = new SyncResult(added, removed, updated);
+        logger.LogInformation("Sync complete for {PlaylistId}: +{Added} -{Removed} ~{Updated}",
+            playlist.YouTubePlaylistId, result.Added, result.Removed, result.Updated);
+
+        return result;
+    }
+
+    private async Task<int> DetectRemovals(
+        List<Video> activeDbVideos,
+        Dictionary<string, YouTubeVideoSnapshot> apiVideoIds)
+    {
+        int removed = 0;
         foreach (var dbVideo in activeDbVideos)
         {
             if (!apiVideoIds.ContainsKey(dbVideo.YouTubeVideoId))
@@ -158,49 +181,23 @@ public class SyncService(
                 removed++;
             }
         }
+        return removed;
+    }
 
-        // Detect additions and re-additions (use deduped dictionary values)
+    private async Task<(int Added, int Updated, List<Video> NewVideos)> DetectAdditionsAndUpdates(
+        Dictionary<string, YouTubeVideoSnapshot> apiVideoIds,
+        Dictionary<string, Video> activeDbVideoIds,
+        Dictionary<string, Video> deletedDbVideos,
+        Playlist playlist)
+    {
+        int added = 0, updated = 0;
         var newVideos = new List<Video>();
+
         foreach (var apiVideo in apiVideoIds.Values)
         {
             if (activeDbVideoIds.TryGetValue(apiVideo.VideoId, out var dbVideo))
             {
-                // Update existing active video if title/channel/metadata changed
-                bool changed = false;
-
-                if (!string.Equals(dbVideo.Title, apiVideo.Title, StringComparison.Ordinal))
-                {
-                    logger.LogDebug("Video title changed: {Old} → {New}", dbVideo.Title, apiVideo.Title);
-                    dbVideo.Title = apiVideo.Title;
-                    changed = true;
-                }
-                if (!string.Equals(dbVideo.ChannelTitle, apiVideo.ChannelTitle, StringComparison.Ordinal))
-                {
-                    dbVideo.ChannelTitle = apiVideo.ChannelTitle;
-                    changed = true;
-                }
-                if (!string.Equals(dbVideo.Description, apiVideo.Description, StringComparison.Ordinal))
-                {
-                    dbVideo.Description = apiVideo.Description;
-                    changed = true;
-                }
-                if (!string.Equals(dbVideo.ThumbnailUrl, apiVideo.ThumbnailUrl, StringComparison.Ordinal))
-                {
-                    dbVideo.ThumbnailUrl = apiVideo.ThumbnailUrl;
-                    changed = true;
-                }
-                if (dbVideo.Position != apiVideo.Position)
-                {
-                    dbVideo.Position = apiVideo.Position;
-                    changed = true;
-                }
-                if (!string.Equals(dbVideo.JsonMetadata, apiVideo.JsonMetadata, StringComparison.Ordinal))
-                {
-                    dbVideo.JsonMetadata = apiVideo.JsonMetadata;
-                    changed = true;
-                }
-
-                if (changed)
+                if (UpdateVideoFields(dbVideo, apiVideo))
                 {
                     await playlistRepo.UpdateVideoAsync(dbVideo).ConfigureAwait(false);
                     updated++;
@@ -208,66 +205,82 @@ public class SyncService(
             }
             else if (deletedDbVideos.TryGetValue(apiVideo.VideoId, out var deletedVideo))
             {
-                // Re-addition: was deleted, now back
                 logger.LogInformation("Video re-added: {VideoId} ({Title})", apiVideo.VideoId, apiVideo.Title);
-                deletedVideo.DeletedAt = null;
-                deletedVideo.RemovalReason = null;
-                deletedVideo.Title = apiVideo.Title;
-                deletedVideo.ChannelTitle = apiVideo.ChannelTitle;
-                deletedVideo.Description = apiVideo.Description;
-                deletedVideo.ThumbnailUrl = apiVideo.ThumbnailUrl;
-                deletedVideo.Position = apiVideo.Position;
-                deletedVideo.JsonMetadata = apiVideo.JsonMetadata;
-                deletedVideo.AddedAt = apiVideo.AddedAt;
+                ReactivateVideo(deletedVideo, apiVideo);
                 await playlistRepo.UpdateVideoAsync(deletedVideo).ConfigureAwait(false);
                 added++;
             }
             else
             {
-                // New video — collect for batch insert
-                newVideos.Add(new Video
-                {
-                    Playlist = playlist,
-                    PlaylistId = playlist.Id,
-                    YouTubeVideoId = apiVideo.VideoId,
-                    Title = apiVideo.Title,
-                    ChannelTitle = apiVideo.ChannelTitle,
-                    AddedAt = apiVideo.AddedAt,
-                    Description = apiVideo.Description,
-                    ThumbnailUrl = apiVideo.ThumbnailUrl,
-                    Position = apiVideo.Position,
-                    JsonMetadata = apiVideo.JsonMetadata,
-                });
+                newVideos.Add(CreateVideo(playlist, apiVideo));
                 added++;
             }
         }
 
-        // Batch insert new videos
-        if (newVideos.Count > 0)
-        {
-            await playlistRepo.AddVideosAsync(newVideos).ConfigureAwait(false);
-            logger.LogDebug("Batch inserted {Count} new videos for {PlaylistId}", newVideos.Count, playlist.YouTubePlaylistId);
-        }
+        return (added, updated, newVideos);
+    }
 
-        // Update playlist metadata
-        if (metadata is not null)
-        {
-            if (playlist.Title is null || !string.Equals(playlist.Title, metadata.Title, StringComparison.Ordinal))
-                playlist.Title = metadata.Title;
-            playlist.Description = metadata.Description;
-            playlist.ThumbnailUrl = metadata.ThumbnailUrl;
-            playlist.PublishedAt = metadata.PublishedAt;
-            if (metadata.JsonMetadata is not null)
-                playlist.JsonMetadata = metadata.JsonMetadata;
-        }
+    private bool UpdateVideoFields(Video video, YouTubeVideoSnapshot snapshot)
+    {
+        var before = (video.Title, video.ChannelTitle, video.Description,
+            video.ThumbnailUrl, video.Position, video.JsonMetadata);
 
-        playlist.LastSyncedAt = DateTime.UtcNow;
-        await playlistRepo.UpdateAsync(playlist).ConfigureAwait(false);
+        video.Title = snapshot.Title;
+        video.ChannelTitle = snapshot.ChannelTitle;
+        video.Description = snapshot.Description;
+        video.ThumbnailUrl = snapshot.ThumbnailUrl;
+        video.Position = snapshot.Position;
+        video.JsonMetadata = snapshot.JsonMetadata;
 
-        var result = new SyncResult(added, removed, updated);
-        logger.LogInformation("Sync complete for {PlaylistId}: +{Added} -{Removed} ~{Updated}",
-            playlist.YouTubePlaylistId, result.Added, result.Removed, result.Updated);
+        var after = (video.Title, video.ChannelTitle, video.Description,
+            video.ThumbnailUrl, video.Position, video.JsonMetadata);
 
-        return result;
+        if (before == after)
+            return false;
+
+        if (before.Title != after.Title)
+            logger.LogDebug("Video title changed: {Old} → {New}", before.Title, after.Title);
+
+        return true;
+    }
+
+    private static void ReactivateVideo(Video video, YouTubeVideoSnapshot apiVideo)
+    {
+        video.DeletedAt = null;
+        video.RemovalReason = null;
+        video.Title = apiVideo.Title;
+        video.ChannelTitle = apiVideo.ChannelTitle;
+        video.Description = apiVideo.Description;
+        video.ThumbnailUrl = apiVideo.ThumbnailUrl;
+        video.Position = apiVideo.Position;
+        video.JsonMetadata = apiVideo.JsonMetadata;
+        video.AddedAt = apiVideo.AddedAt;
+    }
+
+    private static Video CreateVideo(Playlist playlist, YouTubeVideoSnapshot apiVideo) => new()
+    {
+        Playlist = playlist,
+        PlaylistId = playlist.Id,
+        YouTubeVideoId = apiVideo.VideoId,
+        Title = apiVideo.Title,
+        ChannelTitle = apiVideo.ChannelTitle,
+        AddedAt = apiVideo.AddedAt,
+        Description = apiVideo.Description,
+        ThumbnailUrl = apiVideo.ThumbnailUrl,
+        Position = apiVideo.Position,
+        JsonMetadata = apiVideo.JsonMetadata,
+    };
+
+    private static void UpdatePlaylistMetadata(Playlist playlist, YouTubePlaylistSnapshot? metadata)
+    {
+        if (metadata is null) return;
+
+        if (playlist.Title is null || !string.Equals(playlist.Title, metadata.Title, StringComparison.Ordinal))
+            playlist.Title = metadata.Title;
+        playlist.Description = metadata.Description;
+        playlist.ThumbnailUrl = metadata.ThumbnailUrl;
+        playlist.PublishedAt = metadata.PublishedAt;
+        if (metadata.JsonMetadata is not null)
+            playlist.JsonMetadata = metadata.JsonMetadata;
     }
 }

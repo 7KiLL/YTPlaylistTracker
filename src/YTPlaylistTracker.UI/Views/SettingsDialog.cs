@@ -150,7 +150,7 @@ public sealed class SettingsDialog : Dialog
         var updateNowBtn = new Button("Update Now") { X = 2, Y = y };
         updateNowBtn.Clicked += () =>
         {
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
