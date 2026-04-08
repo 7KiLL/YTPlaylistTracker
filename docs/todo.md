@@ -48,7 +48,6 @@
 
 ### P2 — Polish
 - [ ] **Playlist diff view** — Side-by-side before/after comparison when a sync detects changes, making removals easier to review at a glance.
-- [ ] **Light theme toggle** — Add a theme switcher in TUI settings for users who prefer light terminals.
 
 ### P3 — Infrastructure / nice-to-have
 - [ ] **Track video duration & view count** — Fetch `contentDetails`/`statistics` from YouTube API and store in DB for richer historical records (no UI display needed).
