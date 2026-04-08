@@ -96,7 +96,6 @@ public sealed class DetailDialog : Dialog
             ("URL", "youtu.be/" + video.YouTubeVideoId),
             ("Thumbnail", video.ThumbnailUrl ?? "i.ytimg.com/vi/" + video.YouTubeVideoId + "/mqdefault.jpg"),
             ("Added", video.AddedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-"),
-            ("Description", video.Description ?? "-"),
         ];
 
         if (video.DeletedAt.HasValue)
@@ -109,6 +108,8 @@ public sealed class DetailDialog : Dialog
         {
             fields.Add(("Status", "Active"));
         }
+
+        fields.Add(("Description", video.Description ?? "-"));
 
         return new DetailDialog("Video Details", browser, [.. fields]);
     }

@@ -40,6 +40,17 @@ public partial class MainWindow(
     private int _spinnerFrame;
     private static readonly string[] SpinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
     private bool _suppressEvents;
+
+    private IDisposable SuppressEvents()
+    {
+        _suppressEvents = true;
+        return new EventGuard(this);
+    }
+
+    private readonly struct EventGuard(MainWindow owner) : IDisposable
+    {
+        public void Dispose() => owner._suppressEvents = false;
+    }
     private TextField? _searchField;
     private string _searchQuery = "";
     private object? _searchDebounceTimer;
@@ -258,9 +269,12 @@ public partial class MainWindow(
             var suffix = p.IsOffline && !youtubeApiFactory.IsAuthenticated(p) ? " (offline)" : "";
             return prefix + name + suffix;
         }).ToList();
-        _profileList.SetSource(names);
-        var idx = _profiles.IndexOf(_selectedProfile!);
-        if (idx >= 0) _profileList.SelectedItem = idx;
+        using (SuppressEvents())
+        {
+            _profileList.SetSource(names);
+            var idx = _profiles.IndexOf(_selectedProfile!);
+            if (idx >= 0) _profileList.SelectedItem = idx;
+        }
     }
 
     private async Task RefreshPlaylistsAsync()
@@ -282,19 +296,21 @@ public partial class MainWindow(
         }).ToList();
         if (names.Count == 0)
             names.Add("  (no playlists — press S to sync)");
-        _suppressEvents = true;
-        await _playlistList.SetSourceAsync(names).ConfigureAwait(false);
-        if (_playlists.Count == 0) { _selectedPlaylist = null; }
-        else if (prevIdx >= 0 && prevIdx < _playlists.Count)
+        using (SuppressEvents())
         {
-            _playlistList.SelectedItem = prevIdx;
-            _selectedPlaylist = _playlists[prevIdx];
+            await _playlistList.SetSourceAsync(names).ConfigureAwait(false);
+            if (_playlists.Count == 0) { _selectedPlaylist = null; }
+            else if (prevIdx >= 0 && prevIdx < _playlists.Count)
+            {
+                _playlistList.SelectedItem = prevIdx;
+                _selectedPlaylist = _playlists[prevIdx];
+            }
+            else
+            {
+                _playlistList.SelectedItem = 0;
+                _selectedPlaylist = _playlists[0];
+            }
         }
-        else
-        {
-            _playlistList.SelectedItem = 0;
-            _selectedPlaylist = _playlists[0];
-        }
-        _suppressEvents = false;
+        LoadVideosForSelectedPlaylist();
     }
 }

@@ -165,7 +165,9 @@ public partial class MainWindow
         {
             if (e.Item >= 0 && e.Item < _profiles.Count)
             {
-                _selectedProfile = _profiles[e.Item];
+                var profile = _profiles[e.Item];
+                if (profile == _selectedProfile) return;
+                _selectedProfile = profile;
                 _selectedPlaylist = null;
                 _videoTable.Table = null;
                 _videoFrame.Title = "Videos";
@@ -185,9 +187,15 @@ public partial class MainWindow
         if (e.Item < 0 || e.Item >= _playlists.Count) return;
 
         _selectedPlaylist = _playlists[e.Item];
+        LoadVideosForSelectedPlaylist();
+    }
+
+    private void LoadVideosForSelectedPlaylist()
+    {
+        var playlist = _selectedPlaylist;
+        if (playlist is null) return;
 
         // Load videos in background to avoid UI stutter on large playlists
-        var playlist = _selectedPlaylist;
         _ = Task.Run(async () =>
         {
             try
