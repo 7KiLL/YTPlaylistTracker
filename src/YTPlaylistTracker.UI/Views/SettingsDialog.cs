@@ -47,8 +47,9 @@ public sealed class SettingsDialog : Dialog
         var themeNames = ThemePalette.AllNames;
         var currentIdx = Array.IndexOf(themeNames, Theme.CurrentName);
         if (currentIdx < 0) currentIdx = 0;
-        var themeRadio = new BoundedRadioGroup(themeNames)
+        var themeRadio = new RadioGroup()
         {
+            RadioLabels = themeNames,
             X = 12, Y = y,
             SelectedItem = currentIdx,
         };
@@ -221,32 +222,6 @@ public sealed class SettingsDialog : Dialog
                 view.ColorScheme = Colors.ColorSchemes["Dialog"];
 
             ReapplyAllSchemes(view);
-        }
-    }
-
-    private sealed class BoundedRadioGroup : RadioGroup
-    {
-        private static readonly System.Reflection.FieldInfo CursorField =
-            typeof(RadioGroup).GetField("cursor",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-
-        private readonly int _lastIndex;
-
-        public BoundedRadioGroup(string[] radioLabels) : base()
-        {
-            RadioLabels = radioLabels;
-            _lastIndex = radioLabels.Length - 1;
-        }
-
-        private int GetCursor() => (int)CursorField.GetValue(this)!;
-
-        protected override bool OnKeyDown(Key key)
-        {
-            if (key == Key.CursorDown && GetCursor() >= _lastIndex)
-                return false;
-            if (key == Key.CursorUp && GetCursor() <= 0)
-                return false;
-            return base.OnKeyDown(key);
         }
     }
 }
