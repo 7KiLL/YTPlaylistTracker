@@ -49,8 +49,15 @@ public static class Theme
         Colors.ColorSchemes["Menu"] = OnBg(p.Accent, p.Accent, p.AccentBright, p.AccentBright);
         Colors.ColorSchemes["Error"] = OnBg(p.Red, p.Red, p.RedBright, p.RedBright);
 
-        // Frame borders & titles — same bg, accent-colored text
-        Frame = OnBg(p.Accent, p.AccentBright, p.AccentBright, p.AccentBright);
+        // Frame borders & titles — accent text, no inversion on focus
+        Frame = new ColorScheme
+        {
+            Normal = new Terminal.Gui.Attribute(p.Accent, p.Bg),
+            Focus = new Terminal.Gui.Attribute(p.AccentBright, p.Bg),
+            HotNormal = new Terminal.Gui.Attribute(p.AccentBright, p.Bg),
+            HotFocus = new Terminal.Gui.Attribute(p.AccentBright, p.Bg),
+            Disabled = new Terminal.Gui.Attribute(p.FgMuted, p.Bg),
+        };
 
         // Clickable links — accent-colored to match theme
         Link = OnBg(p.AccentBright, p.Accent, p.AccentBright, p.Accent);

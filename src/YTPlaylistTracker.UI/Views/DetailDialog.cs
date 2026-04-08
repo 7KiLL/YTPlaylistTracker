@@ -11,6 +11,7 @@ public sealed class DetailDialog : Dialog
     {
         Title = title;
         Width = 75;
+        BorderStyle = LineStyle.Rounded;
 
         // Separate description from other fields — it gets a scrollable area
         var normalFields = fields.Where(f => !string.Equals(f.label, "Description", StringComparison.Ordinal)).ToArray();

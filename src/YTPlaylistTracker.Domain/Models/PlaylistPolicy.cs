@@ -12,7 +12,7 @@ public record PlaylistPolicy(
     public static PlaylistPolicy For(PlaylistKind kind) => kind switch
     {
         PlaylistKind.Liked => new(
-            Icon: "💜",
+            Icon: "👍",
             SortOrder: 0,
             ManualCooldown: TimeSpan.FromDays(1),
             AllowAutoSync: false,
