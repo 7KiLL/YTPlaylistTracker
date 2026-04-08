@@ -23,6 +23,7 @@ public partial class MainWindow
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
+            SuperViewRendersLineCanvas = true,
         };
         _profileList = new ListView
         {
@@ -42,6 +43,7 @@ public partial class MainWindow
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
+            SuperViewRendersLineCanvas = true,
         };
         _playlistList = new ListView
         {
@@ -61,6 +63,7 @@ public partial class MainWindow
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
+            SuperViewRendersLineCanvas = true,
         };
         _videoTable = new TableView
         {
