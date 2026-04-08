@@ -17,6 +17,7 @@ publish/
 
 # Internal planning docs (not for public)
 docs/superpowers/
+.superpowers/
 
 # Sensitive files
 client_secrets.json

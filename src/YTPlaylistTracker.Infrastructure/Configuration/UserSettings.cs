@@ -12,6 +12,7 @@ public class UserSettings : IUserSettings
     public bool AutoInstallUpdates { get; set; }
     public bool SortTrackedFirst { get; set; } = true;
     public string ThemeName { get; set; } = "";
+    public string YouTubeApiKey { get; set; } = "";
 
     public void Save()
     {
@@ -22,6 +23,7 @@ public class UserSettings : IUserSettings
             autoInstallUpdates = AutoInstallUpdates,
             sortTrackedFirst = SortTrackedFirst,
             themeName = ThemeName,
+            youtubeApiKey = YouTubeApiKey,
         }, JsonOptions);
         File.WriteAllText(SettingsPath, json);
 
@@ -45,6 +47,8 @@ public class UserSettings : IUserSettings
                 settings.SortTrackedFirst = val3.GetBoolean();
             if (doc.RootElement.TryGetProperty("themeName", out var val5))
                 settings.ThemeName = val5.GetString() ?? "";
+            if (doc.RootElement.TryGetProperty("youtubeApiKey", out var val6))
+                settings.YouTubeApiKey = val6.GetString() ?? "";
         }
         catch
         {

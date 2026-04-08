@@ -77,6 +77,27 @@ public sealed class SettingsDialog : Dialog
         Add(new Label($"  Auto-sync cooldown:    {SyncService.AutoSyncCooldown.TotalHours:0}h   (between background syncs)") { X = 1, Y = y });
         y += 2;
 
+        // ── Credentials ──
+        Add(new Label("── Credentials ─────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Theme.SectionHeader });
+        y += 1;
+
+        Add(new Label("  YouTube API Key:") { X = 1, Y = y });
+        var apiKeyField = new TextField(userSettings.YouTubeApiKey) { X = 21, Y = y, Width = 42, Secret = true };
+        apiKeyField.Leave += (_) =>
+        {
+            var newKey = apiKeyField.Text?.ToString()?.Trim() ?? "";
+            if (newKey != userSettings.YouTubeApiKey)
+            {
+                userSettings.YouTubeApiKey = newKey;
+                userSettings.Save();
+                AppSettings.LoadApiKey(newKey);
+            }
+        };
+        Add(apiKeyField);
+        y += 1;
+        Add(new Label("  Optional. Overrides built-in key for offline profiles.") { X = 1, Y = y, ColorScheme = Colors.Menu });
+        y += 2;
+
         // ── Data ──
         Add(new Label("── Data ────────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Theme.SectionHeader });
         y += 1;

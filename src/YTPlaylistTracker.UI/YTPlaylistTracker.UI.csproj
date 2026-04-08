@@ -23,6 +23,7 @@
     <!-- OAuth credentials injected at build time: dotnet build -p:OAuthClientId=xxx -p:OAuthClientSecret=yyy -->
     <OAuthClientId Condition="'$(OAuthClientId)' == ''"></OAuthClientId>
     <OAuthClientSecret Condition="'$(OAuthClientSecret)' == ''"></OAuthClientSecret>
+    <YouTubeApiKey Condition="'$(YouTubeApiKey)' == ''"></YouTubeApiKey>
 
     <!-- Global .NET Tool -->
     <PackAsTool>true</PackAsTool>
@@ -37,7 +38,7 @@
     <PropertyGroup>
       <BuildConstantsFile>$(IntermediateOutputPath)BuildConstants.cs</BuildConstantsFile>
     </PropertyGroup>
-    <WriteLinesToFile File="$(BuildConstantsFile)" Overwrite="true" Lines="&#xA;namespace YTPlaylistTracker.UI%3B&#xA;internal static class BuildConstants&#xA;{&#xA;    public const string OAuthClientId = &quot;$(OAuthClientId)&quot;%3B&#xA;    public const string OAuthClientSecret = &quot;$(OAuthClientSecret)&quot;%3B&#xA;}&#xA;" />
+    <WriteLinesToFile File="$(BuildConstantsFile)" Overwrite="true" Lines="&#xA;namespace YTPlaylistTracker.UI%3B&#xA;internal static class BuildConstants&#xA;{&#xA;    public const string OAuthClientId = &quot;$(OAuthClientId)&quot;%3B&#xA;    public const string OAuthClientSecret = &quot;$(OAuthClientSecret)&quot;%3B&#xA;    public const string YouTubeApiKey = &quot;$(YouTubeApiKey)&quot;%3B&#xA;}&#xA;" />
     <ItemGroup>
       <Compile Include="$(BuildConstantsFile)" />
     </ItemGroup>

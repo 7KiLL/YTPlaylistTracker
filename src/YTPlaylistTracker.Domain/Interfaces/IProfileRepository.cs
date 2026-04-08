@@ -6,6 +6,7 @@ public interface IProfileRepository
 {
     Task<IReadOnlyList<Profile>> GetAllAsync(CancellationToken ct = default);
     Task<Profile?> GetDefaultAsync(CancellationToken ct = default);
+    Task<Profile?> GetByNameAsync(string name, CancellationToken ct = default);
     Task AddAsync(Profile profile, CancellationToken ct = default);
     Task UpdateAsync(Profile profile, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);

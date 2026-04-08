@@ -23,6 +23,9 @@ public static class AppSettings
     public static string OAuthClientId { get; set; } = "";
     public static string OAuthClientSecret { get; set; } = "";
 
+    // YouTube API key — resolved in order: env var → user settings → build-time constant
+    public static string YouTubeApiKey { get; set; } = "";
+
     /// <summary>
     /// Save OAuth client ID/secret to local credentials.json (gitignored, owner-only permissions).
     /// Called during `ytpt login` so subsequent runs don't need env vars.
@@ -74,6 +77,29 @@ public static class AppSettings
         }
 
         // 3. Build-time constants already set via Program.cs → BuildConstants
+    }
+
+    /// <summary>
+    /// Load YouTube API key from all sources (env var → user settings → build-time constant).
+    /// </summary>
+    public static void LoadApiKey(string? userSettingsKey = null)
+    {
+        // 1. Env var takes priority
+        var envKey = Environment.GetEnvironmentVariable("YOUTUBE_API_KEY");
+        if (!string.IsNullOrWhiteSpace(envKey))
+        {
+            YouTubeApiKey = envKey;
+            return;
+        }
+
+        // 2. User settings
+        if (!string.IsNullOrWhiteSpace(userSettingsKey))
+        {
+            YouTubeApiKey = userSettingsKey;
+            return;
+        }
+
+        // 3. Build-time constant already set via Program.cs → BuildConstants
     }
 
     public static void EnsureDirectories()

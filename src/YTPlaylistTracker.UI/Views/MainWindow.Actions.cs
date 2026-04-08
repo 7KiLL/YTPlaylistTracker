@@ -46,7 +46,9 @@ public partial class MainWindow
 
         try
         {
-            var meta = await youtubeApi.GetPlaylistMetadataAsync(playlistId).ConfigureAwait(false);
+            var meta = _youtubeApi is not null
+                ? await _youtubeApi.GetPlaylistMetadataAsync(playlistId).ConfigureAwait(false)
+                : null;
             if (meta is not null)
             {
                 playlist.Title = meta.Title;

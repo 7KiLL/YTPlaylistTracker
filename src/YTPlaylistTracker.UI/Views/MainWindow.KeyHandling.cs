@@ -18,9 +18,11 @@ public partial class MainWindow
         {
             case Key.CursorLeft or Key.h when current > 0:
                 panes[current - 1].SetFocus();
+                UpdateHintBar();
                 return true;
             case Key.CursorRight or Key.l when current >= 0 && current < panes.Length - 1:
                 panes[current + 1].SetFocus();
+                UpdateHintBar();
                 return true;
         }
 
@@ -43,6 +45,25 @@ public partial class MainWindow
                 for (int i = 0; i < 5; i++)
                     focused.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
                 return true;
+        }
+
+        // Profile-specific hotkeys when profile pane has focus
+        if (_profileList.HasFocus)
+        {
+            switch (keyEvent.KeyValue)
+            {
+                case 'n': OnNewProfile(); return true;
+                case 'L': OnToggleLogin(); return true;
+                case 'r': OnRenameProfile(); return true;
+                case 'd': OnSetDefaultProfile(); return true;
+                case 'x': OnDeleteProfile(); return true;
+            }
+
+            if (keyEvent.Key == Key.Enter)
+            {
+                ShowProfileContextMenu();
+                return true;
+            }
         }
 
         // All single-letter keybinds in ProcessHotKey so child views don't eat them
@@ -90,6 +111,7 @@ public partial class MainWindow
                 ? (current + 1) % panes.Length
                 : (current - 1 + panes.Length) % panes.Length;
             panes[next].SetFocus();
+            UpdateHintBar();
             return true;
         }
 

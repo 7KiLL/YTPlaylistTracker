@@ -13,12 +13,13 @@ public partial class MainWindow(
     IPlaylistRepository playlistRepo,
     IProfileRepository profileRepo,
     ISyncService syncService,
-    IYouTubeApiService youtubeApi,
+    IYouTubeApiServiceFactory youtubeApiFactory,
     ISystemLauncher browser,
     IUserSettings userSettings,
     IUpdateService updateService,
     ILogger<MainWindow> logger) : Window("ytpt - YouTube Playlist Tracker")
 {
+    private IYouTubeApiService? _youtubeApi;
     private UpdateInfo? _latestUpdate;
     private bool _updateInstalled;
 
@@ -55,10 +56,20 @@ public partial class MainWindow(
     {
         SetupUI();
         _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
+
+        // First-run: show welcome dialog
         if (_profiles.Count == 0)
         {
-            var defaultProfile = new Profile { Name = "Default", IsDefault = true };
-            await profileRepo.AddAsync(defaultProfile).ConfigureAwait(false);
+            global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _ =>
+            {
+                var welcome = new WelcomeDialog();
+                global::Terminal.Gui.Application.Run(welcome);
+                HandleWelcomeChoice(welcome.Choice);
+                return false;
+            });
+            // Create a temporary default profile so the UI has something to show
+            var tempProfile = new Profile { Name = "Default", IsDefault = true, IsOffline = true };
+            await profileRepo.AddAsync(tempProfile).ConfigureAwait(false);
             _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
         }
 
@@ -70,23 +81,20 @@ public partial class MainWindow(
         if (_selectedPlaylist is not null)
             await RefreshVideosAsync().ConfigureAwait(false);
 
-        // Check if user is logged in before starting background work
-        if (!YouTubeApiService.HasStoredToken("default") &&
-            string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("YOUTUBE_API_KEY")))
+        // Create YouTube API service for the selected profile
+        try
         {
-            global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _ =>
-            {
-                MessageBox.Query("Welcome to ytpt",
-                    "You're not logged in yet.\n\n" +
-                    "To get started, close the app and run:\n" +
-                    "  ytpt login\n\n" +
-                    "This will open your browser to sign in with Google\n" +
-                    "and grant YouTube read-only access.",
-                    "OK");
-                return false;
-            });
-            return;
+            _youtubeApi = await youtubeApiFactory.CreateForProfileAsync(_selectedProfile).ConfigureAwait(false);
         }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to create YouTube API service for profile {Profile}", _selectedProfile.Name);
+        }
+
+        // Skip background work if not authenticated and no API key available
+        if (!youtubeApiFactory.IsAuthenticated(_selectedProfile) &&
+            string.IsNullOrWhiteSpace(Infrastructure.Configuration.AppSettings.YouTubeApiKey))
+            return;
 
         StartBackgroundWork();
     }
@@ -109,11 +117,11 @@ public partial class MainWindow(
                 }
 
                 // Backfill channel info if not yet populated
-                if (capturedProfile is not null && capturedProfile.ChannelTitle is null)
+                if (capturedProfile is not null && capturedProfile.ChannelTitle is null && _youtubeApi is not null)
                 {
                     try
                     {
-                        var channel = await youtubeApi.GetMyChannelAsync().ConfigureAwait(false);
+                        var channel = await _youtubeApi.GetMyChannelAsync().ConfigureAwait(false);
                         if (channel is not null)
                         {
                             capturedProfile.YouTubeChannelId = channel.ChannelId;
@@ -128,10 +136,10 @@ public partial class MainWindow(
 
                 await CheckForUpdatesAsync().ConfigureAwait(false);
 
-                if (userSettings.AutoSyncOnStartup && capturedProfile is not null)
+                if (userSettings.AutoSyncOnStartup && capturedProfile is not null && _youtubeApi is not null)
                     await AutoSyncAllAsync(capturedProfile).ConfigureAwait(false);
                 else
-                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    InvokeUI(() =>
                     {
                         HideSpinner();
                         RefreshPlaylistsAsync().GetAwaiter().GetResult();
@@ -192,19 +200,19 @@ public partial class MainWindow(
 
     private async Task AutoSyncAllAsync(Profile profile)
     {
+        if (_youtubeApi is null) return;
         _isSyncing = true;
-        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-            ShowSpinner("Auto-syncing all playlists..."));
+        global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner("Auto-syncing all playlists..."));
         try
         {
             var syncProgress = new Progress<string>(msg =>
                 global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
-            var results = await syncService.SyncAllTrackedAsync(profile.Id, syncProgress).ConfigureAwait(false);
+            var results = await syncService.SyncAllTrackedAsync(profile.Id, _youtubeApi, syncProgress).ConfigureAwait(false);
             int totalAdded = results.Values.Sum(r => r.Added);
             int totalRemoved = results.Values.Sum(r => r.Removed);
             logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
                 results.Count, totalAdded, totalRemoved);
-            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+            InvokeUI(() =>
             {
                 HideSpinner();
                 RefreshPlaylistsAsync().GetAwaiter().GetResult();
@@ -230,9 +238,26 @@ public partial class MainWindow(
         }
     }
 
+    private void InvokeUI(Action action) =>
+        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+        {
+            try { action(); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "UI callback failed");
+                try { MessageBox.Query("Error", ex.Message, "OK"); } catch { /* last resort */ }
+            }
+        });
+
     private void RefreshProfileList()
     {
-        var names = _profiles.Select(p => p.IsDefault ? "> " + (p.ChannelTitle ?? p.Name) : "  " + (p.ChannelTitle ?? p.Name)).ToList();
+        var names = _profiles.Select(p =>
+        {
+            var name = p.ChannelTitle ?? p.Name;
+            var prefix = p.IsDefault ? "★ " : "  ";
+            var suffix = p.IsOffline && !youtubeApiFactory.IsAuthenticated(p) ? " (offline)" : "";
+            return prefix + name + suffix;
+        }).ToList();
         _profileList.SetSource(names);
         var idx = _profiles.IndexOf(_selectedProfile!);
         if (idx >= 0) _profileList.SelectedItem = idx;
@@ -255,14 +280,17 @@ public partial class MainWindow(
             var icon = policy.Icon is { Length: > 0 } ic ? ic + " " : "";
             return prefix + icon + (p.Title ?? p.YouTubePlaylistId);
         }).ToList();
+        if (names.Count == 0)
+            names.Add("  (no playlists — press S to sync)");
         _suppressEvents = true;
         await _playlistList.SetSourceAsync(names).ConfigureAwait(false);
-        if (prevIdx >= 0 && prevIdx < _playlists.Count)
+        if (_playlists.Count == 0) { _selectedPlaylist = null; }
+        else if (prevIdx >= 0 && prevIdx < _playlists.Count)
         {
             _playlistList.SelectedItem = prevIdx;
             _selectedPlaylist = _playlists[prevIdx];
         }
-        else if (_playlists.Count > 0)
+        else
         {
             _playlistList.SelectedItem = 0;
             _selectedPlaylist = _playlists[0];

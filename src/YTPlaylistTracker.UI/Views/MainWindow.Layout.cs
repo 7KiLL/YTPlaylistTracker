@@ -74,24 +74,34 @@ public partial class MainWindow
         _videoFrame.Add(_videoTable);
         _videoTable.LayoutComplete += (_) => OnVideoTableResized();
 
-        _profileList.OpenSelectedItem += (args) => ShowDetail();
         _playlistList.OpenSelectedItem += (args) => ShowDetail();
 
         Add(_profileFrame, _playlistFrame, _videoFrame);
 
-        _hintBar1 = new Label(" h/l pane │ j/k nav │ J/K fast │ Tab cycle │ Enter detail │ / F3 search │ o F4 sort")
+        _hintBar1 = new Label("")
         {
             Y = Pos.AnchorEnd(2),
             Width = Dim.Fill(),
             ColorScheme = Theme.HintKey,
         };
-        _hintBar2 = new Label(" a F1 add │ t F2 track │ s F5 sync │ S F6 all │ e F7 export │ F8 deleted │ F9 set │ H F11 hist │ ? F12 help │ q quit")
+        _hintBar2 = new Label(" e F7 export │ H F11 hist │ F9 settings │ ? F12 help │ q quit")
         {
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
             ColorScheme = Theme.HintKey,
         };
         Add(_hintBar1, _hintBar2);
+        UpdateHintBar();
+    }
+
+    private void UpdateHintBar()
+    {
+        if (_profileList.HasFocus)
+            _hintBar1.Text = " n new │ L login │ r rename │ d default │ x delete │ Enter menu │ h/l pane │ j/k nav";
+        else if (_playlistList.HasFocus)
+            _hintBar1.Text = " a F1 add │ t F2 track │ T all │ s F5 sync │ S F6 all │ Enter detail │ h/l pane │ j/k nav";
+        else
+            _hintBar1.Text = " / F3 search │ o F4 sort │ F8 deleted │ Enter detail │ h/l pane │ j/k nav";
     }
 
     internal void ReapplyTheme()

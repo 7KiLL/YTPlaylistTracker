@@ -32,7 +32,7 @@ public class SyncServiceIntegrationTests : IDisposable
         _playlistRepo = new PlaylistRepository(_db, repoLogger);
 
         var syncLogger = Substitute.For<ILogger<SyncService>>();
-        _syncService = new SyncService(_youtubeApi, _playlistRepo, syncLogger);
+        _syncService = new SyncService(_playlistRepo, syncLogger);
 
         // Seed
         var profile = new Profile { Name = "Test", IsDefault = true };
@@ -53,7 +53,7 @@ public class SyncServiceIntegrationTests : IDisposable
             new YouTubeVideoSnapshot("v3", "Third Video", "Channel C", 2),
         ]);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(3, result.Added);
         Assert.Equal(0, result.Removed);
@@ -72,7 +72,7 @@ public class SyncServiceIntegrationTests : IDisposable
             new YouTubeVideoSnapshot("v2", "Second", "Ch", 1),
             new YouTubeVideoSnapshot("v3", "Third", "Ch", 2),
         ]);
-        await _syncService.SyncPlaylistAsync(_testPlaylist);
+        await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         // Second sync: v2 is gone
         _youtubeApi.GetPlaylistVideosAsync("PLintegration").Returns([
@@ -81,7 +81,7 @@ public class SyncServiceIntegrationTests : IDisposable
         ]);
         _youtubeApi.CheckVideoStatusAsync("v2").Returns(RemovalReason.Deleted);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Added);
         Assert.Equal(1, result.Removed);
@@ -99,12 +99,12 @@ public class SyncServiceIntegrationTests : IDisposable
         _youtubeApi.GetPlaylistVideosAsync("PLintegration").Returns([
             new YouTubeVideoSnapshot("v1", "Video", "Ch", 0),
         ]);
-        await _syncService.SyncPlaylistAsync(_testPlaylist);
+        await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         // Second sync: removed
         _youtubeApi.GetPlaylistVideosAsync("PLintegration").Returns(new List<YouTubeVideoSnapshot>());
         _youtubeApi.CheckVideoStatusAsync("v1").Returns(RemovalReason.RemovedByOwner);
-        await _syncService.SyncPlaylistAsync(_testPlaylist);
+        await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         var deleted = await _playlistRepo.GetDeletedVideosAsync(_testPlaylist.Id);
         Assert.Single(deleted);
@@ -113,7 +113,7 @@ public class SyncServiceIntegrationTests : IDisposable
         _youtubeApi.GetPlaylistVideosAsync("PLintegration").Returns([
             new YouTubeVideoSnapshot("v1", "Video Restored", "Ch", 0),
         ]);
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(1, result.Added);
         var allVideos = await _playlistRepo.GetVideosAsync(_testPlaylist.Id);

@@ -19,6 +19,9 @@ AppSettings.OAuthClientId = BuildConstants.OAuthClientId;
 AppSettings.OAuthClientSecret = BuildConstants.OAuthClientSecret;
 AppSettings.EnsureDirectories();
 AppSettings.LoadCredentials();
+var userSettingsBootstrap = UserSettings.Load();
+AppSettings.LoadApiKey(userSettingsBootstrap.YouTubeApiKey);
+AppSettings.YouTubeApiKey = string.IsNullOrWhiteSpace(AppSettings.YouTubeApiKey) ? BuildConstants.YouTubeApiKey : AppSettings.YouTubeApiKey;
 
 var isVerbose = args.Contains("--verbose", StringComparer.Ordinal) || args.Contains("-v", StringComparer.Ordinal);
 Log.Logger = new LoggerConfiguration()
@@ -29,6 +32,18 @@ Log.Logger = new LoggerConfiguration()
         retainedFileCountLimit: 7,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
+
+// Global exception handlers — catch crashes that bypass all other try-catch
+AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+{
+    Log.Fatal(e.ExceptionObject as Exception, "UNHANDLED EXCEPTION (AppDomain)");
+    Log.CloseAndFlush();
+};
+TaskScheduler.UnobservedTaskException += (_, e) =>
+{
+    Log.Error(e.Exception, "UNOBSERVED TASK EXCEPTION");
+    e.SetObserved();
+};
 
 ServiceProvider sp = null!;
 try
@@ -50,26 +65,7 @@ services.AddSingleton<IUpdateService>(sp =>
     new UpdateService(
         sp.GetRequiredService<IBinaryUpdater>(),
         sp.GetRequiredService<ILogger<UpdateService>>()));
-IYouTubeApiService CreateYouTubeApiService(IServiceProvider sp)
-{
-    var logger = sp.GetRequiredService<ILogger<YouTubeApiService>>();
-    if (YouTubeApiService.HasStoredToken("default"))
-        return YouTubeApiService.CreateWithEmbeddedOAuthAsync("default", logger).GetAwaiter().GetResult();
-    var credPath = Environment.GetEnvironmentVariable("YTPT_OAUTH_CREDENTIALS")
-                   ?? Path.Combine(AppSettings.AppDataDir, "client_secrets.json");
-    if (File.Exists(credPath))
-        return YouTubeApiService.CreateWithOAuthAsync(credPath, "default", logger).GetAwaiter().GetResult();
-    var apiKey = Environment.GetEnvironmentVariable("YOUTUBE_API_KEY");
-    if (!string.IsNullOrWhiteSpace(apiKey))
-        return YouTubeApiService.CreateWithApiKey(apiKey, logger);
-    Log.Warning("Not logged in. Run 'ytpt login' or set YOUTUBE_API_KEY.");
-    return YouTubeApiService.CreateWithApiKey("", logger);
-}
-
-services.AddSingleton<Lazy<IYouTubeApiService>>(sp =>
-    new Lazy<IYouTubeApiService>(() => CreateYouTubeApiService(sp)));
-services.AddSingleton<IYouTubeApiService>(sp =>
-    new LazyYouTubeApiProxy(sp.GetRequiredService<Lazy<IYouTubeApiService>>()));
+services.AddSingleton<IYouTubeApiServiceFactory, YouTubeApiServiceFactory>();
 
 sp = services.BuildServiceProvider();
 
@@ -122,18 +118,21 @@ var root = new CliRootCommand("ytpt — YouTube Playlist Tracker");
 var verboseOpt = new System.CommandLine.Option<bool>("--verbose", "-v") { Description = "Enable debug logging" };
 root.Add(verboseOpt);
 
+var profileOpt = new System.CommandLine.Option<string?>("--profile", "-p") { Description = "Profile name (default: default profile)" };
+
 // ui
 var uiCmd = new CliCommand("ui", "Launch the interactive TUI");
 uiCmd.SetAction(async (_, _) => await CliCommands.RunUi(sp).ConfigureAwait(false));
 root.Add(uiCmd);
 
-// sync [playlist-id]
+// sync [playlist-id] [--profile]
 var syncArg = new System.CommandLine.Argument<string?>("playlist-id") { Description = "Playlist ID. Omit to sync all.", Arity = ArgumentArity.ZeroOrOne };
-var syncCmd = new CliCommand("sync", "Sync playlists from YouTube") { syncArg };
+var syncCmd = new CliCommand("sync", "Sync playlists from YouTube") { syncArg, profileOpt };
 syncCmd.SetAction(async (result, _) =>
 {
     var playlistId = result.GetValue(syncArg);
-    await CliCommands.RunSync(sp, playlistId).ConfigureAwait(false);
+    var profileName = result.GetValue(profileOpt);
+    await CliCommands.RunSync(sp, playlistId, profileName).ConfigureAwait(false);
 });
 root.Add(syncCmd);
 
@@ -142,14 +141,23 @@ var statusCmd = new CliCommand("status", "Show tracking summary");
 statusCmd.SetAction(async (_, _) => await CliCommands.RunStatus(sp).ConfigureAwait(false));
 root.Add(statusCmd);
 
-// login
-var loginCmd = new CliCommand("login", "Sign in with Google (opens browser)");
-loginCmd.SetAction(async (_, _) => await CliCommands.RunLogin(sp).ConfigureAwait(false));
+// login [--profile]
+var loginCmd = new CliCommand("login", "Sign in with Google (opens browser)") { profileOpt };
+loginCmd.SetAction(async (result, _) =>
+{
+    var profileName = result.GetValue(profileOpt);
+    await CliCommands.RunLogin(sp, profileName).ConfigureAwait(false);
+});
 root.Add(loginCmd);
 
-// logout
-var logoutCmd = new CliCommand("logout", "Sign out and remove stored tokens");
-logoutCmd.SetAction((_, _) => { CliCommands.RunLogout(); return Task.CompletedTask; });
+// logout [--profile]
+var logoutCmd = new CliCommand("logout", "Sign out and remove stored tokens") { profileOpt };
+logoutCmd.SetAction((result, _) =>
+{
+    var profileName = result.GetValue(profileOpt);
+    CliCommands.RunLogout(sp, profileName);
+    return Task.CompletedTask;
+});
 root.Add(logoutCmd);
 
 // reset
@@ -180,13 +188,14 @@ root.Add(resetCmd);
 // export [--format csv|json] [--output path]
 var exportFormatOpt = new System.CommandLine.Option<string>("--format", "-f") { Description = "Output format: csv or json (default: csv)" };
 var exportOutputOpt = new System.CommandLine.Option<string?>("--output", "-o") { Description = "Output file path (default: stdout)" };
-var exportCmd = new CliCommand("export", "Export removed videos report") { exportFormatOpt, exportOutputOpt };
+var exportCmd = new CliCommand("export", "Export removed videos report") { exportFormatOpt, exportOutputOpt, profileOpt };
 exportCmd.SetAction(async (result, _) =>
 {
     var format = result.GetValue(exportFormatOpt);
     if (string.IsNullOrEmpty(format)) format = "csv";
     var output = result.GetValue(exportOutputOpt);
-    await CliCommands.RunExport(sp, format, output).ConfigureAwait(false);
+    var profileName = result.GetValue(profileOpt);
+    await CliCommands.RunExport(sp, format, output, profileName).ConfigureAwait(false);
 });
 root.Add(exportCmd);
 

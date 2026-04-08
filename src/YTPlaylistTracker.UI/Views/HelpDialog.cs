@@ -4,15 +4,22 @@ namespace YTPlaylistTracker.UI.Views;
 
 public sealed class HelpDialog : Dialog
 {
-    public HelpDialog() : base("Keybindings", 52, 26)
+    public HelpDialog() : base("Keybindings", 52, 32)
     {
         (string, string)[] keys =
         [
+            ("── Navigation ──", ""),
             ("h / l / Left / Right", "Switch panes"),
             ("j / k / Up / Down", "Navigate within pane"),
             ("J / K / Shift+Up/Down", "Fast scroll (5 rows)"),
             ("Tab / Shift+Tab", "Cycle panes"),
-            ("Enter", "View details"),
+            ("Enter", "Details / profile menu"),
+            ("── Profiles (when focused) ──", ""),
+            ("n", "New profile"),
+            ("L", "Login / Logout"),
+            ("r", "Rename profile"),
+            ("d", "Set as default"),
+            ("x", "Delete profile"),
             ("/ / F3", "Search / filter videos"),
             ("o / F4", "Sort videos"),
             ("a / F1", "Add playlist by URL"),

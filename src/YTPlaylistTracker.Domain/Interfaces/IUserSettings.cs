@@ -6,5 +6,6 @@ public interface IUserSettings
     bool AutoInstallUpdates { get; set; }
     bool SortTrackedFirst { get; set; }
     string ThemeName { get; set; }
+    string YouTubeApiKey { get; set; }
     void Save();
 }

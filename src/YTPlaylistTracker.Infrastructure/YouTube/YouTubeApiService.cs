@@ -21,6 +21,9 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         _logger = logger;
     }
 
+    internal static YouTubeApiService CreateFromExisting(YouTubeService youtube, ILogger<YouTubeApiService> logger) =>
+        new(youtube, logger);
+
     public static async Task<YouTubeApiService> CreateWithOAuthAsync(
         string clientSecretsPath,
         string profileName,
@@ -125,10 +128,11 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             request.PageToken = nextPageToken;
 
             var response = await request.ExecuteAsync().ConfigureAwait(false);
+            var items = response.Items ?? [];
             _logger.LogInformation("[API] <- {Count} items, nextPage={Next}",
-                response.Items.Count, response.NextPageToken ?? "(none)");
+                items.Count, response.NextPageToken ?? "(none)");
 
-            foreach (var item in response.Items)
+            foreach (var item in items)
             {
                 if (item.Snippet.Title is "Deleted video" or "Private video")
                 {
@@ -172,7 +176,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         request.Id = playlistId;
 
         var response = await request.ExecuteAsync().ConfigureAwait(false);
-        var item = response.Items.FirstOrDefault();
+        var item = response.Items?.FirstOrDefault();
         if (item is null)
         {
             _logger.LogWarning("Playlist not found: {PlaylistId}", playlistId);
@@ -208,7 +212,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             request.PageToken = nextPageToken;
 
             var response = await request.ExecuteAsync().ConfigureAwait(false);
-            foreach (var item in response.Items)
+            foreach (var item in response.Items ?? [])
             {
                 string? json = null;
                 try { json = Newtonsoft.Json.JsonConvert.SerializeObject(item.Snippet); }
@@ -239,7 +243,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         request.Mine = true;
 
         var response = await request.ExecuteAsync().ConfigureAwait(false);
-        var item = response.Items.FirstOrDefault();
+        var item = response.Items?.FirstOrDefault();
         if (item is null)
         {
             _logger.LogWarning("[API] No channel found for authenticated user");
@@ -263,7 +267,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
             request.Id = videoId;
             var response = await request.ExecuteAsync().ConfigureAwait(false);
 
-            if (response.Items.Count == 0)
+            if (response.Items is null || response.Items.Count == 0)
                 return RemovalReason.Deleted;
 
             return response.Items[0].Status.PrivacyStatus switch

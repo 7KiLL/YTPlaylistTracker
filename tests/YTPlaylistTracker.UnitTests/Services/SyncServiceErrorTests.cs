@@ -28,7 +28,7 @@ public class SyncServiceErrorTests
     public SyncServiceErrorTests()
     {
         var logger = Substitute.For<ILogger<SyncService>>();
-        _syncService = new SyncService(_youtubeApi, _playlistRepo, logger);
+        _syncService = new SyncService(_playlistRepo, logger);
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class SyncServiceErrorTests
             .ThrowsAsync(new HttpRequestException("Network error"));
 
         await Assert.ThrowsAsync<HttpRequestException>(
-            () => _syncService.SyncPlaylistAsync(_testPlaylist));
+            () => _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class SyncServiceErrorTests
         _playlistRepo.GetVideosAsync(2).Returns(new List<Video>());
         _youtubeApi.GetPlaylistMetadataAsync("PL2").Returns((Domain.Models.YouTubePlaylistSnapshot?)null);
 
-        var results = await _syncService.SyncAllTrackedAsync(1);
+        var results = await _syncService.SyncAllTrackedAsync(1, _youtubeApi);
 
         Assert.Equal(2, results.Count);
         Assert.Equal(0, results[1].Added); // Failed playlist gets zero result
@@ -75,7 +75,7 @@ public class SyncServiceErrorTests
         _youtubeApi.GetPlaylistVideosAsync("PL1")
             .ThrowsAsync(new InvalidOperationException("Auth failed"));
 
-        var results = await _syncService.SyncAllTrackedAsync(1);
+        var results = await _syncService.SyncAllTrackedAsync(1, _youtubeApi);
 
         Assert.Single(results);
         Assert.Equal(0, results[1].Added);

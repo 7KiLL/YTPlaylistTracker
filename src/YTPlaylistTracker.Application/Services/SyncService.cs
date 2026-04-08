@@ -7,7 +7,6 @@ using YTPlaylistTracker.Domain.Models;
 namespace YTPlaylistTracker.Application.Services;
 
 public class SyncService(
-    IYouTubeApiService youtube,
     IPlaylistRepository playlistRepo,
     ILogger<SyncService> logger) : ISyncService
 {
@@ -44,17 +43,17 @@ public class SyncService(
 
     // --- Sync operations ---
 
-    public async Task<SyncResult> SyncPlaylistAsync(Playlist playlist)
+    public async Task<SyncResult> SyncPlaylistAsync(Playlist playlist, IYouTubeApiService youtube)
     {
         logger.LogInformation("Syncing playlist: {PlaylistId} ({Title})", playlist.YouTubePlaylistId, playlist.Title);
 
         var apiVideos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
         var metadata = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
 
-        return await ApplyPlaylistDiff(playlist, apiVideos, metadata).ConfigureAwait(false);
+        return await ApplyPlaylistDiff(playlist, apiVideos, metadata, youtube).ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyDictionary<int, SyncResult>> SyncAllTrackedAsync(int profileId, IProgress<string>? progress = null)
+    public async Task<IReadOnlyDictionary<int, SyncResult>> SyncAllTrackedAsync(int profileId, IYouTubeApiService youtube, IProgress<string>? progress = null)
     {
         var allPlaylists = await playlistRepo.GetTrackedByProfileAsync(profileId).ConfigureAwait(false);
 
@@ -116,7 +115,7 @@ public class SyncService(
 
             try
             {
-                results[playlist.Id] = await ApplyPlaylistDiff(playlist, data.Videos, data.Meta).ConfigureAwait(false);
+                results[playlist.Id] = await ApplyPlaylistDiff(playlist, data.Videos, data.Meta, youtube).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -132,7 +131,8 @@ public class SyncService(
     private async Task<SyncResult> ApplyPlaylistDiff(
         Playlist playlist,
         IReadOnlyList<YouTubeVideoSnapshot> apiVideos,
-        YouTubePlaylistSnapshot? metadata)
+        YouTubePlaylistSnapshot? metadata,
+        IYouTubeApiService youtube)
     {
         // YouTube allows duplicate videos in a playlist — deduplicate, keeping first occurrence
         var apiVideoIds = apiVideos.DistinctBy(v => v.VideoId).ToDictionary(v => v.VideoId, StringComparer.Ordinal);
@@ -144,7 +144,7 @@ public class SyncService(
         var deletedDbVideos = dbVideos.Where(v => v.DeletedAt is not null).ToDictionary(v => v.YouTubeVideoId, StringComparer.Ordinal);
         var activeDbVideoIds = activeDbVideos.ToDictionary(v => v.YouTubeVideoId, StringComparer.Ordinal);
 
-        int removed = await DetectRemovals(activeDbVideos, apiVideoIds).ConfigureAwait(false);
+        int removed = await DetectRemovals(activeDbVideos, apiVideoIds, youtube).ConfigureAwait(false);
         var (added, updated, newVideos) = await DetectAdditionsAndUpdates(
             apiVideoIds, activeDbVideoIds, deletedDbVideos, playlist).ConfigureAwait(false);
 
@@ -167,7 +167,8 @@ public class SyncService(
 
     private async Task<int> DetectRemovals(
         List<Video> activeDbVideos,
-        Dictionary<string, YouTubeVideoSnapshot> apiVideoIds)
+        Dictionary<string, YouTubeVideoSnapshot> apiVideoIds,
+        IYouTubeApiService youtube)
     {
         int removed = 0;
         foreach (var dbVideo in activeDbVideos)

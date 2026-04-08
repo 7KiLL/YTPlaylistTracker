@@ -8,6 +8,7 @@ public class Profile
     public string? ChannelTitle { get; set; }
     public string? ChannelThumbnailUrl { get; set; }
     public string? OAuthTokenPath { get; set; }
+    public bool IsOffline { get; set; }
     public bool IsDefault { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

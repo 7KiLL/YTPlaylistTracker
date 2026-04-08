@@ -169,6 +169,7 @@ public partial class MainWindow
                 _selectedPlaylist = null;
                 _videoTable.Table = null;
                 _videoFrame.Title = "Videos";
+                await SwitchProfileApiService().ConfigureAwait(false);
                 await RefreshPlaylistsAsync().ConfigureAwait(false);
             }
         }

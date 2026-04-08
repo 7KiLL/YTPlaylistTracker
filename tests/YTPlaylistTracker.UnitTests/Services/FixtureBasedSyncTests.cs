@@ -32,7 +32,7 @@ public class FixtureBasedSyncTests
     public FixtureBasedSyncTests()
     {
         var logger = Substitute.For<ILogger<SyncService>>();
-        _syncService = new SyncService(_youtubeApi, _playlistRepo, logger);
+        _syncService = new SyncService(_playlistRepo, logger);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public class FixtureBasedSyncTests
         _youtubeApi.GetPlaylistVideosAsync(TestPlaylistId).Returns(fixtureVideos);
         _playlistRepo.GetVideosAsync(1).Returns(new List<Video>());
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(fixtureVideos.Count, result.Added);
         Assert.Equal(0, result.Removed);
@@ -61,7 +61,7 @@ public class FixtureBasedSyncTests
         _youtubeApi.GetPlaylistVideosAsync(TestPlaylistId).Returns(videos);
         _playlistRepo.GetVideosAsync(1).Returns(new List<Video>());
 
-        await _syncService.SyncPlaylistAsync(_testPlaylist);
+        await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         await _playlistRepo.Received(1).AddVideosAsync(Arg.Is<IEnumerable<Video>>(vs => vs.Any(v => v.AddedAt == now)));
     }
@@ -84,7 +84,7 @@ public class FixtureBasedSyncTests
         }).ToList();
         _playlistRepo.GetVideosAsync(1).Returns(dbVideos);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Added);
         Assert.Equal(0, result.Removed);
@@ -112,7 +112,7 @@ public class FixtureBasedSyncTests
         _youtubeApi.GetPlaylistVideosAsync(TestPlaylistId).Returns(apiVideos);
         _youtubeApi.CheckVideoStatusAsync(fixtureVideos[0].VideoId).Returns(RemovalReason.Deleted);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Added);
         Assert.Equal(1, result.Removed);
@@ -138,7 +138,7 @@ public class FixtureBasedSyncTests
         _playlistRepo.GetVideosAsync(1).Returns(dbVideos);
         _youtubeApi.GetPlaylistVideosAsync(TestPlaylistId).Returns(fixtureVideos);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(1, result.Added);
         Assert.Equal(0, result.Removed);
@@ -163,7 +163,7 @@ public class FixtureBasedSyncTests
         _playlistRepo.GetVideosAsync(1).Returns(dbVideos);
         _youtubeApi.GetPlaylistVideosAsync(TestPlaylistId).Returns(fixtureVideos);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Added);
         Assert.Equal(0, result.Removed);

@@ -13,11 +13,11 @@ public partial class MainWindow
 {
     private async Task FetchAndImportAllPlaylists(Profile? profile)
     {
-        if (profile is null) return;
+        if (profile is null || _youtubeApi is null) return;
 
         try
         {
-            var userPlaylists = await youtubeApi.GetUserPlaylistsAsync().ConfigureAwait(false);
+            var userPlaylists = await _youtubeApi.GetUserPlaylistsAsync().ConfigureAwait(false);
 
             var dbPlaylists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
             var existingIds = dbPlaylists.Select(p => p.YouTubePlaylistId).ToHashSet(StringComparer.Ordinal);
@@ -45,11 +45,11 @@ public partial class MainWindow
             // Import Liked Videos playlist if not already in DB
             try
             {
-                var channel = await youtubeApi.GetMyChannelAsync().ConfigureAwait(false);
+                var channel = await _youtubeApi!.GetMyChannelAsync().ConfigureAwait(false);
                 if (channel?.LikedVideosPlaylistId is not null
                     && !existingIds.Contains(channel.LikedVideosPlaylistId))
                 {
-                    var likedMeta = await youtubeApi.GetPlaylistMetadataAsync(channel.LikedVideosPlaylistId).ConfigureAwait(false);
+                    var likedMeta = await _youtubeApi!.GetPlaylistMetadataAsync(channel.LikedVideosPlaylistId).ConfigureAwait(false);
                     if (likedMeta is not null)
                     {
                         newPlaylists.Add(new Playlist
@@ -78,7 +78,7 @@ public partial class MainWindow
             {
                 await playlistRepo.AddPlaylistsAsync(newPlaylists).ConfigureAwait(false);
                 logger.LogInformation("Imported {Count} new playlists from YouTube", newPlaylists.Count);
-                global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshPlaylistsAsync().GetAwaiter().GetResult());
+                InvokeUI(() => RefreshPlaylistsAsync().GetAwaiter().GetResult());
             }
         }
         catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
@@ -91,9 +91,14 @@ public partial class MainWindow
         }
     }
 
-    private async void OnSync()
+    private void OnSync()
     {
         if (_isSyncing) return;
+        if (_youtubeApi is null)
+        {
+            MessageBox.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
+            return;
+        }
         if (_selectedPlaylist is null)
         {
             MessageBox.Query("Info", "Select a playlist first.", "OK");
@@ -114,94 +119,79 @@ public partial class MainWindow
         }
 
         _isSyncing = true;
-        ShowSpinner($"Syncing {_selectedPlaylist.Title}...");
-        try
+        var playlist = _selectedPlaylist;
+        var youtube = _youtubeApi;
+        ShowSpinner($"Syncing {playlist.Title}...");
+
+        _ = Task.Run(async () =>
         {
-            var result = await Task.Run(() => syncService.SyncPlaylistAsync(_selectedPlaylist)).ConfigureAwait(false);
-            HideSpinner();
-            await RefreshVideosAsync().ConfigureAwait(false);
-            MessageBox.Query("Sync Complete",
-                "+" + result.Added + " added, -" + result.Removed + " removed, ~" + result.Updated + " updated", "OK");
-        }
-        catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
-        {
-            HideSpinner();
-            logger.LogError(ex, "YouTube API quota or auth error during sync");
-            MessageBox.Query("YouTube Error", "API quota exceeded or auth expired.\nTry: ytpt login", "OK");
-        }
-        catch (GoogleApiException ex)
-        {
-            HideSpinner();
-            logger.LogError(ex, "YouTube API error during sync");
-            MessageBox.Query("YouTube Error", "Sync failed: " + ex.Message, "OK");
-        }
-        catch (HttpRequestException ex)
-        {
-            HideSpinner();
-            logger.LogError(ex, "Network error during sync");
-            MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
-        }
-        catch (Exception ex)
-        {
-            HideSpinner();
-            logger.LogError(ex, "Sync failed");
-            MessageBox.Query("Error", "Sync failed: " + ex.Message, "OK");
-        }
-        finally
-        {
-            _isSyncing = false;
-        }
+            try
+            {
+                var result = await syncService.SyncPlaylistAsync(playlist, youtube).ConfigureAwait(false);
+                InvokeUI(() =>
+                {
+                    HideSpinner();
+                    RefreshVideosAsync().GetAwaiter().GetResult();
+                    MessageBox.Query("Sync Complete",
+                        "+" + result.Added + " added, -" + result.Removed + " removed, ~" + result.Updated + " updated", "OK");
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Sync failed for {PlaylistId}", playlist.YouTubePlaylistId);
+                InvokeUI(() =>
+                {
+                    HideSpinner();
+                    MessageBox.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
+                });
+            }
+            finally { _isSyncing = false; }
+        });
     }
 
-    private async void OnSyncAll()
+    private void OnSyncAll()
     {
         if (_isSyncing || _selectedProfile is null) return;
+        if (_youtubeApi is null)
+        {
+            MessageBox.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
+            return;
+        }
 
         _isSyncing = true;
+        var profileId = _selectedProfile.Id;
+        var youtube = _youtubeApi;
         ShowSpinner("Syncing all playlists...");
-        try
-        {
-            var syncProgress = new Progress<string>(msg =>
-                global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
-            var results = await Task.Run(() => syncService.SyncAllTrackedAsync(_selectedProfile.Id, syncProgress)).ConfigureAwait(false);
-            HideSpinner();
-            await RefreshPlaylistsAsync().ConfigureAwait(false);
-            await RefreshVideosAsync().ConfigureAwait(false);
-            _videoFrame.SetNeedsDisplay();
-            SetNeedsDisplay();
 
-            int totalAdded = results.Values.Sum(r => r.Added);
-            int totalRemoved = results.Values.Sum(r => r.Removed);
-            MessageBox.Query("Sync All Complete",
-                results.Count + " playlists synced\n+" + totalAdded + " added, -" + totalRemoved + " removed", "OK");
-        }
-        catch (GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
+        _ = Task.Run(async () =>
         {
-            HideSpinner();
-            logger.LogError(ex, "YouTube API quota or auth error during sync all");
-            MessageBox.Query("YouTube Error", "API quota exceeded or auth expired.\nTry: ytpt login", "OK");
-        }
-        catch (GoogleApiException ex)
-        {
-            HideSpinner();
-            logger.LogError(ex, "YouTube API error during sync all");
-            MessageBox.Query("YouTube Error", "Sync failed: " + ex.Message, "OK");
-        }
-        catch (HttpRequestException ex)
-        {
-            HideSpinner();
-            logger.LogError(ex, "Network error during sync all");
-            MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
-        }
-        catch (Exception ex)
-        {
-            HideSpinner();
-            logger.LogError(ex, "Sync all failed");
-            MessageBox.Query("Error", "Sync failed: " + ex.Message, "OK");
-        }
-        finally
-        {
-            _isSyncing = false;
-        }
+            try
+            {
+                var syncProgress = new Progress<string>(msg =>
+                    global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
+                var results = await syncService.SyncAllTrackedAsync(profileId, youtube, syncProgress).ConfigureAwait(false);
+                int totalAdded = results.Values.Sum(r => r.Added);
+                int totalRemoved = results.Values.Sum(r => r.Removed);
+                InvokeUI(() =>
+                {
+                    HideSpinner();
+                    RefreshPlaylistsAsync().GetAwaiter().GetResult();
+                    RefreshVideosAsync().GetAwaiter().GetResult();
+                    SetNeedsDisplay();
+                    MessageBox.Query("Sync All Complete",
+                        results.Count + " playlists synced\n+" + totalAdded + " added, -" + totalRemoved + " removed", "OK");
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Sync all failed");
+                InvokeUI(() =>
+                {
+                    HideSpinner();
+                    MessageBox.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
+                });
+            }
+            finally { _isSyncing = false; }
+        });
     }
 }

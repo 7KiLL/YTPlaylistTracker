@@ -29,7 +29,7 @@ public class SyncServiceTests
     public SyncServiceTests()
     {
         var logger = Substitute.For<ILogger<SyncService>>();
-        _syncService = new SyncService(_youtubeApi, _playlistRepo, logger);
+        _syncService = new SyncService(_playlistRepo, logger);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class SyncServiceTests
         ]);
         _playlistRepo.GetVideosAsync(1).Returns(new List<Video>());
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(2, result.Added);
         Assert.Equal(0, result.Removed);
@@ -59,7 +59,7 @@ public class SyncServiceTests
             new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Gone Video", ChannelTitle = "Ch", Playlist = _testPlaylist }
         ]);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Added);
         Assert.Equal(1, result.Removed);
@@ -76,7 +76,7 @@ public class SyncServiceTests
         var video = new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Important Title", ChannelTitle = "Author", Playlist = _testPlaylist };
         _playlistRepo.GetVideosAsync(1).Returns([video]);
 
-        await _syncService.SyncPlaylistAsync(_testPlaylist);
+        await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         // Title must still be "Important Title" after marking as deleted
         await _playlistRepo.Received().UpdateVideoAsync(Arg.Is<Video>(v =>
@@ -95,7 +95,7 @@ public class SyncServiceTests
                         DeletedAt = DateTime.UtcNow.AddDays(-1), RemovalReason = RemovalReason.Deleted, Playlist = _testPlaylist }
         ]);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(1, result.Added); // Re-addition counts as added
         await _playlistRepo.Received().UpdateVideoAsync(Arg.Is<Video>(v =>
@@ -113,7 +113,7 @@ public class SyncServiceTests
             new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Old Title", ChannelTitle = "Old Channel", Playlist = _testPlaylist }
         ]);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Added);
         Assert.Equal(0, result.Removed);
@@ -128,7 +128,7 @@ public class SyncServiceTests
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns(new List<YouTubeVideoSnapshot>());
         _playlistRepo.GetVideosAsync(1).Returns(new List<Video>());
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Added);
         Assert.Equal(0, result.Removed);
@@ -147,7 +147,7 @@ public class SyncServiceTests
             new Video { Id = 11, PlaylistId = 1, YouTubeVideoId = "vid2", Title = "Deleted Vid", Playlist = _testPlaylist },
         ]);
 
-        await _syncService.SyncPlaylistAsync(_testPlaylist);
+        await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         await _playlistRepo.Received().UpdateVideoAsync(Arg.Is<Video>(v =>
             v.YouTubeVideoId == "vid1" && v.RemovalReason == RemovalReason.Private));
@@ -166,7 +166,7 @@ public class SyncServiceTests
             new Video { Id = 10, PlaylistId = 1, YouTubeVideoId = "vid1", Title = "Same Title", ChannelTitle = "Same Channel", Playlist = _testPlaylist }
         ]);
 
-        var result = await _syncService.SyncPlaylistAsync(_testPlaylist);
+        var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         Assert.Equal(0, result.Updated);
     }

@@ -18,6 +18,12 @@ public class ProfileRepository(AppDbContext db, ILogger<ProfileRepository> logge
         return await db.Profiles.FirstOrDefaultAsync(p => p.IsDefault, ct).ConfigureAwait(false);
     }
 
+    public async Task<Profile?> GetByNameAsync(string name, CancellationToken ct = default)
+    {
+        return await db.Profiles.FirstOrDefaultAsync(
+            p => p.Name == name, ct).ConfigureAwait(false);
+    }
+
     public async Task AddAsync(Profile profile, CancellationToken ct = default)
     {
         logger.LogInformation("Adding profile: {Name}", profile.Name);

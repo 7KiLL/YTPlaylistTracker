@@ -42,7 +42,9 @@
 ## Backlog (prioritized)
 
 ### P1 — Core UX gaps
-- [ ] **Profile management in TUI** — Add create/rename/delete profile dialogs so multi-account users can manage profiles without CLI workarounds.
+- [x] **Profile management in TUI** — Per-profile OAuth, offline profiles, CRUD dialogs, context menu, hotkeys (n/L/r/d/x).
+- [ ] **Profile pane reselection bug** — Down-arrow on single-profile list re-fires OnProfileSelected, clearing video list. Guard against reselecting same profile or suppress redundant events.
+- [ ] **Video detail Status field** — Shows "Active" followed by description text bleeding into the Status line. Likely a truncation/formatting issue in DetailDialog.ForVideo().
 
 ### P2 — Polish
 - [ ] **Playlist diff view** — Side-by-side before/after comparison when a sync detects changes, making removals easier to review at a glance.
