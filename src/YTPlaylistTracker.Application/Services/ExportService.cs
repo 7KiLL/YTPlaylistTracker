@@ -16,7 +16,7 @@ public static class ExportService
         string RemovalReason,
         string RemovedAt);
 
-    public static List<ExportEntry> BuildEntries(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos)
+    public static IReadOnlyList<ExportEntry> BuildEntries(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos)
     {
         return [..removedVideos.Select(pv => new ExportEntry(
             pv.Playlist.Title ?? pv.Playlist.YouTubePlaylistId,
@@ -28,7 +28,7 @@ public static class ExportService
         )),];
     }
 
-    public static string ToCsv(List<ExportEntry> entries)
+    public static string ToCsv(IReadOnlyList<ExportEntry> entries)
     {
         var sb = new StringBuilder();
         sb.AppendLine("PlaylistTitle,VideoId,VideoTitle,Channel,RemovalReason,RemovedAt");
@@ -39,7 +39,7 @@ public static class ExportService
         return sb.ToString();
     }
 
-    public static string ToJson(List<ExportEntry> entries)
+    public static string ToJson(IReadOnlyList<ExportEntry> entries)
     {
         return JsonSerializer.Serialize(entries, JsonOptions);
     }

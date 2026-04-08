@@ -33,7 +33,7 @@ public class YouTubeApiService : IYouTubeApiService, IDisposable
         await using (stream.ConfigureAwait(false))
         {
             var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-(await GoogleClientSecrets.FromStreamAsync(stream)).Secrets,
+(await GoogleClientSecrets.FromStreamAsync(stream).ConfigureAwait(false)).Secrets,
             [YouTubeService.Scope.YoutubeReadonly],
             "user",
             CancellationToken.None,

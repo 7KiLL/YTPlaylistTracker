@@ -238,7 +238,7 @@ public class SyncService(
         if (before == after)
             return false;
 
-        if (before.Title != after.Title)
+        if (!string.Equals(before.Title, after.Title, StringComparison.Ordinal))
             logger.LogDebug("Video title changed: {Old} → {New}", before.Title, after.Title);
 
         return true;

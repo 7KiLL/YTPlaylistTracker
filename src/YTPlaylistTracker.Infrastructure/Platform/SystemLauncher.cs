@@ -2,12 +2,6 @@ using System.Diagnostics;
 
 namespace YTPlaylistTracker.Infrastructure.Platform;
 
-public interface ISystemLauncher
-{
-    void OpenUrl(string url);
-    void OpenPath(string path);
-}
-
 public class SystemLauncher : ISystemLauncher
 {
     public void OpenUrl(string url)

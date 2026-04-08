@@ -17,15 +17,21 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
-# --- EF Core auto-generated migrations (suppress unfixable warnings) ---
+# --- EF Core auto-generated migrations (all auto-generated, don't lint) ---
 [**/Data/Migrations/*.cs]
-dotnet_diagnostic.CA1861.severity = suggestion  # Constant arrays in auto-generated code
+dotnet_analyzer_diagnostic.category-Design.severity = none
+dotnet_analyzer_diagnostic.category-Style.severity = none
+dotnet_analyzer_diagnostic.category-Usage.severity = none
+dotnet_analyzer_diagnostic.category-Performance.severity = none
+generated_code = true
 
 # --- Roslyn analyzer rules ---
 [*.{cs,csx}]
 
 # Roslyn: suppress noise, keep what catches real bugs
 dotnet_diagnostic.CA1305.severity = none        # IFormatProvider — no i18n needed
+dotnet_diagnostic.CA1816.severity = none        # GC.SuppressFinalize — no finalizers in this project
+dotnet_diagnostic.CA1822.severity = none        # Make static — primary ctor params look like instance members
 dotnet_diagnostic.CA1848.severity = none        # LoggerMessage delegates — overkill for TUI app
 dotnet_diagnostic.CA1859.severity = none        # Concrete type for perf — marginal, not worth interface churn
 dotnet_diagnostic.CA1873.severity = none        # Log argument cost — low-throughput app
@@ -46,5 +52,6 @@ dotnet_diagnostic.MA0004.severity = suggestion
 dotnet_diagnostic.MA0006.severity = suggestion
 dotnet_diagnostic.MA0009.severity = warning    # Regex DoS — real security issue
 dotnet_diagnostic.MA0016.severity = suggestion
+dotnet_diagnostic.MA0038.severity = none       # Deprecated, replaced by CA1822
 dotnet_diagnostic.MA0048.severity = suggestion
 dotnet_diagnostic.MA0051.severity = suggestion

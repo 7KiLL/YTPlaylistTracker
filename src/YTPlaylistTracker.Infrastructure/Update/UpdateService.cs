@@ -209,7 +209,7 @@ public class UpdateService(IBinaryUpdater binaryUpdater, ILogger<UpdateService> 
                     if (dir != null) Directory.CreateDirectory(dir);
 
                     if (!string.IsNullOrEmpty(entry.Name))
-                        await entry.ExtractToFileAsync(destinationPath, overwrite: true, cancellationToken: ct);
+                        await entry.ExtractToFileAsync(destinationPath, overwrite: true, cancellationToken: ct).ConfigureAwait(false);
                 }
             }
         }

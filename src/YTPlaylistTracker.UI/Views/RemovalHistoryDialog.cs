@@ -67,7 +67,7 @@ public sealed class RemovalHistoryDialog : Dialog
                             return val is "Deleted" or "Private" or "Unknown"
                                 ? Theme.StatusRemoved
                                 : null;
-                        }
+                        },
                     },
                 },
             },
