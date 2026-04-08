@@ -11,6 +11,7 @@ public class UserSettings : IUserSettings
     public bool AutoSyncOnStartup { get; set; } = true;
     public bool AutoInstallUpdates { get; set; }
     public bool SortTrackedFirst { get; set; } = true;
+    public string ThemeName { get; set; } = "";
 
     public void Save()
     {
@@ -20,6 +21,7 @@ public class UserSettings : IUserSettings
             autoSyncOnStartup = AutoSyncOnStartup,
             autoInstallUpdates = AutoInstallUpdates,
             sortTrackedFirst = SortTrackedFirst,
+            themeName = ThemeName,
         }, JsonOptions);
         File.WriteAllText(SettingsPath, json);
 
@@ -41,6 +43,8 @@ public class UserSettings : IUserSettings
                 settings.AutoInstallUpdates = val4.GetBoolean();
             if (doc.RootElement.TryGetProperty("sortTrackedFirst", out var val3))
                 settings.SortTrackedFirst = val3.GetBoolean();
+            if (doc.RootElement.TryGetProperty("themeName", out var val5))
+                settings.ThemeName = val5.GetString() ?? "";
         }
         catch
         {

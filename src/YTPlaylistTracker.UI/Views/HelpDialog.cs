@@ -33,7 +33,7 @@ public sealed class HelpDialog : Dialog
         int y = 0;
         foreach (var (key, action) in keys)
         {
-            Add(new Label(key) { X = 1, Y = y, ColorScheme = Colors.Menu });
+            Add(new Label(key) { X = 1, Y = y, ColorScheme = Theme.HintKey });
             Add(new Label(action) { X = 26, Y = y });
             y++;
         }

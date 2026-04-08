@@ -146,7 +146,16 @@ public partial class MainWindow
         _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
             { MinWidth = _lastLayout.AddedWidth, MaxWidth = _lastLayout.AddedWidth };
         _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
-            { MinWidth = _lastLayout.StatusWidth, MaxWidth = _lastLayout.StatusWidth };
+        {
+            MinWidth = _lastLayout.StatusWidth, MaxWidth = _lastLayout.StatusWidth,
+            ColorGetter = args =>
+            {
+                var val = args.CellValue?.ToString() ?? "";
+                if (val.StartsWith("X ", StringComparison.Ordinal)) return Theme.StatusRemoved;
+                if (val == "Active") return Theme.StatusActive;
+                return null;
+            }
+        };
     }
 
     private async void OnProfileSelected(ListViewItemEventArgs e)

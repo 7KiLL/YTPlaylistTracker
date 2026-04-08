@@ -64,7 +64,10 @@ public sealed class RemovedVideosDialog : Dialog
             table.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
                 { MinWidth = layout.ChannelWidth, MaxWidth = layout.ChannelWidth };
             table.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
-                { MinWidth = 14, MaxWidth = 14 };
+            {
+                MinWidth = 14, MaxWidth = 14,
+                ColorGetter = args => Theme.StatusRemoved
+            };
             table.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
                 { MinWidth = 18, MaxWidth = 18 };
             table.SetNeedsDisplay();

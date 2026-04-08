@@ -92,6 +92,7 @@ public partial class MainWindow
             return;
         }
 
+        ReapplyTheme();
         await RefreshPlaylistsAsync();
         ApplyFilterAndSort();
     }
@@ -131,6 +132,8 @@ public partial class MainWindow
                 global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                 {
                     HideSpinner();
+                    ColorScheme = Theme.UpdateInstalled;
+                    SetNeedsDisplay();
                     RestartApp();
                 });
             }

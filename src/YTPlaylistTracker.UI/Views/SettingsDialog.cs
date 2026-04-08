@@ -1,3 +1,4 @@
+using NStack;
 using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
@@ -16,12 +17,12 @@ public sealed class SettingsDialog : Dialog
 
     public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist,
         IUserSettings userSettings, IUpdateService updateService, ISystemLauncher? launcher = null)
-        : base("Settings", 70, 28)
+        : base("Settings", 70, 30)
     {
         int y = 0;
 
         // ── General ──
-        Add(new Label("── General ─────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Colors.Menu });
+        Add(new Label("── General ─────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Theme.SectionHeader });
         y += 1;
 
         var autoSyncCheck = new CheckBox("Auto-sync on startup", userSettings.AutoSyncOnStartup) { X = 2, Y = y };
@@ -37,10 +38,35 @@ public sealed class SettingsDialog : Dialog
         var sortTrackedCheck = new CheckBox("Sort tracked playlists first", userSettings.SortTrackedFirst) { X = 2, Y = y };
         sortTrackedCheck.Toggled += (_) => { userSettings.SortTrackedFirst = sortTrackedCheck.Checked; userSettings.Save(); };
         Add(sortTrackedCheck);
-        y += 2;
+        y += 1;
+
+        // Theme selector
+        Add(new Label("  Theme:") { X = 1, Y = y });
+        var themeNames = ThemePalette.AllNames;
+        var currentIdx = Array.IndexOf(themeNames, Theme.CurrentName);
+        if (currentIdx < 0) currentIdx = 0;
+        var themeRadio = new RadioGroup(themeNames.Select(n => (ustring)n).ToArray())
+        {
+            X = 12, Y = y,
+            SelectedItem = currentIdx,
+        };
+        themeRadio.SelectedItemChanged += (args) =>
+        {
+            var name = themeNames[themeRadio.SelectedItem];
+            userSettings.ThemeName = name;
+            userSettings.Save();
+            Theme.Apply(name);
+            ReapplyAllSchemes(this);
+            SetNeedsDisplay();
+
+            if (global::Terminal.Gui.Application.Top is MainWindow mw)
+                mw.ReapplyTheme();
+        };
+        Add(themeRadio);
+        y += themeNames.Length + 1;
 
         // ── Sync ──
-        Add(new Label("── Sync ────────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Colors.Menu });
+        Add(new Label("── Sync ────────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Theme.SectionHeader });
         y += 1;
 
         var likedPolicy = PlaylistPolicy.For(Domain.Enums.PlaylistKind.Liked);
@@ -52,7 +78,7 @@ public sealed class SettingsDialog : Dialog
         y += 2;
 
         // ── Data ──
-        Add(new Label("── Data ────────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Colors.Menu });
+        Add(new Label("── Data ────────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Theme.SectionHeader });
         y += 1;
 
         Add(new Label("  Database:") { X = 1, Y = y });
@@ -66,7 +92,7 @@ public sealed class SettingsDialog : Dialog
         Add(logBtn);
         y += 1;
 
-        var purgeBtn = new Button("Purge Deleted Videos") { X = 2, Y = y };
+        var purgeBtn = new Button("Purge Deleted Videos") { X = 2, Y = y, ColorScheme = Theme.Danger };
         purgeBtn.Clicked += async () =>
         {
             if (selectedPlaylist is null)
@@ -91,7 +117,7 @@ public sealed class SettingsDialog : Dialog
             }
         };
 
-        var resetBtn = new Button("Reset Database") { X = 26, Y = y };
+        var resetBtn = new Button("Reset Database") { X = 26, Y = y, ColorScheme = Theme.Danger };
         resetBtn.Clicked += () =>
         {
             var confirm = MessageBox.Query("Reset Database",
@@ -116,7 +142,7 @@ public sealed class SettingsDialog : Dialog
         y += 2;
 
         // ── About ──
-        Add(new Label("── About ───────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Colors.Menu });
+        Add(new Label("── About ───────────────────────────────────────────────────") { X = 1, Y = y, ColorScheme = Theme.SectionHeader });
         y += 1;
 
         Add(new Label($"  Version:  {UpdateService.GetCurrentVersion()}") { X = 1, Y = y });
@@ -155,5 +181,22 @@ public sealed class SettingsDialog : Dialog
         var closeBtn = new Button("Close", true);
         closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
+    }
+
+    private static void ReapplyAllSchemes(View root)
+    {
+        root.ColorScheme = Colors.Dialog;
+        foreach (var view in root.Subviews)
+        {
+            if (view is Label lbl && lbl.Text?.ToString()?.StartsWith("──", StringComparison.Ordinal) == true)
+                lbl.ColorScheme = Theme.SectionHeader;
+            else if (view is Button btn && (btn.Text?.ToString()?.Contains("Purge", StringComparison.Ordinal) == true
+                || btn.Text?.ToString()?.Contains("Reset", StringComparison.Ordinal) == true))
+                btn.ColorScheme = Theme.Danger;
+            else
+                view.ColorScheme = Colors.Dialog;
+
+            ReapplyAllSchemes(view);
+        }
     }
 }

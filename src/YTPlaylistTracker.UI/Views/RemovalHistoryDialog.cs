@@ -56,7 +56,20 @@ public sealed class RemovalHistoryDialog : Dialog
                 ShowHorizontalHeaderOverline = false,
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = true,
-                AlwaysShowHeaders = true
+                AlwaysShowHeaders = true,
+                ColumnStyles = new Dictionary<System.Data.DataColumn, TableView.ColumnStyle>
+                {
+                    [dt.Columns["Reason"]!] = new()
+                    {
+                        ColorGetter = args =>
+                        {
+                            var val = args.CellValue?.ToString() ?? "";
+                            return val is "Deleted" or "Private" or "Unknown"
+                                ? Theme.StatusRemoved
+                                : null;
+                        }
+                    }
+                }
             }
         };
 

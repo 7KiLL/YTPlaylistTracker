@@ -19,7 +19,7 @@ internal static class CliCommands
         using var scope = sp.CreateScope();
         var s = scope.ServiceProvider;
         App.Init();
-        Theme.Apply();
+        Theme.Apply(sp.GetRequiredService<IUserSettings>().ThemeName);
         try
         {
             var mainWindow = new MainWindow(

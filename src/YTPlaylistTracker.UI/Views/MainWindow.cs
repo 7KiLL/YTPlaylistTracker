@@ -51,84 +51,6 @@ public partial class MainWindow(
         ? $"ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!)"
         : "ytpt - YouTube Playlist Tracker";
 
-    private void SetupUI()
-    {
-        var profileFrame = new FrameView("Profiles")
-        {
-            X = 0, Y = 0,
-            Width = 18,
-            Height = Dim.Fill(2)
-        };
-        _profileList = new ListView
-        {
-            Width = Dim.Fill(),
-            Height = Dim.Fill()
-        };
-        _profileList.SelectedItemChanged += OnProfileSelected;
-        profileFrame.Add(_profileList);
-
-        var playlistFrame = new FrameView("Playlists")
-        {
-            X = Pos.Right(profileFrame),
-            Y = 0,
-            Width = 28,
-            Height = Dim.Fill(2)
-        };
-        _playlistList = new ListView
-        {
-            Width = Dim.Fill(),
-            Height = Dim.Fill()
-        };
-        _playlistList.SelectedItemChanged += OnPlaylistSelected;
-        playlistFrame.Add(_playlistList);
-
-        _videoFrame = new FrameView("Videos")
-        {
-            X = Pos.Right(playlistFrame),
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(2)
-        };
-        _videoTable = new TableView
-        {
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
-            FullRowSelect = true,
-            Style = new TableView.TableStyle
-            {
-                ShowVerticalCellLines = false,
-                ShowVerticalHeaderLines = false,
-                ShowHorizontalHeaderOverline = false,
-                ShowHorizontalHeaderUnderline = true,
-                ExpandLastColumn = false,
-                AlwaysShowHeaders = true,
-                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>()
-            }
-        };
-        _videoTable.CellActivated += (args) => ShowDetail();
-        _videoFrame.Add(_videoTable);
-        _videoTable.LayoutComplete += (_) => OnVideoTableResized();
-
-        _profileList.OpenSelectedItem += (args) => ShowDetail();
-        _playlistList.OpenSelectedItem += (args) => ShowDetail();
-
-        Add(profileFrame, playlistFrame, _videoFrame);
-
-        var hintBar1 = new Label(" h/l pane │ j/k nav │ J/K fast │ Tab cycle │ Enter detail │ / F3 search │ o F4 sort")
-        {
-            Y = Pos.AnchorEnd(2),
-            Width = Dim.Fill(),
-            ColorScheme = Colors.Menu
-        };
-        var hintBar2 = new Label(" a F1 add │ t F2 track │ s F5 sync │ S F6 all │ e F7 export │ F8 deleted │ F9 set │ H F11 hist │ ? F12 help │ q quit")
-        {
-            Y = Pos.AnchorEnd(1),
-            Width = Dim.Fill(),
-            ColorScheme = Colors.Menu
-        };
-        Add(hintBar1, hintBar2);
-    }
-
     public async Task InitializeAsync()
     {
         SetupUI();
@@ -166,7 +88,11 @@ public partial class MainWindow(
             return;
         }
 
-        // Fetch playlists from YouTube in background after UI renders, then auto-sync if enabled
+        StartBackgroundWork();
+    }
+
+    private void StartBackgroundWork()
+    {
         var capturedProfile = _selectedProfile;
         global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _ =>
         {
@@ -200,100 +126,108 @@ public partial class MainWindow(
                     catch (Exception ex) { logger.LogWarning(ex, "Failed to fetch channel info"); }
                 }
 
-                // Always check for updates in background
-                try
-                {
-                    var updateResult = await updateService.CheckForUpdateAsync();
-                    if (updateResult.IsUpdateAvailable && userSettings.AutoInstallUpdates)
-                    {
-                        logger.LogInformation("[Update] Auto-installing v{Version}", updateResult.LatestVersion);
-                        try
-                        {
-                            await updateService.ApplyUpdateAsync(updateResult);
-                            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                            {
-                                _latestUpdate = updateResult;
-                                _updateInstalled = true;
-                                Title = $"ytpt — v{updateResult.LatestVersion} installed, restart to apply";
-                                SetNeedsDisplay();
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
-                            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                            {
-                                _latestUpdate = updateResult;
-                                Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
-                                SetNeedsDisplay();
-                            });
-                        }
-                    }
-                    else
-                    {
-                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                        {
-                            _latestUpdate = updateResult;
-                            if (updateResult.IsUpdateAvailable)
-                            {
-                                Title = $"ytpt - YouTube Playlist Tracker (v{updateResult.LatestVersion} available!)";
-                                SetNeedsDisplay();
-                            }
-                        });
-                    }
-                }
-                catch (Exception ex) { logger.LogWarning(ex, "Update check failed"); }
+                await CheckForUpdatesAsync();
 
                 if (userSettings.AutoSyncOnStartup && capturedProfile is not null)
-                {
-                    _isSyncing = true;
-                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                        ShowSpinner("Auto-syncing all playlists..."));
-                    try
-                    {
-                        var syncProgress = new Progress<string>(msg =>
-                            global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
-                        var results = await syncService.SyncAllTrackedAsync(capturedProfile.Id, syncProgress);
-                        int totalAdded = results.Values.Sum(r => r.Added);
-                        int totalRemoved = results.Values.Sum(r => r.Removed);
-                        logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
-                            results.Count, totalAdded, totalRemoved);
-                        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
-                        {
-                            HideSpinner();
-                            RefreshPlaylistsAsync().GetAwaiter().GetResult();
-                            RefreshVideosAsync().GetAwaiter().GetResult();
-                            Title = $"ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved})";
-                            SetNeedsDisplay();
-                            global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(5), _ =>
-                            {
-                                Title = DefaultTitle;
-                                SetNeedsDisplay();
-                                return false;
-                            });
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Auto-sync failed");
-                        global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
-                    }
-                    finally
-                    {
-                        _isSyncing = false;
-                    }
-                }
+                    await AutoSyncAllAsync(capturedProfile);
                 else
-                {
                     global::Terminal.Gui.Application.MainLoop.Invoke(() =>
                     {
                         HideSpinner();
                         RefreshPlaylistsAsync().GetAwaiter().GetResult();
                     });
-                }
             });
             return false;
         });
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            var updateResult = await updateService.CheckForUpdateAsync();
+            if (updateResult.IsUpdateAvailable && userSettings.AutoInstallUpdates)
+            {
+                logger.LogInformation("[Update] Auto-installing v{Version}", updateResult.LatestVersion);
+                try
+                {
+                    await updateService.ApplyUpdateAsync(updateResult);
+                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    {
+                        _latestUpdate = updateResult;
+                        _updateInstalled = true;
+                        Title = $"ytpt — v{updateResult.LatestVersion} installed, restart to apply";
+                        ColorScheme = Theme.UpdateInstalled;
+                        SetNeedsDisplay();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
+                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    {
+                        _latestUpdate = updateResult;
+                        Title = DefaultTitle;
+                        ColorScheme = Theme.UpdateAvailable;
+                        SetNeedsDisplay();
+                    });
+                }
+            }
+            else
+            {
+                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                {
+                    _latestUpdate = updateResult;
+                    if (updateResult.IsUpdateAvailable)
+                    {
+                        Title = DefaultTitle;
+                        ColorScheme = Theme.UpdateAvailable;
+                        SetNeedsDisplay();
+                    }
+                });
+            }
+        }
+        catch (Exception ex) { logger.LogWarning(ex, "Update check failed"); }
+    }
+
+    private async Task AutoSyncAllAsync(Profile profile)
+    {
+        _isSyncing = true;
+        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+            ShowSpinner("Auto-syncing all playlists..."));
+        try
+        {
+            var syncProgress = new Progress<string>(msg =>
+                global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
+            var results = await syncService.SyncAllTrackedAsync(profile.Id, syncProgress);
+            int totalAdded = results.Values.Sum(r => r.Added);
+            int totalRemoved = results.Values.Sum(r => r.Removed);
+            logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",
+                results.Count, totalAdded, totalRemoved);
+            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+            {
+                HideSpinner();
+                RefreshPlaylistsAsync().GetAwaiter().GetResult();
+                RefreshVideosAsync().GetAwaiter().GetResult();
+                Title = $"ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved})";
+                SetNeedsDisplay();
+                global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(5), _ =>
+                {
+                    Title = DefaultTitle;
+                    SetNeedsDisplay();
+                    return false;
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Auto-sync failed");
+            global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
+        }
+        finally
+        {
+            _isSyncing = false;
+        }
     }
 
     private void RefreshProfileList()
@@ -334,28 +268,5 @@ public partial class MainWindow(
             _selectedPlaylist = _playlists[0];
         }
         _suppressEvents = false;
-    }
-
-    private void ShowSpinner(string message)
-    {
-        HideSpinner();
-        _spinnerFrame = 0;
-        _spinnerTimer = global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(200), _ =>
-        {
-            Title = "ytpt " + SpinnerFrames[_spinnerFrame % SpinnerFrames.Length] + " " + message;
-            _spinnerFrame++;
-            return true;
-        });
-    }
-
-    private void HideSpinner()
-    {
-        if (_spinnerTimer is not null)
-        {
-            global::Terminal.Gui.Application.MainLoop.RemoveTimeout(_spinnerTimer);
-            _spinnerTimer = null;
-        }
-        Title = DefaultTitle;
-        SetNeedsDisplay();
     }
 }

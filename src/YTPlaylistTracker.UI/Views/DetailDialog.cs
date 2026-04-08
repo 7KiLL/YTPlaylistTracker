@@ -21,20 +21,17 @@ public sealed class DetailDialog : Dialog
                 var link = new Button(UnicodeWidth.Truncate(value, 50))
                 {
                     X = 20, Y = y,
-                    ColorScheme = new ColorScheme
-                    {
-                        Normal = global::Terminal.Gui.Application.Driver.MakeAttribute(Color.Cyan, Color.Black),
-                        Focus = global::Terminal.Gui.Application.Driver.MakeAttribute(Color.Black, Color.Cyan),
-                        HotNormal = global::Terminal.Gui.Application.Driver.MakeAttribute(Color.Cyan, Color.Black),
-                        HotFocus = global::Terminal.Gui.Application.Driver.MakeAttribute(Color.Black, Color.Cyan),
-                    }
+                    ColorScheme = Theme.Link
                 };
                 link.Clicked += () => browser.OpenUrl(linkUrl);
                 Add(link);
             }
             else
             {
-                Add(new Label(UnicodeWidth.Truncate(value, 52)) { X = 20, Y = y });
+                var valueLabel = new Label(UnicodeWidth.Truncate(value, 52)) { X = 20, Y = y };
+                if (label == "Status")
+                    valueLabel.ColorScheme = value == "Active" ? Theme.StatusActive : Theme.StatusRemoved;
+                Add(valueLabel);
             }
 
             if (label == "URL") url = value;
