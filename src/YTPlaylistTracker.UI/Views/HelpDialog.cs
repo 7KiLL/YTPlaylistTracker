@@ -4,8 +4,11 @@ namespace YTPlaylistTracker.UI.Views;
 
 public sealed class HelpDialog : Dialog
 {
-    public HelpDialog() : base("Keybindings", 52, 32)
+    public HelpDialog() : base()
     {
+        Title = "Keybindings";
+        Width = 52;
+        Height = 32;
         (string, string)[] keys =
         [
             ("── Navigation ──", ""),
@@ -40,13 +43,13 @@ public sealed class HelpDialog : Dialog
         int y = 0;
         foreach (var (key, action) in keys)
         {
-            Add(new Label(key) { X = 1, Y = y, ColorScheme = Theme.HintKey });
-            Add(new Label(action) { X = 26, Y = y });
+            Add(new Label() { Text = key, X = 1, Y = y, ColorScheme = Theme.HintKey });
+            Add(new Label() { Text = action, X = 26, Y = y });
             y++;
         }
 
-        var closeBtn = new Button("Close", is_default: true);
-        closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+        var closeBtn = new Button() { Text = "Close", IsDefault = true };
+        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
     }
 }

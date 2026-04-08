@@ -15,15 +15,15 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog("Add Playlist", 60, 8);
-        var label = new Label("YouTube Playlist URL or ID:") { X = 1, Y = 1 };
-        var input = new TextField("") { X = 1, Y = 2, Width = Dim.Fill(2) };
-        var okBtn = new Button("Add", is_default: true);
-        var cancelBtn = new Button("Cancel");
+        var dialog = new Dialog() { Title = "Add Playlist", Width = 60, Height = 8 };
+        var label = new Label() { Text = "YouTube Playlist URL or ID:", X = 1, Y = 1 };
+        var input = new TextField() { Text = "", X = 1, Y = 2, Width = Dim.Fill(2) };
+        var okBtn = new Button() { Text = "Add", IsDefault = true };
+        var cancelBtn = new Button() { Text = "Cancel" };
 
         string? inputValue = null;
-        okBtn.Clicked += () => { inputValue = input.Text?.ToString(); global::Terminal.Gui.Application.RequestStop(); };
-        cancelBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+        okBtn.Accepting += (sender, e) => { inputValue = input.Text; global::Terminal.Gui.Application.RequestStop(); };
+        cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
 
         dialog.Add(label, input);
         dialog.AddButton(okBtn);
@@ -166,15 +166,16 @@ public partial class MainWindow
 
     private void ShowSortMenu()
     {
-        var dialog = new Dialog("Sort by", 30, 10);
+        var dialog = new Dialog() { Title = "Sort by", Width = 30, Height = 10 };
         string[] options = ["Title", "Channel", "Added Date", "Status"];
-        var list = new ListView(options)
+        var list = new ListView()
         {
             Width = Dim.Fill(), Height = Dim.Fill(),
         };
-        list.OpenSelectedItem += (args) =>
+        list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>(options));
+        list.OpenSelectedItem += (sender, e) =>
         {
-            var selected = options[args.Item];
+            var selected = options[list.SelectedItem];
             if (string.Equals(_sortColumn, selected, StringComparison.Ordinal))
                 _sortAscending = !_sortAscending;
             else
@@ -185,8 +186,8 @@ public partial class MainWindow
             global::Terminal.Gui.Application.RequestStop();
         };
         dialog.Add(list);
-        var cancelBtn2 = new Button("Cancel");
-        cancelBtn2.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+        var cancelBtn2 = new Button() { Text = "Cancel" };
+        cancelBtn2.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         dialog.AddButton(cancelBtn2);
         global::Terminal.Gui.Application.Run(dialog);
         ApplyFilterAndSort();
@@ -196,30 +197,31 @@ public partial class MainWindow
     {
         if (_searchField is not null) return;
 
-        _searchField = new TextField("")
+        _searchField = new TextField()
         {
+            Text = "",
             X = 0, Y = 0,
             Width = Dim.Fill(),
         };
-        _searchField.TextChanged += (_) =>
+        _searchField.TextChanged += (sender, e) =>
         {
-            _searchQuery = _searchField.Text?.ToString() ?? "";
+            _searchQuery = _searchField.Text ?? "";
 
             if (_searchDebounceTimer is not null)
-                global::Terminal.Gui.Application.MainLoop.RemoveTimeout(_searchDebounceTimer);
+                global::Terminal.Gui.Application.RemoveTimeout(_searchDebounceTimer);
 
-            _searchDebounceTimer = global::Terminal.Gui.Application.MainLoop.AddTimeout(
-                TimeSpan.FromMilliseconds(150), (_) =>
+            _searchDebounceTimer = global::Terminal.Gui.Application.AddTimeout(
+                TimeSpan.FromMilliseconds(150), () =>
                 {
                     ApplyFilterAndSort();
                     return false;
                 });
         };
-        _searchField.KeyPress += (e) =>
+        _searchField.KeyDown += (sender, e) =>
         {
-            if (e.KeyEvent.Key == (Key.Backspace | Key.CtrlMask))
+            if (e == Key.Backspace.WithCtrl)
             {
-                var text = _searchField.Text?.ToString() ?? "";
+                var text = _searchField.Text ?? "";
                 var pos = _searchField.CursorPosition;
                 if (pos > 0)
                 {
@@ -231,12 +233,12 @@ public partial class MainWindow
                 }
                 e.Handled = true;
             }
-            else if (e.KeyEvent.Key == Key.Esc)
+            else if (e == Key.Esc)
             {
                 HideSearch();
                 e.Handled = true;
             }
-            else if (e.KeyEvent.Key == Key.Enter)
+            else if (e == Key.Enter)
             {
                 _videoTable.SetFocus();
                 e.Handled = true;
@@ -247,7 +249,7 @@ public partial class MainWindow
         _videoTable.Y = 1;
         _videoTable.Height = Dim.Fill();
         _searchField.SetFocus();
-        _videoFrame.SetNeedsDisplay();
+        _videoFrame.SetNeedsDraw();
     }
 
     private void HideSearch()
@@ -256,7 +258,7 @@ public partial class MainWindow
 
         if (_searchDebounceTimer is not null)
         {
-            global::Terminal.Gui.Application.MainLoop.RemoveTimeout(_searchDebounceTimer);
+            global::Terminal.Gui.Application.RemoveTimeout(_searchDebounceTimer);
             _searchDebounceTimer = null;
         }
 

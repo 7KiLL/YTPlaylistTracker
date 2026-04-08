@@ -12,8 +12,11 @@ public partial class MainWindow
 
     private void SetupUI()
     {
-        _profileFrame = new FrameView("Profiles")
+        Title = "ytpt - YouTube Playlist Tracker";
+
+        _profileFrame = new FrameView()
         {
+            Title = "Profiles",
             X = 0, Y = 0,
             Width = 18,
             Height = Dim.Fill(2),
@@ -23,13 +26,14 @@ public partial class MainWindow
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            ColorScheme = Colors.Base,
+            ColorScheme = Colors.ColorSchemes["Base"],
         };
         _profileList.SelectedItemChanged += OnProfileSelected;
         _profileFrame.Add(_profileList);
 
-        _playlistFrame = new FrameView("Playlists")
+        _playlistFrame = new FrameView()
         {
+            Title = "Playlists",
             X = Pos.Right(_profileFrame),
             Y = 0,
             Width = 28,
@@ -40,13 +44,14 @@ public partial class MainWindow
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            ColorScheme = Colors.Base,
+            ColorScheme = Colors.ColorSchemes["Base"],
         };
         _playlistList.SelectedItemChanged += OnPlaylistSelected;
         _playlistFrame.Add(_playlistList);
 
-        _videoFrame = new FrameView("Videos")
+        _videoFrame = new FrameView()
         {
+            Title = "Videos",
             X = Pos.Right(_playlistFrame),
             Y = 0,
             Width = Dim.Fill(),
@@ -58,8 +63,8 @@ public partial class MainWindow
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             FullRowSelect = true,
-            ColorScheme = Colors.Base,
-            Style = new TableView.TableStyle
+            ColorScheme = Colors.ColorSchemes["Base"],
+            Style = new TableStyle
             {
                 ShowVerticalCellLines = false,
                 ShowVerticalHeaderLines = false,
@@ -67,25 +72,27 @@ public partial class MainWindow
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = false,
                 AlwaysShowHeaders = true,
-                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>(),
+                ColumnStyles = new Dictionary<int, ColumnStyle>(),
             },
         };
-        _videoTable.CellActivated += (args) => ShowDetail();
+        _videoTable.CellActivated += (sender, e) => ShowDetail();
         _videoFrame.Add(_videoTable);
-        _videoTable.LayoutComplete += (_) => OnVideoTableResized();
+        _videoTable.DrawComplete += (sender, e) => OnVideoTableResized();
 
-        _playlistList.OpenSelectedItem += (args) => ShowDetail();
+        _playlistList.OpenSelectedItem += (sender, e) => ShowDetail();
 
         Add(_profileFrame, _playlistFrame, _videoFrame);
 
-        _hintBar1 = new Label("")
+        _hintBar1 = new Label()
         {
+            Text = "",
             Y = Pos.AnchorEnd(2),
             Width = Dim.Fill(),
             ColorScheme = Theme.HintKey,
         };
-        _hintBar2 = new Label(" e F7 export │ H F11 hist │ F9 settings │ ? F12 help │ q quit")
+        _hintBar2 = new Label()
         {
+            Text = " e F7 export │ H F11 hist │ F9 settings │ ? F12 help │ q quit",
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
             ColorScheme = Theme.HintKey,
@@ -109,13 +116,13 @@ public partial class MainWindow
         _profileFrame.ColorScheme = Theme.Frame;
         _playlistFrame.ColorScheme = Theme.Frame;
         _videoFrame.ColorScheme = Theme.Frame;
-        _profileList.ColorScheme = Colors.Base;
-        _playlistList.ColorScheme = Colors.Base;
-        _videoTable.ColorScheme = Colors.Base;
+        _profileList.ColorScheme = Colors.ColorSchemes["Base"];
+        _playlistList.ColorScheme = Colors.ColorSchemes["Base"];
+        _videoTable.ColorScheme = Colors.ColorSchemes["Base"];
         _hintBar1.ColorScheme = Theme.HintKey;
         _hintBar2.ColorScheme = Theme.HintKey;
         ApplyDefaultColorScheme();
-        SetNeedsDisplay();
+        SetNeedsDraw();
     }
 
     private void ShowSpinner(string message)
@@ -123,7 +130,7 @@ public partial class MainWindow
         HideSpinner();
         _spinnerFrame = 0;
         ColorScheme = Theme.Syncing;
-        _spinnerTimer = global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(200), _ =>
+        _spinnerTimer = global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromMilliseconds(200), () =>
         {
             Title = "ytpt " + SpinnerFrames[_spinnerFrame % SpinnerFrames.Length] + " " + message;
             _spinnerFrame++;
@@ -135,12 +142,12 @@ public partial class MainWindow
     {
         if (_spinnerTimer is not null)
         {
-            global::Terminal.Gui.Application.MainLoop.RemoveTimeout(_spinnerTimer);
+            global::Terminal.Gui.Application.RemoveTimeout(_spinnerTimer);
             _spinnerTimer = null;
         }
         Title = DefaultTitle;
         ApplyDefaultColorScheme();
-        SetNeedsDisplay();
+        SetNeedsDraw();
     }
 
     private void ApplyDefaultColorScheme()
@@ -150,6 +157,6 @@ public partial class MainWindow
         else if (_latestUpdate is { IsUpdateAvailable: true })
             ColorScheme = Theme.UpdateAvailable;
         else
-            ColorScheme = Colors.Base;
+            ColorScheme = Colors.ColorSchemes["Base"];
     }
 }

@@ -84,7 +84,7 @@ public partial class MainWindow
         }
         else
         {
-            _lastLayout = ColumnLayout.Compute(_videoTable.Bounds.Width);
+            _lastLayout = ColumnLayout.Compute(_videoTable.Viewport.Width);
 
             for (int i = 0; i < filtered.Count; i++)
             {
@@ -101,7 +101,7 @@ public partial class MainWindow
         }
 
         _filteredVideos = filtered;
-        _videoTable.Table = dt;
+        _videoTable.Table = new DataTableSource(dt);
         ApplyColumnStyles(dt);
 
         var syncedLabel = " | synced: " + SyncService.FormatLastSynced(_selectedPlaylist);
@@ -114,11 +114,12 @@ public partial class MainWindow
     {
         if (_videoTable.Table == null) return;
 
-        var newLayout = ColumnLayout.Compute(_videoTable.Bounds.Width);
+        var newLayout = ColumnLayout.Compute(_videoTable.Viewport.Width);
         if (newLayout == _lastLayout) return;
 
         _lastLayout = newLayout;
-        var dt = _videoTable.Table;
+        if (_videoTable.Table is not DataTableSource dts) return;
+        var dt = dts.DataTable;
 
         for (int i = 0; i < dt.Rows.Count; i++)
         {
@@ -131,21 +132,21 @@ public partial class MainWindow
         }
 
         ApplyColumnStyles(dt);
-        _videoTable.SetNeedsDisplay();
+        _videoTable.SetNeedsDraw();
     }
 
     private void ApplyColumnStyles(DataTable dt)
     {
         _videoTable.Style.ColumnStyles.Clear();
-        _videoTable.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
+        _videoTable.Style.ColumnStyles[0] = new ColumnStyle
             { MinWidth = _lastLayout.NumberWidth, MaxWidth = _lastLayout.NumberWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
+        _videoTable.Style.ColumnStyles[1] = new ColumnStyle
             { MinWidth = _lastLayout.TitleWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
+        _videoTable.Style.ColumnStyles[2] = new ColumnStyle
             { MinWidth = _lastLayout.ChannelWidth, MaxWidth = _lastLayout.ChannelWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
+        _videoTable.Style.ColumnStyles[3] = new ColumnStyle
             { MinWidth = _lastLayout.AddedWidth, MaxWidth = _lastLayout.AddedWidth };
-        _videoTable.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
+        _videoTable.Style.ColumnStyles[4] = new ColumnStyle
         {
             MinWidth = _lastLayout.StatusWidth, MaxWidth = _lastLayout.StatusWidth,
             ColorGetter = args =>
@@ -158,7 +159,7 @@ public partial class MainWindow
         };
     }
 
-    private async void OnProfileSelected(ListViewItemEventArgs e)
+    private async void OnProfileSelected(object? sender, ListViewItemEventArgs e)
     {
         if (_suppressEvents) return;
         try
@@ -181,7 +182,7 @@ public partial class MainWindow
         }
     }
 
-    private void OnPlaylistSelected(ListViewItemEventArgs e)
+    private void OnPlaylistSelected(object? sender, ListViewItemEventArgs e)
     {
         if (_suppressEvents) return;
         if (e.Item < 0 || e.Item >= _playlists.Count) return;
@@ -204,7 +205,7 @@ public partial class MainWindow
                     ? await playlistRepo.GetDeletedVideosAsync(playlist.Id)
 .ConfigureAwait(false) : await playlistRepo.GetVideosAsync(playlist.Id).ConfigureAwait(false)).ToList();
 
-                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                global::Terminal.Gui.Application.Invoke(() =>
                 {
                     if (_selectedPlaylist?.Id != playlist.Id) return;
                     _videos = videos;

@@ -168,7 +168,7 @@ public partial class MainWindow
             try
             {
                 var syncProgress = new Progress<string>(msg =>
-                    global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
+                    global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
                 var results = await syncService.SyncAllTrackedAsync(profileId, youtube, syncProgress).ConfigureAwait(false);
                 int totalAdded = results.Values.Sum(r => r.Added);
                 int totalRemoved = results.Values.Sum(r => r.Removed);
@@ -177,7 +177,7 @@ public partial class MainWindow
                     HideSpinner();
                     RefreshPlaylistsAsync().GetAwaiter().GetResult();
                     RefreshVideosAsync().GetAwaiter().GetResult();
-                    SetNeedsDisplay();
+                    SetNeedsDraw();
                     MessageBox.Query("Sync All Complete",
                         results.Count + " playlists synced\n+" + totalAdded + " added, -" + totalRemoved + " removed", "OK");
                 });

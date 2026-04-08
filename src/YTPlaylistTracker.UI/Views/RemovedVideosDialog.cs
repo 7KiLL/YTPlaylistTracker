@@ -7,8 +7,11 @@ namespace YTPlaylistTracker.UI.Views;
 public sealed class RemovedVideosDialog : Dialog
 {
     public RemovedVideosDialog(IReadOnlyList<Video> removedVideos, string playlistTitle)
-        : base($"Removed Videos - {playlistTitle}", 80, 25)
+        : base()
     {
+        Title = $"Removed Videos - {playlistTitle}";
+        Width = 80;
+        Height = 25;
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(int));
         dt.Columns.Add("Title", typeof(string));
@@ -34,8 +37,8 @@ public sealed class RemovedVideosDialog : Dialog
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
             FullRowSelect = true,
-            Table = dt,
-            Style = new TableView.TableStyle
+            Table = new DataTableSource(dt),
+            Style = new TableStyle
             {
                 ShowVerticalCellLines = false,
                 ShowVerticalHeaderLines = false,
@@ -43,34 +46,35 @@ public sealed class RemovedVideosDialog : Dialog
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = false,
                 AlwaysShowHeaders = true,
-                ColumnStyles = new Dictionary<DataColumn, TableView.ColumnStyle>(),
+                ColumnStyles = new Dictionary<int, ColumnStyle>(),
             },
         };
 
-        var closeBtn = new Button("Close", is_default: true);
-        closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+        var closeBtn = new Button() { Text = "Close", IsDefault = true };
+        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
 
         Add(table);
 
-        table.LayoutComplete += (_) =>
+        table.DrawComplete += (sender, e) =>
         {
             if (table.Table == null) return;
-            var layout = ColumnLayout.Compute(table.Bounds.Width);
+            if (table.Viewport.Width <= 0) return;
+            var layout = ColumnLayout.Compute(table.Viewport.Width);
             table.Style.ColumnStyles.Clear();
-            table.Style.ColumnStyles[dt.Columns[0]] = new TableView.ColumnStyle
+            table.Style.ColumnStyles[0] = new ColumnStyle
                 { MinWidth = layout.NumberWidth, MaxWidth = layout.NumberWidth };
-            table.Style.ColumnStyles[dt.Columns[1]] = new TableView.ColumnStyle
+            table.Style.ColumnStyles[1] = new ColumnStyle
                 { MinWidth = layout.TitleWidth };
-            table.Style.ColumnStyles[dt.Columns[2]] = new TableView.ColumnStyle
+            table.Style.ColumnStyles[2] = new ColumnStyle
                 { MinWidth = layout.ChannelWidth, MaxWidth = layout.ChannelWidth };
-            table.Style.ColumnStyles[dt.Columns[3]] = new TableView.ColumnStyle
+            table.Style.ColumnStyles[3] = new ColumnStyle
             {
                 MinWidth = 14, MaxWidth = 14,
                 ColorGetter = args => Theme.StatusRemoved,
             };
-            table.Style.ColumnStyles[dt.Columns[4]] = new TableView.ColumnStyle
+            table.Style.ColumnStyles[4] = new ColumnStyle
                 { MinWidth = 18, MaxWidth = 18 };
-            table.SetNeedsDisplay();
+            table.SetNeedsDraw();
         };
 
         AddButton(closeBtn);

@@ -46,8 +46,8 @@ public sealed record ThemePalette(
     public static readonly ThemePalette GruvboxDark = new(
         Name: "Gruvbox Dark",
         Bg: Color.Black, BgSurface: Color.DarkGray,
-        Fg: Color.BrightYellow, FgMuted: Color.Brown,
-        Accent: Color.Brown, AccentBright: Color.BrightYellow,
+        Fg: Color.BrightYellow, FgMuted: Color.Yellow,
+        Accent: Color.Yellow, AccentBright: Color.BrightYellow,
         Green: Color.BrightGreen, Red: Color.Red, RedBright: Color.BrightRed,
         Yellow: Color.BrightYellow, Cyan: Color.Cyan);
 
@@ -75,7 +75,7 @@ public sealed record ThemePalette(
         Fg: Color.Black, FgMuted: Color.DarkGray,
         Accent: Color.Blue, AccentBright: Color.BrightBlue,
         Green: Color.Green, Red: Color.Red, RedBright: Color.BrightRed,
-        Yellow: Color.Brown, Cyan: Color.Blue);
+        Yellow: Color.Yellow, Cyan: Color.Blue);
 
     // ── Registry ──
 

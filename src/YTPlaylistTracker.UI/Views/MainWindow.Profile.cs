@@ -38,8 +38,8 @@ public partial class MainWindow
         var isAuth = youtubeApiFactory.IsAuthenticated(_selectedProfile);
         var loginLabel = isAuth ? "Logout" : "Login with Google";
 
-        var menu = new ContextMenu(0, 0,
-            new MenuBarItem("", new MenuItem[]
+        var menu = new ContextMenu();
+        menu.Show(new MenuBarItem("", new MenuItem[]
             {
                 new("View _Details", "", () => ShowDetail()),
                 new(loginLabel + " (_L)", "", () => OnToggleLogin()),
@@ -49,25 +49,24 @@ public partial class MainWindow
                 new("Delete (x)", "", () => OnDeleteProfile()),
             })
         );
-        menu.Show();
     }
 
     private void OnNewProfile()
     {
-        var dialog = new Dialog("New Profile", 50, 8);
-        var label = new Label("Name:") { X = 1, Y = 0 };
-        var input = new TextField("") { X = 8, Y = 0, Width = 36 };
+        var dialog = new Dialog() { Title = "New Profile", Width = 50, Height = 8 };
+        var label = new Label() { Text = "Name:", X = 1, Y = 0 };
+        var input = new TextField() { Text = "", X = 8, Y = 0, Width = 36 };
         dialog.Add(label, input);
 
-        var okBtn = new Button("Create") { IsDefault = true };
+        var okBtn = new Button() { Text = "Create", IsDefault = true };
         string? inputValue = null;
-        okBtn.Clicked += () =>
+        okBtn.Accepting += (sender, e) =>
         {
-            inputValue = input.Text?.ToString()?.Trim();
+            inputValue = input.Text?.Trim();
             global::Terminal.Gui.Application.RequestStop();
         };
-        var cancelBtn = new Button("Cancel");
-        cancelBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+        var cancelBtn = new Button() { Text = "Cancel" };
+        cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         dialog.AddButton(cancelBtn);
         dialog.AddButton(okBtn);
 
@@ -81,7 +80,7 @@ public partial class MainWindow
             await profileRepo.AddAsync(profile).ConfigureAwait(false);
             _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
 
-            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+            global::Terminal.Gui.Application.Invoke(() =>
             {
                 RefreshProfileList();
                 // Select the new profile
@@ -121,23 +120,23 @@ public partial class MainWindow
             {
                 var service = await youtubeApiFactory.LoginAsync(profile, authUrl =>
                 {
-                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    global::Terminal.Gui.Application.Invoke(() =>
                     {
-                        urlDialog = new Dialog("Login with Google", 78, 10);
-                        urlDialog.Add(new Label("If the browser didn't open:") { X = 1, Y = 0 });
-                        var urlField = new TextField(authUrl) { X = 1, Y = 2, Width = 72, ReadOnly = true };
+                        urlDialog = new Dialog() { Title = "Login with Google", Width = 78, Height = 10 };
+                        urlDialog.Add(new Label() { Text = "If the browser didn't open:", X = 1, Y = 0 });
+                        var urlField = new TextField() { Text = authUrl, X = 1, Y = 2, Width = 72, ReadOnly = true };
                         urlField.SelectAll();
                         urlDialog.Add(urlField);
-                        var copyBtn = new Button("Copy URL") { X = 1, Y = 4 };
-                        copyBtn.Clicked += () =>
+                        var copyBtn = new Button() { Text = "Copy URL", X = 1, Y = 4 };
+                        copyBtn.Accepting += (sender, e) =>
                         {
                             if (browser.TryCopyToClipboard(authUrl, out var err)) copyBtn.Text = "Copied!";
                             else MessageBox.Query("Copy Failed", err!, "OK");
                         };
-                        var openBtn = new Button("Open in Browser") { X = 16, Y = 4 };
-                        openBtn.Clicked += () => browser.OpenUrl(authUrl);
+                        var openBtn = new Button() { Text = "Open in Browser", X = 16, Y = 4 };
+                        openBtn.Accepting += (sender, e) => browser.OpenUrl(authUrl);
                         urlDialog.Add(copyBtn, openBtn);
-                        urlDialog.Add(new Label("Waiting for sign-in...") { X = 38, Y = 4, ColorScheme = Colors.Menu });
+                        urlDialog.Add(new Label() { Text = "Waiting for sign-in...", X = 38, Y = 4, ColorScheme = Colors.ColorSchemes["Menu"] });
                         global::Terminal.Gui.Application.Run(urlDialog);
                     });
                 }).ConfigureAwait(false);
@@ -160,7 +159,7 @@ public partial class MainWindow
                     RefreshProfileList();
                     RefreshPlaylistsAsync().GetAwaiter().GetResult();
                     Title = DefaultTitle;
-                    global::Terminal.Gui.Application.Top?.SetNeedsDisplay();
+                    global::Terminal.Gui.Application.Top?.SetNeedsDraw();
                     StartBackgroundWork();
                 });
             }
@@ -193,7 +192,7 @@ public partial class MainWindow
         _ = Task.Run(async () =>
         {
             _youtubeApi = await youtubeApiFactory.CreateForProfileAsync(_selectedProfile).ConfigureAwait(false);
-            global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshProfileList());
+            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -201,20 +200,20 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog("Rename Profile", 50, 7);
-        var label = new Label("Name:") { X = 1, Y = 0 };
-        var input = new TextField(_selectedProfile.Name) { X = 8, Y = 0, Width = 36 };
+        var dialog = new Dialog() { Title = "Rename Profile", Width = 50, Height = 7 };
+        var label = new Label() { Text = "Name:", X = 1, Y = 0 };
+        var input = new TextField() { Text = _selectedProfile.Name, X = 8, Y = 0, Width = 36 };
         dialog.Add(label, input);
 
-        var okBtn = new Button("Save") { IsDefault = true };
+        var okBtn = new Button() { Text = "Save", IsDefault = true };
         string? inputValue = null;
-        okBtn.Clicked += () =>
+        okBtn.Accepting += (sender, e) =>
         {
-            inputValue = input.Text?.ToString()?.Trim();
+            inputValue = input.Text?.Trim();
             global::Terminal.Gui.Application.RequestStop();
         };
-        var cancelBtn = new Button("Cancel");
-        cancelBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+        var cancelBtn = new Button() { Text = "Cancel" };
+        cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         dialog.AddButton(cancelBtn);
         dialog.AddButton(okBtn);
 
@@ -226,7 +225,7 @@ public partial class MainWindow
         {
             await profileRepo.UpdateAsync(_selectedProfile).ConfigureAwait(false);
             _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
-            global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshProfileList());
+            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -238,7 +237,7 @@ public partial class MainWindow
             await profileRepo.SetDefaultAsync(_selectedProfile.Id).ConfigureAwait(false);
             _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
             _selectedProfile = _profiles.FirstOrDefault(p => p.Id == _selectedProfile.Id) ?? _selectedProfile;
-            global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshProfileList());
+            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -266,7 +265,7 @@ public partial class MainWindow
             _selectedProfile = newDefault;
             _youtubeApi = await youtubeApiFactory.CreateForProfileAsync(newDefault).ConfigureAwait(false);
 
-            global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+            global::Terminal.Gui.Application.Invoke(() =>
             {
                 RefreshProfileList();
                 RefreshPlaylistsAsync().GetAwaiter().GetResult();

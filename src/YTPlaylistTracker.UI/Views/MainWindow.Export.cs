@@ -39,21 +39,21 @@ public partial class MainWindow
                 return;
             }
 
-            var dialog = new Dialog("Export Removed Videos", 50, 10);
-            var formatLabel = new Label("Format:") { X = 1, Y = 1 };
-            var formatRadio = new RadioGroup(new NStack.ustring[] { "CSV", "JSON" }) { X = 12, Y = 1 };
-            var pathLabel = new Label("File:") { X = 1, Y = 3 };
+            var dialog = new Dialog() { Title = "Export Removed Videos", Width = 50, Height = 10 };
+            var formatLabel = new Label() { Text = "Format:", X = 1, Y = 1 };
+            var formatRadio = new RadioGroup() { RadioLabels = new[] { "CSV", "JSON" }, X = 12, Y = 1 };
+            var pathLabel = new Label() { Text = "File:", X = 1, Y = 3 };
             var defaultPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "ytpt-removed-videos");
-            var pathField = new TextField(defaultPath) { X = 12, Y = 3, Width = Dim.Fill(2) };
-            var okBtn = new Button("Export", is_default: true);
-            var cancelBtn = new Button("Cancel");
+            var pathField = new TextField() { Text = defaultPath, X = 12, Y = 3, Width = Dim.Fill(2) };
+            var okBtn = new Button() { Text = "Export", IsDefault = true };
+            var cancelBtn = new Button() { Text = "Cancel" };
 
             string? resultPath = null;
             int selectedFormat = 0;
-            okBtn.Clicked += () => { resultPath = pathField.Text?.ToString(); selectedFormat = formatRadio.SelectedItem; global::Terminal.Gui.Application.RequestStop(); };
-            cancelBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+            okBtn.Accepting += (sender, e) => { resultPath = pathField.Text; selectedFormat = formatRadio.SelectedItem; global::Terminal.Gui.Application.RequestStop(); };
+            cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
 
             dialog.Add(formatLabel, formatRadio, pathLabel, pathField);
             dialog.AddButton(okBtn);
@@ -129,17 +129,17 @@ public partial class MainWindow
             try
             {
                 await updateService.ApplyUpdateAsync(update).ConfigureAwait(false);
-                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                global::Terminal.Gui.Application.Invoke(() =>
                 {
                     HideSpinner();
                     ColorScheme = Theme.UpdateInstalled;
-                    SetNeedsDisplay();
+                    SetNeedsDraw();
                     RestartApp();
                 });
             }
             catch (UpdateException ex)
             {
-                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                global::Terminal.Gui.Application.Invoke(() =>
                 {
                     HideSpinner();
                     var msg = ex.ManualDownloadUrl is not null

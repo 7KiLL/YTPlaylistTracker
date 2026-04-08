@@ -1,8 +1,8 @@
 using System.Buffers;
 using System.Globalization;
 using System.Text;
+using Terminal.Gui;
 using TextRune = System.Text.Rune;
-using TguiRune = System.Rune;  // Terminal.Gui's NStack Rune
 
 namespace YTPlaylistTracker.UI;
 
@@ -20,7 +20,7 @@ internal static class UnicodeWidth
             var status = TextRune.DecodeFromUtf16(s.AsSpan(i), out var rune, out var charsConsumed);
             if (status != OperationStatus.Done)
                 break;
-            width += TguiRune.ColumnWidth(new TguiRune((uint)rune.Value));
+            width += new Rune(rune.Value).GetColumns();
             i += charsConsumed;
         }
         return width;
@@ -38,7 +38,7 @@ internal static class UnicodeWidth
             var status = TextRune.DecodeFromUtf16(s.AsSpan(i), out var rune, out var charsConsumed);
             if (status != OperationStatus.Done)
                 break;
-            int cw = TguiRune.ColumnWidth(new TguiRune((uint)rune.Value));
+            int cw = new Rune(rune.Value).GetColumns();
             if (width + cw > maxDisplayWidth - 2)
                 return s[..i] + "..";
             width += cw;

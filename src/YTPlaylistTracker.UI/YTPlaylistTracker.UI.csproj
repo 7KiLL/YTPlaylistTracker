@@ -10,7 +10,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5" PrivateAssets="All" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.5" />
-    <PackageReference Include="Terminal.Gui" Version="1.19.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
+    <PackageReference Include="Terminal.Gui" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +20,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);NU1608</NoWarn>
 
     <!-- OAuth credentials injected at build time: dotnet build -p:OAuthClientId=xxx -p:OAuthClientSecret=yyy -->
     <OAuthClientId Condition="'$(OAuthClientId)' == ''"></OAuthClientId>

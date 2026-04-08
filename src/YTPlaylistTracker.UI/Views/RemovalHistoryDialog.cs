@@ -7,8 +7,11 @@ namespace YTPlaylistTracker.UI.Views;
 public sealed class RemovalHistoryDialog : Dialog
 {
     public RemovalHistoryDialog(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos)
-        : base("Removal History - All Playlists", 90, 28)
+        : base()
     {
+        Title = "Removal History - All Playlists";
+        Width = 90;
+        Height = 28;
         var dt = new DataTable();
         dt.Columns.Add("Date", typeof(string));
         dt.Columns.Add("Playlist", typeof(string));
@@ -37,8 +40,9 @@ public sealed class RemovalHistoryDialog : Dialog
             dt.Rows.Add("", "", "No removed videos found.", "", "");
         }
 
-        var countLabel = new Label($"{removedVideos.Count} removed videos across all tracked playlists")
+        var countLabel = new Label()
         {
+            Text = $"{removedVideos.Count} removed videos across all tracked playlists",
             X = 0, Y = 0, Width = Dim.Fill(),
         };
 
@@ -48,8 +52,8 @@ public sealed class RemovalHistoryDialog : Dialog
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
             FullRowSelect = true,
-            Table = dt,
-            Style = new TableView.TableStyle
+            Table = new DataTableSource(dt),
+            Style = new TableStyle
             {
                 ShowVerticalCellLines = false,
                 ShowVerticalHeaderLines = false,
@@ -57,9 +61,9 @@ public sealed class RemovalHistoryDialog : Dialog
                 ShowHorizontalHeaderUnderline = true,
                 ExpandLastColumn = true,
                 AlwaysShowHeaders = true,
-                ColumnStyles = new Dictionary<System.Data.DataColumn, TableView.ColumnStyle>
+                ColumnStyles = new Dictionary<int, ColumnStyle>
                 {
-                    [dt.Columns["Reason"]!] = new()
+                    [4] = new()
                     {
                         ColorGetter = args =>
                         {
@@ -73,8 +77,8 @@ public sealed class RemovalHistoryDialog : Dialog
             },
         };
 
-        var closeBtn = new Button("Close", is_default: true);
-        closeBtn.Clicked += () => global::Terminal.Gui.Application.RequestStop();
+        var closeBtn = new Button() { Text = "Close", IsDefault = true };
+        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
 
         Add(countLabel, table);
         AddButton(closeBtn);

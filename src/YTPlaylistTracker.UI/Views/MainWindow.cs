@@ -17,7 +17,7 @@ public partial class MainWindow(
     ISystemLauncher browser,
     IUserSettings userSettings,
     IUpdateService updateService,
-    ILogger<MainWindow> logger) : Window("ytpt - YouTube Playlist Tracker")
+    ILogger<MainWindow> logger) : Window()
 {
     private IYouTubeApiService? _youtubeApi;
     private UpdateInfo? _latestUpdate;
@@ -71,7 +71,7 @@ public partial class MainWindow(
         // First-run: show welcome dialog
         if (_profiles.Count == 0)
         {
-            global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _ =>
+            global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
             {
                 var welcome = new WelcomeDialog();
                 global::Terminal.Gui.Application.Run(welcome);
@@ -113,7 +113,7 @@ public partial class MainWindow(
     private void StartBackgroundWork()
     {
         var capturedProfile = _selectedProfile;
-        global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(100), _token =>
+        global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
         {
             ShowSpinner("Fetching playlists...");
             _ = Task.Run(async () =>
@@ -139,7 +139,7 @@ public partial class MainWindow(
                             capturedProfile.ChannelTitle = channel.Title;
                             capturedProfile.ChannelThumbnailUrl = channel.ThumbnailUrl;
                             await profileRepo.UpdateAsync(capturedProfile).ConfigureAwait(false);
-                            global::Terminal.Gui.Application.MainLoop.Invoke(() => RefreshProfileList());
+                            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
                         }
                     }
                     catch (Exception ex) { logger.LogWarning(ex, "Failed to fetch channel info"); }
@@ -171,37 +171,37 @@ public partial class MainWindow(
                 try
                 {
                     await updateService.ApplyUpdateAsync(updateResult).ConfigureAwait(false);
-                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    global::Terminal.Gui.Application.Invoke(() =>
                     {
                         _latestUpdate = updateResult;
                         _updateInstalled = true;
                         Title = $"ytpt — v{updateResult.LatestVersion} installed, restart to apply";
                         ColorScheme = Theme.UpdateInstalled;
-                        SetNeedsDisplay();
+                        SetNeedsDraw();
                     });
                 }
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
-                    global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                    global::Terminal.Gui.Application.Invoke(() =>
                     {
                         _latestUpdate = updateResult;
                         Title = DefaultTitle;
                         ColorScheme = Theme.UpdateAvailable;
-                        SetNeedsDisplay();
+                        SetNeedsDraw();
                     });
                 }
             }
             else
             {
-                global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+                global::Terminal.Gui.Application.Invoke(() =>
                 {
                     _latestUpdate = updateResult;
                     if (updateResult.IsUpdateAvailable)
                     {
                         Title = DefaultTitle;
                         ColorScheme = Theme.UpdateAvailable;
-                        SetNeedsDisplay();
+                        SetNeedsDraw();
                     }
                 });
             }
@@ -213,11 +213,11 @@ public partial class MainWindow(
     {
         if (_youtubeApi is null) return;
         _isSyncing = true;
-        global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner("Auto-syncing all playlists..."));
+        global::Terminal.Gui.Application.Invoke(() => ShowSpinner("Auto-syncing all playlists..."));
         try
         {
             var syncProgress = new Progress<string>(msg =>
-                global::Terminal.Gui.Application.MainLoop.Invoke(() => ShowSpinner(msg)));
+                global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
             var results = await syncService.SyncAllTrackedAsync(profile.Id, _youtubeApi, syncProgress).ConfigureAwait(false);
             int totalAdded = results.Values.Sum(r => r.Added);
             int totalRemoved = results.Values.Sum(r => r.Removed);
@@ -229,11 +229,11 @@ public partial class MainWindow(
                 RefreshPlaylistsAsync().GetAwaiter().GetResult();
                 RefreshVideosAsync().GetAwaiter().GetResult();
                 Title = $"ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved})";
-                SetNeedsDisplay();
-                global::Terminal.Gui.Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(5), _ =>
+                SetNeedsDraw();
+                global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromSeconds(5), () =>
                 {
                     Title = DefaultTitle;
-                    SetNeedsDisplay();
+                    SetNeedsDraw();
                     return false;
                 });
             });
@@ -241,7 +241,7 @@ public partial class MainWindow(
         catch (Exception ex)
         {
             logger.LogError(ex, "Auto-sync failed");
-            global::Terminal.Gui.Application.MainLoop.Invoke(() => HideSpinner());
+            global::Terminal.Gui.Application.Invoke(() => HideSpinner());
         }
         finally
         {
@@ -250,7 +250,7 @@ public partial class MainWindow(
     }
 
     private void InvokeUI(Action action) =>
-        global::Terminal.Gui.Application.MainLoop.Invoke(() =>
+        global::Terminal.Gui.Application.Invoke(() =>
         {
             try { action(); }
             catch (Exception ex)
@@ -271,7 +271,7 @@ public partial class MainWindow(
         }).ToList();
         using (SuppressEvents())
         {
-            _profileList.SetSource(names);
+            _profileList.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>(names));
             var idx = _profiles.IndexOf(_selectedProfile!);
             if (idx >= 0) _profileList.SelectedItem = idx;
         }
@@ -298,7 +298,7 @@ public partial class MainWindow(
             names.Add("  (no playlists — press S to sync)");
         using (SuppressEvents())
         {
-            await _playlistList.SetSourceAsync(names).ConfigureAwait(false);
+            _playlistList.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>(names));
             if (_playlists.Count == 0) { _selectedPlaylist = null; }
             else if (prevIdx >= 0 && prevIdx < _playlists.Count)
             {

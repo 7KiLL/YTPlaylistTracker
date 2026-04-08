@@ -30,18 +30,18 @@ public static class Theme
 
         ColorScheme OnBg(Color normal, Color focus, Color hotNormal, Color hotFocus) => new()
         {
-            Normal = App.Driver.MakeAttribute(normal, p.Bg),
-            Focus = App.Driver.MakeAttribute(p.Bg, focus),
-            HotNormal = App.Driver.MakeAttribute(hotNormal, p.Bg),
-            HotFocus = App.Driver.MakeAttribute(p.Bg, hotFocus),
-            Disabled = App.Driver.MakeAttribute(p.FgMuted, p.Bg),
+            Normal = new Terminal.Gui.Attribute(normal, p.Bg),
+            Focus = new Terminal.Gui.Attribute(p.Bg, focus),
+            HotNormal = new Terminal.Gui.Attribute(hotNormal, p.Bg),
+            HotFocus = new Terminal.Gui.Attribute(p.Bg, hotFocus),
+            Disabled = new Terminal.Gui.Attribute(p.FgMuted, p.Bg),
         };
 
         // Global Terminal.Gui schemes
-        Colors.Base = OnBg(p.Fg, p.Accent, p.Accent, p.Accent);
-        Colors.Dialog = OnBg(p.Fg, p.Accent, p.Accent, p.Accent);
-        Colors.Menu = OnBg(p.Accent, p.Accent, p.AccentBright, p.AccentBright);
-        Colors.Error = OnBg(p.Red, p.Red, p.RedBright, p.RedBright);
+        Colors.ColorSchemes["Base"] = OnBg(p.Fg, p.Accent, p.Accent, p.Accent);
+        Colors.ColorSchemes["Dialog"] = OnBg(p.Fg, p.Accent, p.Accent, p.Accent);
+        Colors.ColorSchemes["Menu"] = OnBg(p.Accent, p.Accent, p.AccentBright, p.AccentBright);
+        Colors.ColorSchemes["Error"] = OnBg(p.Red, p.Red, p.RedBright, p.RedBright);
 
         // Frame borders & titles — same bg, accent-colored text
         Frame = OnBg(p.Accent, p.AccentBright, p.AccentBright, p.AccentBright);
