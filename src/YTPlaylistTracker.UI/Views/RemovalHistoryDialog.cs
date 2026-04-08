@@ -1,19 +1,24 @@
 using System.Data;
 using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
+using YTPlaylistTracker.Infrastructure.Platform;
 
 namespace YTPlaylistTracker.UI.Views;
 
 public sealed class RemovalHistoryDialog : Dialog
 {
-    public RemovalHistoryDialog(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos)
+    private readonly IReadOnlyList<(Playlist Playlist, Video Video)> _removedVideos;
+    private readonly ISystemLauncher? _browser;
+
+    public RemovalHistoryDialog(IReadOnlyList<(Playlist Playlist, Video Video)> removedVideos, ISystemLauncher? browser = null)
         : base()
     {
+        _removedVideos = removedVideos;
+        _browser = browser;
         Title = "Removal History - All Playlists";
         Width = 90;
         Height = 28;
-        
-        
+
         var dt = new DataTable();
         dt.Columns.Add("Date", typeof(string));
         dt.Columns.Add("Playlist", typeof(string));
@@ -79,6 +84,8 @@ public sealed class RemovalHistoryDialog : Dialog
             },
         };
 
+        table.CellActivated += (sender, e) => ShowVideoDetail(table.SelectedRow);
+
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
 
@@ -86,4 +93,11 @@ public sealed class RemovalHistoryDialog : Dialog
         AddButton(closeBtn);
     }
 
+    private void ShowVideoDetail(int row)
+    {
+        if (row < 0 || row >= _removedVideos.Count) return;
+        var (_, video) = _removedVideos[row];
+        var dialog = DetailDialog.ForVideo(video, _browser);
+        global::Terminal.Gui.Application.Run(dialog);
+    }
 }

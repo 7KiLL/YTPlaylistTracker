@@ -16,7 +16,7 @@ public partial class MainWindow
         try
         {
             var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id).ConfigureAwait(false);
-            var dialog = new RemovalHistoryDialog(removedVideos);
+            var dialog = new RemovalHistoryDialog(removedVideos, browser);
             global::Terminal.Gui.Application.Run(dialog);
         }
         catch (Exception ex)
