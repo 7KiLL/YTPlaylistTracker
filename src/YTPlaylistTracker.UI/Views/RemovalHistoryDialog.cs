@@ -12,8 +12,8 @@ public sealed class RemovalHistoryDialog : Dialog
         Title = "Removal History - All Playlists";
         Width = 90;
         Height = 28;
-        ShadowStyle = ShadowStyle.None;
-        BorderStyle = LineStyle.Rounded;
+        
+        
         var dt = new DataTable();
         dt.Columns.Add("Date", typeof(string));
         dt.Columns.Add("Playlist", typeof(string));
@@ -79,7 +79,7 @@ public sealed class RemovalHistoryDialog : Dialog
             },
         };
 
-        var closeBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Close", IsDefault = true };
+        var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
 
         Add(countLabel, table);

@@ -93,7 +93,11 @@ public partial class MainWindow
 
     private void OnSync()
     {
-        if (_isSyncing) return;
+        if (_isSyncing)
+        {
+            MessageBox.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
+            return;
+        }
         if (_youtubeApi is null)
         {
             MessageBox.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
@@ -127,7 +131,9 @@ public partial class MainWindow
         {
             try
             {
-                var result = await syncService.SyncPlaylistAsync(playlist, youtube).ConfigureAwait(false);
+                var syncProgress = new Progress<string>(msg =>
+                    global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
+                var result = await syncService.SyncPlaylistAsync(playlist, youtube, syncProgress).ConfigureAwait(false);
                 InvokeUI(() =>
                 {
                     HideSpinner();
@@ -151,7 +157,12 @@ public partial class MainWindow
 
     private void OnSyncAll()
     {
-        if (_isSyncing || _selectedProfile is null) return;
+        if (_isSyncing)
+        {
+            MessageBox.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
+            return;
+        }
+        if (_selectedProfile is null) return;
         if (_youtubeApi is null)
         {
             MessageBox.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");

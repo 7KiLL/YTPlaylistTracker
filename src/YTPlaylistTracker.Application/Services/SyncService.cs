@@ -43,11 +43,13 @@ public class SyncService(
 
     // --- Sync operations ---
 
-    public async Task<SyncResult> SyncPlaylistAsync(Playlist playlist, IYouTubeApiService youtube)
+    public async Task<SyncResult> SyncPlaylistAsync(Playlist playlist, IYouTubeApiService youtube, IProgress<string>? progress = null)
     {
         logger.LogInformation("Syncing playlist: {PlaylistId} ({Title})", playlist.YouTubePlaylistId, playlist.Title);
 
+        progress?.Report($"Fetching {playlist.Title}...");
         var apiVideos = await youtube.GetPlaylistVideosAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
+        progress?.Report($"Fetched {apiVideos.Count} videos from {playlist.Title}, applying changes...");
         var metadata = await youtube.GetPlaylistMetadataAsync(playlist.YouTubePlaylistId).ConfigureAwait(false);
 
         return await ApplyPlaylistDiff(playlist, apiVideos, metadata, youtube).ConfigureAwait(false);

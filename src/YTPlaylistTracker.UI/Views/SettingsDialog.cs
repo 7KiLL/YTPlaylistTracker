@@ -21,8 +21,8 @@ public sealed class SettingsDialog : Dialog
         Title = "Settings";
         Width = 70;
         Height = 30;
-        ShadowStyle = ShadowStyle.None;
-        BorderStyle = LineStyle.Rounded;
+        
+        
         int y = 0;
 
         // ── General ──
@@ -109,17 +109,17 @@ public sealed class SettingsDialog : Dialog
         y += 1;
 
         Add(new Label() { Text = "  Database:", X = 1, Y = y });
-        var dbBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = AppSettings.DbPath, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
+        var dbBtn = new Button() { Text = AppSettings.DbPath, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
         dbBtn.Accepting += (sender, e) => launcher?.OpenPath(AppSettings.DbPath);
         Add(dbBtn);
         y += 1;
         Add(new Label() { Text = "  Logs:", X = 1, Y = y });
-        var logBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = AppSettings.LogDir, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
+        var logBtn = new Button() { Text = AppSettings.LogDir, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
         logBtn.Accepting += (sender, e) => launcher?.OpenPath(AppSettings.LogDir);
         Add(logBtn);
         y += 1;
 
-        var purgeBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Purge Deleted Videos", X = 2, Y = y, ColorScheme = Theme.Danger };
+        var purgeBtn = new Button() { Text = "Purge Deleted Videos", X = 2, Y = y, ColorScheme = Theme.Danger };
         purgeBtn.Accepting += async (sender, e) =>
         {
             if (selectedPlaylist is null)
@@ -144,7 +144,7 @@ public sealed class SettingsDialog : Dialog
             }
         };
 
-        var resetBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Reset Database", X = 26, Y = y, ColorScheme = Theme.Danger };
+        var resetBtn = new Button() { Text = "Reset Database", X = 26, Y = y, ColorScheme = Theme.Danger };
         resetBtn.Accepting += (sender, e) =>
         {
             var confirm = MessageBox.Query("Reset Database",
@@ -174,7 +174,7 @@ public sealed class SettingsDialog : Dialog
 
         Add(new Label() { Text = $"  Version:  {UpdateService.GetCurrentVersion()}", X = 1, Y = y });
         y += 1;
-        var updateNowBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Update Now", X = 2, Y = y };
+        var updateNowBtn = new Button() { Text = "Update Now", X = 2, Y = y };
         updateNowBtn.Accepting += (sender, e) =>
         {
             _ = Task.Run(async () =>
@@ -205,7 +205,7 @@ public sealed class SettingsDialog : Dialog
         };
         Add(updateNowBtn);
 
-        var closeBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Close", IsDefault = true };
+        var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
     }

@@ -15,11 +15,11 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "Add Playlist", Width = 60, Height = 8, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
+        var dialog = new Dialog() { Title = "Add Playlist", Width = 60, Height = 8 };
         var label = new Label() { Text = "YouTube Playlist URL or ID:", X = 1, Y = 1 };
         var input = new TextField() { Text = "", X = 1, Y = 2, Width = Dim.Fill(2) };
-        var okBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Add", IsDefault = true };
-        var cancelBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Cancel" };
+        var okBtn = new Button() { Text = "Add", IsDefault = true };
+        var cancelBtn = new Button() { Text = "Cancel" };
 
         string? inputValue = null;
         okBtn.Accepting += (sender, e) => { inputValue = input.Text; global::Terminal.Gui.Application.RequestStop(); };
@@ -166,7 +166,7 @@ public partial class MainWindow
 
     private void ShowSortMenu()
     {
-        var dialog = new Dialog() { Title = "Sort by", Width = 30, Height = 10, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
+        var dialog = new Dialog() { Title = "Sort by", Width = 30, Height = 10 };
         string[] options = ["Title", "Channel", "Added Date", "Status"];
         var list = new ListView()
         {
@@ -186,7 +186,7 @@ public partial class MainWindow
             global::Terminal.Gui.Application.RequestStop();
         };
         dialog.Add(list);
-        var cancelBtn2 = new Button() { ShadowStyle = ShadowStyle.None, Text = "Cancel" };
+        var cancelBtn2 = new Button() { Text = "Cancel" };
         cancelBtn2.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         dialog.AddButton(cancelBtn2);
         global::Terminal.Gui.Application.Run(dialog);

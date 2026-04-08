@@ -12,8 +12,8 @@ public sealed class DetailDialog : Dialog
         Title = title;
         Width = 75;
         Height = Math.Min(fields.Length + 5, 22);
-        ShadowStyle = ShadowStyle.None;
-        BorderStyle = LineStyle.Rounded;
+        
+        
         string? url = null;
         int y = 0;
         foreach (var (label, value) in fields)
@@ -47,12 +47,12 @@ public sealed class DetailDialog : Dialog
         if (browser is not null && url is not null)
         {
             var captured = url;
-            var openBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Open in Browser" };
+            var openBtn = new Button() { Text = "Open in Browser" };
             openBtn.Accepting += (sender, e) => browser.OpenUrl(captured);
             AddButton(openBtn);
         }
 
-        var closeBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Close", IsDefault = true };
+        var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
     }

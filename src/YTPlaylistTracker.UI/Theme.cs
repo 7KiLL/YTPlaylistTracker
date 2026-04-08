@@ -28,6 +28,12 @@ public static class Theme
         var p = ThemePalette.ForName(themeName);
         CurrentName = p.Name;
 
+        // Disable shadows globally — flat, clean look
+        Dialog.DefaultShadow = ShadowStyle.None;
+        Dialog.DefaultBorderStyle = LineStyle.Rounded;
+        Button.DefaultShadow = ShadowStyle.None;
+        MessageBox.DefaultBorderStyle = LineStyle.Rounded;
+
         ColorScheme OnBg(Color normal, Color focus, Color hotNormal, Color hotFocus) => new()
         {
             Normal = new Terminal.Gui.Attribute(normal, p.Bg),

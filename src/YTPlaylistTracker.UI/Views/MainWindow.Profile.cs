@@ -53,19 +53,19 @@ public partial class MainWindow
 
     private void OnNewProfile()
     {
-        var dialog = new Dialog() { Title = "New Profile", Width = 50, Height = 8, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
+        var dialog = new Dialog() { Title = "New Profile", Width = 50, Height = 8 };
         var label = new Label() { Text = "Name:", X = 1, Y = 0 };
         var input = new TextField() { Text = "", X = 8, Y = 0, Width = 36 };
         dialog.Add(label, input);
 
-        var okBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Create", IsDefault = true };
+        var okBtn = new Button() { Text = "Create", IsDefault = true };
         string? inputValue = null;
         okBtn.Accepting += (sender, e) =>
         {
             inputValue = input.Text?.Trim();
             global::Terminal.Gui.Application.RequestStop();
         };
-        var cancelBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Cancel" };
+        var cancelBtn = new Button() { Text = "Cancel" };
         cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         dialog.AddButton(cancelBtn);
         dialog.AddButton(okBtn);
@@ -122,17 +122,17 @@ public partial class MainWindow
                 {
                     global::Terminal.Gui.Application.Invoke(() =>
                     {
-                        urlDialog = new Dialog() { Title = "Login with Google", Width = Dim.Percent(80), Height = 10, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
+                        urlDialog = new Dialog() { Title = "Login with Google", Width = Dim.Percent(80), Height = 10 };
                         urlDialog.Add(new Label() { Text = "A browser window should open. If not, copy this URL:", X = 1, Y = 0 });
                         var urlField = new TextField() { Text = authUrl, X = 1, Y = 2, Width = Dim.Fill(2), ReadOnly = true };
                         urlDialog.Add(urlField);
-                        var copyBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Copy URL", X = 1, Y = 4 };
+                        var copyBtn = new Button() { Text = "Copy URL", X = 1, Y = 4 };
                         copyBtn.Accepting += (sender, e) =>
                         {
                             if (browser.TryCopyToClipboard(authUrl, out var err)) copyBtn.Text = "Copied!";
                             else MessageBox.Query("Copy Failed", err!, "OK");
                         };
-                        var openBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Open in Browser", X = 16, Y = 4 };
+                        var openBtn = new Button() { Text = "Open in Browser", X = 16, Y = 4 };
                         openBtn.Accepting += (sender, e) => browser.OpenUrl(authUrl);
                         urlDialog.Add(copyBtn, openBtn);
                         urlDialog.Add(new Label() { Text = "Waiting for sign-in...", X = 38, Y = 4, ColorScheme = Colors.ColorSchemes["Menu"] });
@@ -199,19 +199,19 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "Rename Profile", Width = 50, Height = 7, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
+        var dialog = new Dialog() { Title = "Rename Profile", Width = 50, Height = 7 };
         var label = new Label() { Text = "Name:", X = 1, Y = 0 };
         var input = new TextField() { Text = _selectedProfile.Name, X = 8, Y = 0, Width = 36 };
         dialog.Add(label, input);
 
-        var okBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Save", IsDefault = true };
+        var okBtn = new Button() { Text = "Save", IsDefault = true };
         string? inputValue = null;
         okBtn.Accepting += (sender, e) =>
         {
             inputValue = input.Text?.Trim();
             global::Terminal.Gui.Application.RequestStop();
         };
-        var cancelBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Cancel" };
+        var cancelBtn = new Button() { Text = "Cancel" };
         cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         dialog.AddButton(cancelBtn);
         dialog.AddButton(okBtn);

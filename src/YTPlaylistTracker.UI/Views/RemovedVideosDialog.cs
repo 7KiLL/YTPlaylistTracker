@@ -12,8 +12,8 @@ public sealed class RemovedVideosDialog : Dialog
         Title = $"Removed Videos - {playlistTitle}";
         Width = 80;
         Height = 25;
-        ShadowStyle = ShadowStyle.None;
-        BorderStyle = LineStyle.Rounded;
+        
+        
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(int));
         dt.Columns.Add("Title", typeof(string));
@@ -52,7 +52,7 @@ public sealed class RemovedVideosDialog : Dialog
             },
         };
 
-        var closeBtn = new Button() { ShadowStyle = ShadowStyle.None, Text = "Close", IsDefault = true };
+        var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
 
         Add(table);
