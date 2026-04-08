@@ -60,8 +60,8 @@ public partial class MainWindow(
     private ColumnWidths _lastLayout;
 
     private string DefaultTitle => _latestUpdate is { IsUpdateAvailable: true }
-        ? $"ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!)"
-        : "ytpt - YouTube Playlist Tracker";
+        ? $" ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!) "
+        : " ytpt - YouTube Playlist Tracker ";
 
     protected override void Dispose(bool disposing)
     {
@@ -182,7 +182,7 @@ public partial class MainWindow(
                     {
                         _latestUpdate = updateResult;
                         _updateInstalled = true;
-                        Title = $"ytpt — v{updateResult.LatestVersion} installed, restart to apply";
+                        Title = $" ytpt — v{updateResult.LatestVersion} installed, restart to apply ";
                         ColorScheme = Theme.UpdateInstalled;
                         SetNeedsDraw();
                     });
@@ -235,7 +235,7 @@ public partial class MainWindow(
                 HideSpinner();
                 RefreshPlaylistsAsync().GetAwaiter().GetResult();
                 RefreshVideosAsync().GetAwaiter().GetResult();
-                Title = $"ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved})";
+                Title = $" ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved}) ";
                 SetNeedsDraw();
                 global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromSeconds(5), () =>
                 {

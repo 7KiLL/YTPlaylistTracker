@@ -7,13 +7,17 @@ public partial class MainWindow
 {
     private FrameView _profileFrame = null!;
     private FrameView _playlistFrame = null!;
+    private Label _profileHeaderLabel = null!;
+    private Label _playlistHeaderLabel = null!;
+    private Label _videoStatusLabel = null!;
     private Label _hintBar1 = null!;
     private Label _hintBar2 = null!;
 
     private void SetupUI()
     {
-        Title = "ytpt - YouTube Playlist Tracker";
+        Title = " ytpt - YouTube Playlist Tracker ";
         BorderStyle = LineStyle.Rounded;
+        Border!.Thickness = new Thickness(1, 2, 1, 1);
 
         _profileFrame = new FrameView()
         {
@@ -23,14 +27,22 @@ public partial class MainWindow
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
         };
+        _profileHeaderLabel = new Label()
+        {
+            Text = " Profiles",
+            X = 0, Y = 0,
+            Width = Dim.Fill(),
+            ColorScheme = Theme.Frame,
+        };
         _profileList = new ListView
         {
-            Width = Dim.Fill(),
+            X = 1, Y = 1,
+            Width = Dim.Fill(1),
             Height = Dim.Fill(),
             ColorScheme = Colors.ColorSchemes["Base"],
         };
         _profileList.SelectedItemChanged += OnProfileSelected;
-        _profileFrame.Add(_profileList);
+        _profileFrame.Add(_profileHeaderLabel, _profileList);
 
         _playlistFrame = new FrameView()
         {
@@ -41,14 +53,22 @@ public partial class MainWindow
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
         };
+        _playlistHeaderLabel = new Label()
+        {
+            Text = " Playlists",
+            X = 0, Y = 0,
+            Width = Dim.Fill(),
+            ColorScheme = Theme.Frame,
+        };
         _playlistList = new ListView
         {
-            Width = Dim.Fill(),
+            X = 1, Y = 1,
+            Width = Dim.Fill(1),
             Height = Dim.Fill(),
             ColorScheme = Colors.ColorSchemes["Base"],
         };
         _playlistList.SelectedItemChanged += OnPlaylistSelected;
-        _playlistFrame.Add(_playlistList);
+        _playlistFrame.Add(_playlistHeaderLabel, _playlistList);
 
         _videoFrame = new FrameView()
         {
@@ -59,9 +79,17 @@ public partial class MainWindow
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
         };
+        _videoStatusLabel = new Label()
+        {
+            Text = " Videos",
+            X = 0, Y = 0,
+            Width = Dim.Fill(),
+            ColorScheme = Theme.Frame,
+        };
         _videoTable = new TableView
         {
-            Width = Dim.Fill(),
+            X = 1, Y = 1,
+            Width = Dim.Fill(1),
             Height = Dim.Fill(),
             FullRowSelect = true,
             ColorScheme = Colors.ColorSchemes["Base"],
@@ -77,7 +105,7 @@ public partial class MainWindow
             },
         };
         _videoTable.CellActivated += (sender, e) => ShowDetail();
-        _videoFrame.Add(_videoTable);
+        _videoFrame.Add(_videoStatusLabel, _videoTable);
         _videoTable.DrawComplete += (sender, e) => OnVideoTableResized();
 
         _playlistList.OpenSelectedItem += (sender, e) => ShowDetail();
@@ -117,6 +145,9 @@ public partial class MainWindow
         _profileFrame.ColorScheme = Theme.Frame;
         _playlistFrame.ColorScheme = Theme.Frame;
         _videoFrame.ColorScheme = Theme.Frame;
+        _profileHeaderLabel.ColorScheme = Theme.Frame;
+        _playlistHeaderLabel.ColorScheme = Theme.Frame;
+        _videoStatusLabel.ColorScheme = Theme.Frame;
         _profileList.ColorScheme = Colors.ColorSchemes["Base"];
         _playlistList.ColorScheme = Colors.ColorSchemes["Base"];
         _videoTable.ColorScheme = Colors.ColorSchemes["Base"];
@@ -133,7 +164,7 @@ public partial class MainWindow
         ColorScheme = Theme.Syncing;
         _spinnerTimer = global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromMilliseconds(200), () =>
         {
-            Title = "ytpt " + SpinnerFrames[_spinnerFrame % SpinnerFrames.Length] + " " + message;
+            Title = " ytpt " + SpinnerFrames[_spinnerFrame % SpinnerFrames.Length] + " " + message + " ";
             _spinnerFrame++;
             return true;
         });

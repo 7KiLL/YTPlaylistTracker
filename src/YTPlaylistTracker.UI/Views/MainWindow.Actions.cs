@@ -200,8 +200,8 @@ public partial class MainWindow
         _searchField = new TextField()
         {
             Text = "",
-            X = 0, Y = 0,
-            Width = Dim.Fill(),
+            X = 1, Y = 1,
+            Width = Dim.Fill(1),
         };
         _searchField.TextChanged += (sender, e) =>
         {
@@ -246,7 +246,7 @@ public partial class MainWindow
         };
 
         _videoFrame.Add(_searchField);
-        _videoTable.Y = 1;
+        _videoTable.Y = 2;
         _videoTable.Height = Dim.Fill();
         _searchField.SetFocus();
         _videoFrame.SetNeedsDraw();
@@ -265,7 +265,7 @@ public partial class MainWindow
         _videoFrame.Remove(_searchField);
         _searchField = null;
         _searchQuery = "";
-        _videoTable.Y = 0;
+        _videoTable.Y = 1;
         _videoTable.Height = Dim.Fill();
         _videoTable.SetFocus();
         ApplyFilterAndSort();
