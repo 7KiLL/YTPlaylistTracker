@@ -11,12 +11,19 @@ public sealed class DetailDialog : Dialog
     {
         Title = title;
         Width = 75;
-        Height = Math.Min(fields.Length + 5, 22);
-        
-        
+
+        // Separate description from other fields — it gets a scrollable area
+        var normalFields = fields.Where(f => !string.Equals(f.label, "Description", StringComparison.Ordinal)).ToArray();
+        var description = fields.FirstOrDefault(f => string.Equals(f.label, "Description", StringComparison.Ordinal)).value;
+        bool hasDescription = description is not null and not "-" and not "";
+
+        // Height: fields + description area + chrome
+        int descHeight = hasDescription ? 6 : 0;
+        Height = Math.Min(normalFields.Length + descHeight + 5, 26);
+
         string? url = null;
         int y = 0;
-        foreach (var (label, value) in fields)
+        foreach (var (label, value) in normalFields)
         {
             Add(new Label() { Text = label + ":", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
 
@@ -42,6 +49,24 @@ public sealed class DetailDialog : Dialog
 
             if (string.Equals(label, "URL", StringComparison.Ordinal)) url = value;
             y++;
+        }
+
+        if (hasDescription)
+        {
+            y++;
+            Add(new Label() { Text = "Description:", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
+            y++;
+            var descView = new TextView()
+            {
+                Text = description!,
+                X = 1, Y = y,
+                Width = Dim.Fill(2),
+                Height = Dim.Fill(2),
+                ReadOnly = true,
+                WordWrap = true,
+                ColorScheme = Colors.ColorSchemes["Base"],
+            };
+            Add(descView);
         }
 
         if (browser is not null && url is not null)
@@ -84,9 +109,9 @@ public sealed class DetailDialog : Dialog
             ("Last Synced", playlist.LastSyncedAt?.ToString("yyyy-MM-dd HH:mm") ?? "Never"),
             ("Published", playlist.PublishedAt?.ToString("yyyy-MM-dd") ?? "-"),
             ("Thumbnail", playlist.ThumbnailUrl ?? "-"),
-            ("Description", playlist.Description ?? "-"),
             ("Active Videos", activeCount.ToString()),
             ("Removed", removedCount.ToString()),
+            ("Description", playlist.Description ?? "-"),
         ];
 
         return new DetailDialog("Playlist Details", browser, [.. fields]);

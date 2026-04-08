@@ -49,7 +49,7 @@ public sealed class RemovalHistoryDialog : Dialog
 
         var countLabel = new Label()
         {
-            Text = $"{removedVideos.Count} removed videos across all tracked playlists",
+            Text = $"{removedVideos.Count} removed videos across all tracked playlists  │  Enter: details",
             X = 0, Y = 0, Width = Dim.Fill(),
         };
 
