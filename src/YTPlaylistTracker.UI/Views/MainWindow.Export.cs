@@ -39,7 +39,7 @@ public partial class MainWindow
                 return;
             }
 
-            var dialog = new Dialog() { Title = "Export Removed Videos", Width = 50, Height = 10 };
+            var dialog = new Dialog() { Title = "Export Removed Videos", Width = 50, Height = 10, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
             var formatLabel = new Label() { Text = "Format:", X = 1, Y = 1 };
             var formatRadio = new RadioGroup() { RadioLabels = new[] { "CSV", "JSON" }, X = 12, Y = 1 };
             var pathLabel = new Label() { Text = "File:", X = 1, Y = 3 };

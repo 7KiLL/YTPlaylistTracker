@@ -12,6 +12,8 @@ public sealed class RemovalHistoryDialog : Dialog
         Title = "Removal History - All Playlists";
         Width = 90;
         Height = 28;
+        ShadowStyle = ShadowStyle.None;
+        BorderStyle = LineStyle.Rounded;
         var dt = new DataTable();
         dt.Columns.Add("Date", typeof(string));
         dt.Columns.Add("Playlist", typeof(string));

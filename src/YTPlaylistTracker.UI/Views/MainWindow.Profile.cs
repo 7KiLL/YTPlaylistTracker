@@ -53,7 +53,7 @@ public partial class MainWindow
 
     private void OnNewProfile()
     {
-        var dialog = new Dialog() { Title = "New Profile", Width = 50, Height = 8 };
+        var dialog = new Dialog() { Title = "New Profile", Width = 50, Height = 8, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
         var label = new Label() { Text = "Name:", X = 1, Y = 0 };
         var input = new TextField() { Text = "", X = 8, Y = 0, Width = 36 };
         dialog.Add(label, input);
@@ -122,7 +122,7 @@ public partial class MainWindow
                 {
                     global::Terminal.Gui.Application.Invoke(() =>
                     {
-                        urlDialog = new Dialog() { Title = "Login with Google", Width = 78, Height = 10 };
+                        urlDialog = new Dialog() { Title = "Login with Google", Width = 78, Height = 10, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
                         urlDialog.Add(new Label() { Text = "If the browser didn't open:", X = 1, Y = 0 });
                         var urlField = new TextField() { Text = authUrl, X = 1, Y = 2, Width = 72, ReadOnly = true };
                         urlField.SelectAll();
@@ -200,7 +200,7 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "Rename Profile", Width = 50, Height = 7 };
+        var dialog = new Dialog() { Title = "Rename Profile", Width = 50, Height = 7, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
         var label = new Label() { Text = "Name:", X = 1, Y = 0 };
         var input = new TextField() { Text = _selectedProfile.Name, X = 8, Y = 0, Width = 36 };
         dialog.Add(label, input);

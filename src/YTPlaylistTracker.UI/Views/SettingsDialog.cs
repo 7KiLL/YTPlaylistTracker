@@ -21,6 +21,8 @@ public sealed class SettingsDialog : Dialog
         Title = "Settings";
         Width = 70;
         Height = 30;
+        ShadowStyle = ShadowStyle.None;
+        BorderStyle = LineStyle.Rounded;
         int y = 0;
 
         // ── General ──

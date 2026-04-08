@@ -12,6 +12,8 @@ public sealed class RemovedVideosDialog : Dialog
         Title = $"Removed Videos - {playlistTitle}";
         Width = 80;
         Height = 25;
+        ShadowStyle = ShadowStyle.None;
+        BorderStyle = LineStyle.Rounded;
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(int));
         dt.Columns.Add("Title", typeof(string));

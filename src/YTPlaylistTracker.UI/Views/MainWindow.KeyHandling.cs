@@ -4,110 +4,128 @@ namespace YTPlaylistTracker.UI.Views;
 
 public partial class MainWindow
 {
-    protected override bool OnKeyDown(Key key)
+    private void SetupKeyHandling()
     {
-        // === ProcessHotKey logic (runs first) ===
+        // global::Terminal.Gui.Application.KeyDown fires BEFORE any view processes the key.
+        // This is the v2 equivalent of v1's ProcessHotKey (parent-first).
+        // We use it for vim-style letter keys that child views would otherwise consume.
+        global::Terminal.Gui.Application.KeyDown += OnApplicationKeyDown;
+    }
 
-        // Don't intercept vim/letter keys when search field is active
-        bool searchFocused = _searchField is not null && _searchField.HasFocus;
+    private void CleanupKeyHandling()
+    {
+        global::Terminal.Gui.Application.KeyDown -= OnApplicationKeyDown;
+    }
 
-        if (!searchFocused)
+    private void OnApplicationKeyDown(object? sender, Key key)
+    {
+        // Don't intercept when search field is active
+        if (_searchField is not null && _searchField.HasFocus)
+            return;
+
+        // Pane switching (arrows + h/l)
+        View[] panes = [_profileList, _playlistList, _videoTable];
+        var current = Array.FindIndex(panes, p => p.HasFocus);
+
+        if ((key == Key.CursorLeft || key == (Key)'h') && current > 0)
         {
-            // Pane switching (arrows + h/l)
-            View[] panes = [_profileList, _playlistList, _videoTable];
-            var current = Array.FindIndex(panes, p => p.HasFocus);
+            panes[current - 1].SetFocus();
+            UpdateHintBar();
+            key.Handled = true;
+            return;
+        }
 
-            if ((key == Key.CursorLeft || key == (Key)'h') && current > 0)
+        if ((key == Key.CursorRight || key == (Key)'l') && current >= 0 && current < panes.Length - 1)
+        {
+            panes[current + 1].SetFocus();
+            UpdateHintBar();
+            key.Handled = true;
+            return;
+        }
+
+        // Focused pane for j/k navigation
+        var focused = (_profileList.HasFocus, _playlistList.HasFocus) switch
+        {
+            (true, _) => (View)_profileList,
+            (_, true) => (View)_playlistList,
+            _ => (View)_videoTable,
+        };
+
+        // Shift+Arrow: fast scroll (5 rows at a time)
+        if (key == Key.CursorDown.WithShift)
+        {
+            for (int i = 0; i < 5; i++)
+                focused.NewKeyDownEvent(Key.CursorDown);
+            key.Handled = true;
+            return;
+        }
+
+        if (key == Key.CursorUp.WithShift)
+        {
+            for (int i = 0; i < 5; i++)
+                focused.NewKeyDownEvent(Key.CursorUp);
+            key.Handled = true;
+            return;
+        }
+
+        // Profile-specific hotkeys when profile pane has focus
+        if (_profileList.HasFocus)
+        {
+            if (key == (Key)'n') { OnNewProfile(); key.Handled = true; return; }
+            if (key == (Key)'L') { OnToggleLogin(); key.Handled = true; return; }
+            if (key == (Key)'r') { OnRenameProfile(); key.Handled = true; return; }
+            if (key == (Key)'d') { OnSetDefaultProfile(); key.Handled = true; return; }
+            if (key == (Key)'x') { OnDeleteProfile(); key.Handled = true; return; }
+
+            if (key == Key.Enter)
             {
-                panes[current - 1].SetFocus();
-                UpdateHintBar();
-                return true;
-            }
-
-            if ((key == Key.CursorRight || key == (Key)'l') && current >= 0 && current < panes.Length - 1)
-            {
-                panes[current + 1].SetFocus();
-                UpdateHintBar();
-                return true;
-            }
-
-            // Focused pane for j/k navigation
-            var focused = (_profileList.HasFocus, _playlistList.HasFocus) switch
-            {
-                (true, _) => (View)_profileList,
-                (_, true) => (View)_playlistList,
-                _ => (View)_videoTable,
-            };
-
-            // Shift+Arrow: fast scroll (5 rows at a time)
-            if (key == Key.CursorDown.WithShift)
-            {
-                for (int i = 0; i < 5; i++)
-                    focused.NewKeyDownEvent(Key.CursorDown);
-                return true;
-            }
-
-            if (key == Key.CursorUp.WithShift)
-            {
-                for (int i = 0; i < 5; i++)
-                    focused.NewKeyDownEvent(Key.CursorUp);
-                return true;
-            }
-
-            // Profile-specific hotkeys when profile pane has focus
-            if (_profileList.HasFocus)
-            {
-                if (key == (Key)'n') { OnNewProfile(); return true; }
-                if (key == (Key)'L') { OnToggleLogin(); return true; }
-                if (key == (Key)'r') { OnRenameProfile(); return true; }
-                if (key == (Key)'d') { OnSetDefaultProfile(); return true; }
-                if (key == (Key)'x') { OnDeleteProfile(); return true; }
-
-                if (key == Key.Enter)
-                {
-                    ShowProfileContextMenu();
-                    return true;
-                }
-            }
-
-            // Shift+J/K (uppercase) = fast scroll; lowercase = single step
-            if (key == (Key)'J')
-            {
-                for (int i = 0; i < 5; i++)
-                    focused.NewKeyDownEvent(Key.CursorDown);
-                return true;
-            }
-
-            if (key == (Key)'K')
-            {
-                for (int i = 0; i < 5; i++)
-                    focused.NewKeyDownEvent(Key.CursorUp);
-                return true;
-            }
-
-            if (key == (Key)'j') { focused.NewKeyDownEvent(Key.CursorDown); return true; }
-            if (key == (Key)'k') { focused.NewKeyDownEvent(Key.CursorUp); return true; }
-            if (key == (Key)'a') { _ = OnAddByUrlAsync(); return true; }
-            if (key == (Key)'t') { OnToggleTrack(); return true; }
-            if (key == (Key)'T') { OnToggleAllTracking(); return true; }
-            if (key == (Key)'s') { OnSync(); return true; }
-            if (key == (Key)'S') { OnSyncAll(); return true; }
-            if (key == (Key)'e') { _ = OnExport(); return true; }
-            if (key == (Key)'H') { _ = OnShowHistory(); return true; }
-            if (key == (Key)'o') { ShowSortMenu(); return true; }
-            if (key == (Key)'u') { OnUpdateCheck(); return true; }
-            if (key == (Key)'q') { global::Terminal.Gui.Application.RequestStop(); return true; }
-            if (key == (Key)'/') { ShowSearch(); return true; }
-
-            if (key == (Key)'?')
-            {
-                global::Terminal.Gui.Application.Run(new HelpDialog());
-                return true;
+                ShowProfileContextMenu();
+                key.Handled = true;
+                return;
             }
         }
 
-        // === ProcessKey logic (Tab, F-keys, Ctrl combos — always active) ===
+        // Shift+J/K (uppercase) = fast scroll; lowercase = single step
+        if (key == (Key)'J')
+        {
+            for (int i = 0; i < 5; i++)
+                focused.NewKeyDownEvent(Key.CursorDown);
+            key.Handled = true;
+            return;
+        }
 
+        if (key == (Key)'K')
+        {
+            for (int i = 0; i < 5; i++)
+                focused.NewKeyDownEvent(Key.CursorUp);
+            key.Handled = true;
+            return;
+        }
+
+        if (key == (Key)'j') { focused.NewKeyDownEvent(Key.CursorDown); key.Handled = true; return; }
+        if (key == (Key)'k') { focused.NewKeyDownEvent(Key.CursorUp); key.Handled = true; return; }
+        if (key == (Key)'a') { _ = OnAddByUrlAsync(); key.Handled = true; return; }
+        if (key == (Key)'t') { OnToggleTrack(); key.Handled = true; return; }
+        if (key == (Key)'T') { OnToggleAllTracking(); key.Handled = true; return; }
+        if (key == (Key)'s') { OnSync(); key.Handled = true; return; }
+        if (key == (Key)'S') { OnSyncAll(); key.Handled = true; return; }
+        if (key == (Key)'e') { _ = OnExport(); key.Handled = true; return; }
+        if (key == (Key)'H') { _ = OnShowHistory(); key.Handled = true; return; }
+        if (key == (Key)'o') { ShowSortMenu(); key.Handled = true; return; }
+        if (key == (Key)'u') { OnUpdateCheck(); key.Handled = true; return; }
+        if (key == (Key)'q') { global::Terminal.Gui.Application.RequestStop(); key.Handled = true; return; }
+        if (key == (Key)'/') { ShowSearch(); key.Handled = true; return; }
+
+        if (key == (Key)'?')
+        {
+            global::Terminal.Gui.Application.Run(new HelpDialog());
+            key.Handled = true;
+            return;
+        }
+    }
+
+    protected override bool OnKeyDown(Key key)
+    {
         // Tab / Shift+Tab: cycle focus between the three panes
         if (key == Key.Tab || key == Key.Tab.WithShift)
         {

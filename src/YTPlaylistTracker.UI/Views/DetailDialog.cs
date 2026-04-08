@@ -12,6 +12,8 @@ public sealed class DetailDialog : Dialog
         Title = title;
         Width = 75;
         Height = Math.Min(fields.Length + 5, 22);
+        ShadowStyle = ShadowStyle.None;
+        BorderStyle = LineStyle.Rounded;
         string? url = null;
         int y = 0;
         foreach (var (label, value) in fields)

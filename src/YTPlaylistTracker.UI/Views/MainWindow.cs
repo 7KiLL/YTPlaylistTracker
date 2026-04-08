@@ -63,9 +63,16 @@ public partial class MainWindow(
         ? $"ytpt - YouTube Playlist Tracker (v{_latestUpdate.LatestVersion} available!)"
         : "ytpt - YouTube Playlist Tracker";
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) CleanupKeyHandling();
+        base.Dispose(disposing);
+    }
+
     public async Task InitializeAsync()
     {
         SetupUI();
+        SetupKeyHandling();
         _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
 
         // First-run: show welcome dialog

@@ -17,6 +17,8 @@ public sealed class WelcomeDialog : Dialog
         Title = "Welcome to ytpt";
         Width = 60;
         Height = 12;
+        ShadowStyle = ShadowStyle.None;
+        BorderStyle = LineStyle.Rounded;
 
         Add(new Label() { Text = "Track YouTube playlists and detect removed videos.", X = 1, Y = 0 });
         Add(new Label() { Text = "How do you want to start?", X = 1, Y = 2 });

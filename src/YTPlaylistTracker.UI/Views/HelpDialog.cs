@@ -9,6 +9,8 @@ public sealed class HelpDialog : Dialog
         Title = "Keybindings";
         Width = 52;
         Height = 32;
+        ShadowStyle = ShadowStyle.None;
+        BorderStyle = LineStyle.Rounded;
         (string, string)[] keys =
         [
             ("── Navigation ──", ""),

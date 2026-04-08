@@ -15,7 +15,7 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "Add Playlist", Width = 60, Height = 8 };
+        var dialog = new Dialog() { Title = "Add Playlist", Width = 60, Height = 8, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
         var label = new Label() { Text = "YouTube Playlist URL or ID:", X = 1, Y = 1 };
         var input = new TextField() { Text = "", X = 1, Y = 2, Width = Dim.Fill(2) };
         var okBtn = new Button() { Text = "Add", IsDefault = true };
@@ -166,7 +166,7 @@ public partial class MainWindow
 
     private void ShowSortMenu()
     {
-        var dialog = new Dialog() { Title = "Sort by", Width = 30, Height = 10 };
+        var dialog = new Dialog() { Title = "Sort by", Width = 30, Height = 10, ShadowStyle = ShadowStyle.None, BorderStyle = LineStyle.Rounded };
         string[] options = ["Title", "Channel", "Added Date", "Status"];
         var list = new ListView()
         {

@@ -12,7 +12,7 @@ public record PlaylistPolicy(
     public static PlaylistPolicy For(PlaylistKind kind) => kind switch
     {
         PlaylistKind.Liked => new(
-            Icon: "♥",
+            Icon: "💜",
             SortOrder: 0,
             ManualCooldown: TimeSpan.FromDays(1),
             AllowAutoSync: false,
@@ -20,13 +20,13 @@ public record PlaylistPolicy(
                            + "Initial sync may take a while.\n\n"
                            + "Enable tracking?"),
         PlaylistKind.WatchLater => new(
-            Icon: "⏱",
+            Icon: "🕐",
             SortOrder: 1,
             ManualCooldown: null,
             AllowAutoSync: true,
             TrackingWarning: null),
         PlaylistKind.Uploads => new(
-            Icon: "▶",
+            Icon: "📺",
             SortOrder: 2,
             ManualCooldown: null,
             AllowAutoSync: true,
