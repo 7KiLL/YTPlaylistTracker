@@ -13,6 +13,7 @@ public partial class MainWindow
     private void SetupUI()
     {
         Title = "ytpt - YouTube Playlist Tracker";
+        BorderStyle = LineStyle.Rounded;
 
         _profileFrame = new FrameView()
         {
@@ -21,6 +22,7 @@ public partial class MainWindow
             Width = 18,
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
+            BorderStyle = LineStyle.Rounded,
         };
         _profileList = new ListView
         {
@@ -39,6 +41,7 @@ public partial class MainWindow
             Width = 28,
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
+            BorderStyle = LineStyle.Rounded,
         };
         _playlistList = new ListView
         {
@@ -57,6 +60,7 @@ public partial class MainWindow
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
+            BorderStyle = LineStyle.Rounded,
         };
         _videoTable = new TableView
         {
