@@ -1,54 +1,227 @@
 # TODO / Backlog
 
-## Completed (v0.1.0 — v0.4.0)
-- [x] Multi-profile support
-- [x] Playlist tracking with soft-delete history
-- [x] OAuth2 sign-in (persisted credentials)
-- [x] Manual sync (individual and all)
-- [x] TUI with three-pane layout (profiles, playlists, videos)
-- [x] Video search (by title/channel)
-- [x] Video sorting (Title, Channel, Added Date, Status)
-- [x] Removed videos view (filtered display)
-- [x] Detail dialogs for profiles/playlists/videos
-- [x] Dark theme + Ctrl+C quit confirmation
-- [x] Database reset command (ytpt reset)
-- [x] Cross-platform browser launching
-- [x] Lazy YouTube API initialization
-- [x] EF Core Migrations (auto-upgrade from v0.1.0 databases)
-- [x] Video metadata: AddedAt, Description, ThumbnailUrl, Position, JsonMetadata
-- [x] Playlist metadata: Description, ThumbnailUrl, PublishedAt, JsonMetadata
-- [x] Release infrastructure (GitHub Actions, cross-platform builds)
-- [x] Install scripts (bash + PowerShell one-liners)
-- [x] Fixture-based sync tests
+## Completed
 
-## Bug Fixes (v0.4.x)
-- [x] Fix MainLoop.Invoke(async () => ...) deadlock — Terminal.Gui treats async lambdas as fire-and-forget; replaced with sync lambda + .GetAwaiter().GetResult()
-- [x] Fix ShowSpinner() timer leak — calling ShowSpinner twice leaked the first timer; now cleans up previous timer before creating a new one
-- [x] Fix spinner flicker — reduced interval from 80ms to 200ms
-- [x] Fix UserSettings test flakiness — File.Move now uses overwrite:true
-- [x] Add validate-secrets CI job in release.yml
-- [x] Improve API logging with [API] prefix for easier filtering
+<details>
+<summary>v0.1.0 - v0.5.0 (click to expand)</summary>
 
-## Completed (v0.5.0)
-- [x] Auto-sync on startup (configurable)
-- [x] Removal history/timeline view (show when videos were removed)
-- [x] Export removed videos report (CSV/JSON)
-- [x] Bulk import playlists from YouTube account (auto-imports on startup via authenticated API)
+### v0.1.0 - v0.4.0
+- Multi-profile support, playlist tracking with soft-delete history
+- OAuth2 sign-in (persisted credentials), lazy YouTube API init
+- TUI three-pane layout (profiles, playlists, videos)
+- Video search (title/channel), sorting (title, channel, date, status)
+- Removed videos view, detail dialogs for profiles/playlists/videos
+- Dark theme, Ctrl+C quit confirmation, database reset command
+- Cross-platform browser launching, EF Core migrations
+- Video metadata (AddedAt, Description, ThumbnailUrl, Position, JsonMetadata)
+- Playlist metadata (Description, ThumbnailUrl, PublishedAt, JsonMetadata)
+- Release infrastructure (GitHub Actions, 5-platform builds, install scripts)
+- Fixture-based sync tests
 
-## In Progress
-- [x] **Enrich profile with YouTube channel info** — Fetch channel name, ID, and avatar via `channels.list?mine=true` on login/sync/startup; profile list shows channel name instead of "Default".
-- [x] **Update/upgrade system** — Auto-check for updates on startup, title bar notification, in-place binary replacement via Ctrl+U / Settings / `ytpt update` CLI.
+### v0.4.x Bug Fixes
+- Fix `Application.Invoke(async () => ...)` fire-and-forget — replaced with sync lambda + `.GetAwaiter().GetResult()`
+- Fix `ShowSpinner()` timer leak — clean up previous timer before creating new one
+- Fix spinner flicker — interval 80ms -> 200ms
+- Fix `UserSettings` test flakiness — `File.Move` with `overwrite: true`
+- Add `validate-secrets` CI job in release.yml
+- Improve API logging with `[API]` prefix
 
-## Backlog (prioritized)
+### v0.5.0
+- Auto-sync on startup (configurable)
+- Removal history/timeline view
+- Export removed videos report (CSV/JSON)
+- Bulk import playlists from YouTube account
 
-### P1 — Core UX gaps
-- [x] **Profile management in TUI** — Per-profile OAuth, offline profiles, CRUD dialogs, context menu, hotkeys (n/L/r/d/x).
-- [x] **Profile pane reselection bug** — Down-arrow on single-profile list re-fires OnProfileSelected, clearing video list. Guard against reselecting same profile or suppress redundant events.
-- [x] **Video detail Status field** — Shows "Active" followed by description text bleeding into the Status line. Likely a truncation/formatting issue in DetailDialog.ForVideo().
+### v0.6.0 - v0.9.0
+- Enrich profile with YouTube channel info (name, ID, avatar)
+- Auto-update system (title bar notification, in-place binary replacement)
+- Profile management in TUI (per-profile OAuth, CRUD dialogs, context menu, hotkeys)
+- Profile pane reselection bug fix
+- Video detail Status field formatting fix
+- Settings dialog tabbed layout
+- Glyph fallback for terminals without emoji support
 
-### P2 — Polish
-- [ ] **Playlist diff view** — Side-by-side before/after comparison when a sync detects changes, making removals easier to review at a glance.
+</details>
 
-### P3 — Infrastructure / nice-to-have
-- [ ] **Track video duration & view count** — Fetch `contentDetails`/`statistics` from YouTube API and store in DB for richer historical records (no UI display needed).
-- [ ] **Smoke tests with Testcontainers** — End-to-end test in a Linux container to catch platform-specific issues in CI.
+---
+
+## Bugs & Anti-patterns
+
+Issues that are wrong today and should be fixed.
+
+### B1. Async lambda in `Accepting` handler
+**File**: `SettingsDialog.Storage.cs:35`
+
+`purgeBtn.Accepting += async (sender, e) =>` is fire-and-forget — exceptions are swallowed. Violates `async-tui-safety.md`. Must use sync lambda with `.GetAwaiter().GetResult()` or offload to `Task.Run` + `Application.Invoke`.
+
+### B2. Stale docs referencing v1 APIs
+Files with outdated Terminal.Gui v1 references:
+- `architecture.md:64` — says "Terminal.Gui v1: v2 is still pre-release" (we're on v2.0.0)
+- `CLAUDE.md:114` — references "MainLoop.Invoke" (should be `Application.Invoke`)
+- `README.md:261` — says "Terminal.Gui v1 limitation" for emoji rendering
+- `multitasking.md:43-46` — uses `Application.MainLoop.RemoveTimeout`/`AddTimeout` (should be `Application.RemoveTimeout`/`AddTimeout`)
+
+### B3. `Application.Top` static access (4 locations)
+**See**: improvements.md R1
+
+`Application.Top` is legacy in v2. Current usages:
+- `MainWindow.KeyHandling.cs:23,27` — guard checks
+- `MainWindow.Profile.cs:161` — `SetNeedsDraw()`
+- `SettingsDialog.Storage.cs:71` — `RequestStop()`
+
+Replace with `View.App?.TopRunnableView` and `Application.Navigation.GetFocused()` when upgrading Terminal.Gui.
+
+---
+
+## v2 Alignment
+
+Patterns that work today but use deprecated/v1 APIs. Not bugs, but tech debt.
+
+### V1. `Colors.ColorSchemes["..."]` dictionary access (20+ sites)
+**See**: improvements.md R2
+
+**Files**: `Theme.cs:47-50`, `MainWindow.Layout.cs`, `DetailDialog.cs`, `SettingsDialog.cs`, `WelcomeDialog.cs`, and more.
+
+v2 replacement: `Scheme` / `SchemeManager` / `VisualRole`. The dictionary still works in 2.0.0 but is the v1 pattern.
+
+### V2. Manual `KeyDown` event handling -> Command-based bindings
+**See**: improvements.md P1
+
+**File**: `MainWindow.KeyHandling.cs` (entire file)
+
+Current: imperative `Application.KeyDown` with key comparisons and `key.Handled = true`.
+Target: `AddCommand()` + `KeyBindings.Add()` for declarative, user-configurable bindings.
+
+Benefits: JSON-configurable, self-documenting, no manual text-field guards.
+
+### V3. Custom spinner -> `SpinnerView`
+**See**: improvements.md P2
+
+**Files**: `MainWindow.cs:41` (SpinnerFrames), `MainWindow.Layout.cs:160-180` (ShowSpinner/HideSpinner)
+
+v2 provides built-in `SpinnerView` with multiple animation styles. Eliminates custom timer management and the `AddTimeout`/`RemoveTimeout` dance.
+
+### V4. `ContextMenu` -> `PopoverMenu`
+**See**: improvements.md P3
+
+**File**: `MainWindow.Profile.cs` (profile context menu)
+
+v2's `PopoverMenu` provides richer cascading menus, better keyboard support, and consistent styling.
+
+### V5. Ad-hoc input dialogs -> `Prompt<T>`
+**See**: improvements.md P6
+
+**Files**: `MainWindow.Actions.cs:14-32` (OnAddByUrlAsync), `MainWindow.Profile.cs` (rename dialog)
+
+Several places build `Dialog` + `TextField` + OK/Cancel manually. v2's `Prompt<T>` does this in one call.
+
+---
+
+## New Features
+
+### F1. Playlist diff view
+Side-by-side before/after comparison when a sync detects changes, making removals easier to review at a glance.
+
+### F2. Track video duration & view count
+Fetch `contentDetails`/`statistics` from YouTube API and store in DB for richer historical records. No UI display needed initially.
+
+---
+
+## Polish & UX
+
+### U1. Responsive pane widths
+**See**: improvements.md G2
+
+**File**: `MainWindow.Layout.cs:22,47`
+
+Profile/playlist panes use fixed widths (`Width = 18`, `Width = 28`). Use `Dim.Auto()` or `Dim.Percent()` to adapt to terminal size.
+
+### U2. Built-in scrollbars
+**See**: improvements.md G1
+
+Use `ViewportSettings.HasVerticalScrollBar` on scrollable views instead of manual scroll handling.
+
+### U3. Mouse hover states
+**See**: improvements.md G3
+
+v2's `MouseHighlightStates` provides automatic hover/press visual feedback on interactive views.
+
+### U4. Link view for URLs
+**See**: improvements.md G5
+
+**File**: `DetailDialog.cs` (browser buttons)
+
+v2's built-in `Link` view for clickable hyperlinks. Could replace manual button + `ISystemLauncher.OpenUrl()` for YouTube links.
+
+### U5. Tab-style borders for pane headers
+**See**: improvements.md G8
+
+v2's `BorderSettings.Tab` could replace interior header Labels inside FrameViews with integrated tab-style titles.
+
+### U6. ConfigurationManager for user themes
+**See**: improvements.md G4
+
+**Files**: `Theme.cs`, `ThemePalette.cs`
+
+Expose themes via `~/.tui/ytpt.config.json` for user customization without code changes.
+
+---
+
+## Testing
+
+### E1. E2E scenario test project + harness
+**See**: improvements.md T1
+
+Create `YTPlaylistTracker.ScenarioTests` with `TuiTestHarness` that initializes Terminal.Gui headlessly, mocks services via NSubstitute, and exposes helpers for seed data and key simulation.
+
+### E2. Scenario catalog
+**See**: improvements.md T2
+
+Comprehensive scenario tables covering: initialization, keyboard navigation, data binding, sync, themes, column layout, and dialogs. Full catalog in `improvements.md`.
+
+### E3. Virtual time for timer tests
+**See**: improvements.md T4
+
+Test spinner animation, search debounce, and auto-sync timers using `VirtualTimeProvider` (v2.x+) instead of real delays.
+
+### E4. TestLogging integration
+**See**: improvements.md T5
+
+Use `TestLogging.BindTo(testOutputHelper)` to capture Terminal.Gui internal logs in test output for diagnosing failures.
+
+---
+
+## Infrastructure
+
+### I1. Instance-based Application pattern (large refactor)
+**See**: improvements.md P4
+
+Move from static `Application.*` to `IApplication` instances for testability. Best done when upgrading to a newer Terminal.Gui version. Affects all UI files.
+
+### I2. `IRunnable<TResult>` for dialogs
+**See**: improvements.md P5
+
+**Files**: `WelcomeDialog.cs`, `SettingsDialog.cs`, `DetailDialog.cs`, etc.
+
+Type-safe modal results instead of manual variable capture. Requires v2.x+ API.
+
+### I3. Smoke tests with Testcontainers
+End-to-end test in a Linux container to catch platform-specific issues in CI.
+
+### I4. Logging integration
+**See**: improvements.md G6
+
+v2's `Logging` class is compatible with `Microsoft.Extensions.Logging`. Could unify app logging with Terminal.Gui internal logging.
+
+---
+
+## Priority Order
+
+1. **B1-B2** — Fix async bug and stale docs (minimal effort, high value)
+2. **E1-E2** — E2E scenario test infrastructure + scenarios
+3. **V3** — Replace custom spinner with SpinnerView (eliminates timer complexity)
+4. **V2** — Command-based key bindings (declarative, configurable)
+5. **B3** — Application.Top migration (when upgrading Terminal.Gui)
+6. **V4** — PopoverMenu for context menus
+7. **F1-F2** — New features as time permits
+8. Everything else by category priority
