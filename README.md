@@ -145,11 +145,14 @@ Get an API key from [Google Cloud Console](https://console.cloud.google.com/) �
 | Command | Description |
 |---------|-------------|
 | `ytpt` or `ytpt ui` | Launch interactive TUI |
-| `ytpt login` | Sign in with Google (OAuth2) |
-| `ytpt logout` | Sign out, remove stored tokens |
-| `ytpt sync` | Sync all tracked playlists (headless) |
+| `ytpt login [--profile name]` | Sign in with Google (OAuth2) |
+| `ytpt logout [--profile name]` | Sign out, remove stored tokens |
+| `ytpt sync [--profile name]` | Sync all tracked playlists (headless) |
 | `ytpt sync <playlist-id>` | Sync a specific playlist |
 | `ytpt status` | Show tracking summary |
+| `ytpt export` | Export removed videos (CSV to stdout) |
+| `ytpt export -f json -o report.json` | Export as JSON to file |
+| `ytpt update` | Check for and apply updates |
 | `ytpt reset [--yes]` | Delete database and start fresh |
 | `ytpt --help` | Show all available commands |
 
@@ -157,26 +160,74 @@ Add `--verbose` or `-v` to any command for debug logging.
 
 ## TUI Keybindings
 
+### Navigation
+
+| Key | Action |
+|-----|--------|
+| `h` / `l` / Left / Right | Navigate between panes (profiles, playlists, videos) |
+| `j` / `k` | Navigate up/down in focused pane |
+| `J` / `K` / Shift+Up/Down | Fast scroll (5 rows) |
+| Tab / Shift+Tab | Cycle focus between panes |
+| `Enter` | View details / open context menu (profiles) |
+
+### Actions
+
 | Key | Action |
 |-----|--------|
 | `a` / `F1` | Add playlist (paste URL or ID) |
 | `t` / `F2` | Toggle tracking on/off for selected playlist |
-| `T` | Toggle all playlists in profile (track all or untrack all) |
+| `T` | Toggle all playlists in profile |
 | `s` / `F5` | Sync selected playlist |
 | `S` / `F6` | Sync all tracked playlists |
-| `/` | Search videos by title or channel (case-insensitive) |
-| `o` | Sort videos (by Title, Channel, Added Date, or Status) |
-| `?` | Show help dialog |
-| `Enter` | View details of selected profile/playlist/video |
-| `h` / `l` | Navigate between panes (profiles, playlists, videos) |
-| `j` / `k` | Navigate up/down in focused pane |
-| `J` / `K` / Shift+Up/Down | Fast scroll (5 rows) |
-| Tab / Shift+Tab | Cycle focus between panes |
+| `e` / `F7` | Export removed videos report |
+| `H` / `F11` | Show sync history |
+| `u` / Ctrl+U | Check for updates |
+
+### Search & Filter
+
+| Key | Action |
+|-----|--------|
+| `/` / `F3` | Search videos by title or channel |
+| `o` / `F4` | Sort videos (Title, Channel, Date, Status) |
 | `F8` | Toggle: show removed videos only |
+
+### Profile Management (when profile pane is focused)
+
+| Key | Action |
+|-----|--------|
+| `n` | New profile |
+| `L` | Login / logout for selected profile |
+| `r` | Rename profile |
+| `d` | Set as default profile |
+| `x` | Delete profile |
+
+### General
+
+| Key | Action |
+|-----|--------|
+| `?` / `F12` | Show help dialog |
 | `F9` | Settings |
 | `q` / `F10` | Quit |
 | Ctrl+C x2 | Quick quit (double-press within 1s) |
 | Esc | Close search (when searching) |
+
+## Auto-Update
+
+ytpt can check for new releases and update itself in place:
+
+```bash
+ytpt update             # CLI: check and apply update
+```
+
+In the TUI, press `u` or `Ctrl+U` to check for updates. Auto-install on startup can be enabled in Settings (`F9`).
+
+## Multi-Profile Support
+
+ytpt supports multiple Google accounts. Each profile has its own OAuth token, playlists, and videos — fully isolated.
+
+- Create profiles in the TUI (press `n` in the profile pane) or use `--profile` with CLI commands
+- Switch between profiles in the left pane of the TUI
+- Set a default profile with `d`
 
 ## Data Storage
 
@@ -191,7 +242,7 @@ All data is stored locally:
 Contents:
 - `tracker.db` — SQLite database (playlists, videos, removal history)
 - `logs/` — Rolling log files (7 day retention)
-- `oauth-tokens/` — Google OAuth refresh tokens
+- `oauth-tokens/` — Google OAuth refresh tokens (per profile)
 
 File permissions are set to owner-only (700/600) on Linux/macOS.
 
@@ -225,6 +276,11 @@ dotnet build                        # Build all
 dotnet test                         # Run all tests
 dotnet test --filter "SyncService"  # Run specific tests
 ```
+
+Test projects:
+- **Unit tests** — SyncService diff logic, URL parsing, error scenarios (NSubstitute mocks)
+- **Integration tests** — Repository CRUD, end-to-end sync flow (in-memory SQLite)
+- **Scenario tests** — TUI interaction scenarios
 
 ### Building with OAuth credentials
 
