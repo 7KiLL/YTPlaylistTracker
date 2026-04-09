@@ -6,11 +6,13 @@ public sealed class HelpDialog : Dialog
 {
     public HelpDialog() : base()
     {
-        Title = "Keybindings";
+        Title = "";
         Width = 52;
-        Height = 32;
-        
-        
+        Height = 33;
+        Border!.Settings &= ~BorderSettings.Title;
+
+        Add(new Label { Text = " Keybindings", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+
         (string, string)[] keys =
         [
             ("── Navigation ──", ""),
@@ -42,7 +44,7 @@ public sealed class HelpDialog : Dialog
             ("Ctrl+C (x2)", "Quit"),
         ];
 
-        int y = 0;
+        int y = 1;
         foreach (var (key, action) in keys)
         {
             Add(new Label() { Text = key, X = 1, Y = y, ColorScheme = Theme.HintKey });

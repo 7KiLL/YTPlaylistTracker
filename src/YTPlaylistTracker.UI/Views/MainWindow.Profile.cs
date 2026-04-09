@@ -53,9 +53,11 @@ public partial class MainWindow
 
     private void OnNewProfile()
     {
-        var dialog = new Dialog() { Title = "New Profile", Width = 50, Height = 8 };
-        var label = new Label() { Text = "Name:", X = 1, Y = 0 };
-        var input = new TextField() { Text = "", X = 8, Y = 0, Width = 36 };
+        var dialog = new Dialog() { Title = "", Width = 50, Height = 9 };
+        dialog.Border!.Settings &= ~BorderSettings.Title;
+        dialog.Add(new Label { Text = " New Profile", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        var label = new Label() { Text = "Name:", X = 1, Y = 1 };
+        var input = new TextField() { Text = "", X = 8, Y = 1, Width = 36 };
         dialog.Add(label, input);
 
         var okBtn = new Button() { Text = "Create", IsDefault = true };
@@ -109,7 +111,7 @@ public partial class MainWindow
         if (_selectedProfile is null) return;
 
         if (string.IsNullOrWhiteSpace(AppSettings.OAuthClientId) || string.IsNullOrWhiteSpace(AppSettings.OAuthClientSecret))
-        { MessageBox.Query("OAuth Not Configured", "OAuth credentials not configured.\nSet YTPT_CLIENT_ID and YTPT_CLIENT_SECRET env vars.", "OK"); return; }
+        { Dialogs.Query("OAuth Not Configured", "OAuth credentials not configured.\nSet YTPT_CLIENT_ID and YTPT_CLIENT_SECRET env vars.", "OK"); return; }
 
         var profile = _selectedProfile;
         Dialog? urlDialog = null;
@@ -122,20 +124,22 @@ public partial class MainWindow
                 {
                     global::Terminal.Gui.Application.Invoke(() =>
                     {
-                        urlDialog = new Dialog() { Title = "Login with Google", Width = Dim.Percent(80), Height = 10 };
-                        urlDialog.Add(new Label() { Text = "A browser window should open. If not, copy this URL:", X = 1, Y = 0 });
-                        var urlField = new TextField() { Text = authUrl, X = 1, Y = 2, Width = Dim.Fill(2), ReadOnly = true };
+                        urlDialog = new Dialog() { Title = "", Width = Dim.Percent(80), Height = 11 };
+                        urlDialog.Border!.Settings &= ~BorderSettings.Title;
+                        urlDialog.Add(new Label { Text = " Login with Google", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+                        urlDialog.Add(new Label() { Text = "A browser window should open. If not, copy this URL:", X = 1, Y = 1 });
+                        var urlField = new TextField() { Text = authUrl, X = 1, Y = 3, Width = Dim.Fill(2), ReadOnly = true };
                         urlDialog.Add(urlField);
-                        var copyBtn = new Button() { Text = "Copy URL", X = 1, Y = 4 };
+                        var copyBtn = new Button() { Text = "Copy URL", X = 1, Y = 5 };
                         copyBtn.Accepting += (sender, e) =>
                         {
                             if (browser.TryCopyToClipboard(authUrl, out var err)) copyBtn.Text = "Copied!";
-                            else MessageBox.Query("Copy Failed", err!, "OK");
+                            else Dialogs.Query("Copy Failed", err!);
                         };
-                        var openBtn = new Button() { Text = "Open in Browser", X = 16, Y = 4 };
+                        var openBtn = new Button() { Text = "Open in Browser", X = 16, Y = 5 };
                         openBtn.Accepting += (sender, e) => browser.OpenUrl(authUrl);
                         urlDialog.Add(copyBtn, openBtn);
-                        urlDialog.Add(new Label() { Text = "Waiting for sign-in...", X = 38, Y = 4, ColorScheme = Colors.ColorSchemes["Menu"] });
+                        urlDialog.Add(new Label() { Text = "Waiting for sign-in...", X = 38, Y = 5, ColorScheme = Colors.ColorSchemes["Menu"] });
                         global::Terminal.Gui.Application.Run(urlDialog);
                     });
                 }).ConfigureAwait(false);
@@ -169,7 +173,7 @@ public partial class MainWindow
                 {
                     if (urlDialog is not null) global::Terminal.Gui.Application.RequestStop();
                     Title = DefaultTitle;
-                    MessageBox.Query("Login Failed", ex.Message, "OK");
+                    Dialogs.Query("Login Failed", ex.Message, "OK");
                 });
             }
         });
@@ -179,7 +183,7 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var confirm = MessageBox.Query("Logout",
+        var confirm = Dialogs.Query("Logout",
             $"Remove OAuth tokens for \"{_selectedProfile.ChannelTitle ?? _selectedProfile.Name}\"?\n\nThe profile will switch to offline mode.",
             "Logout", "Cancel");
         if (confirm != 0) return;
@@ -199,9 +203,11 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "Rename Profile", Width = 50, Height = 7 };
-        var label = new Label() { Text = "Name:", X = 1, Y = 0 };
-        var input = new TextField() { Text = _selectedProfile.Name, X = 8, Y = 0, Width = 36 };
+        var dialog = new Dialog() { Title = "", Width = 50, Height = 8 };
+        dialog.Border!.Settings &= ~BorderSettings.Title;
+        dialog.Add(new Label { Text = " Rename Profile", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        var label = new Label() { Text = "Name:", X = 1, Y = 1 };
+        var input = new TextField() { Text = _selectedProfile.Name, X = 8, Y = 1, Width = 36 };
         dialog.Add(label, input);
 
         var okBtn = new Button() { Text = "Save", IsDefault = true };
@@ -244,9 +250,9 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
         if (_profiles.Count <= 1)
-        { MessageBox.Query("Cannot Delete", "You must have at least one profile.", "OK"); return; }
+        { Dialogs.Query("Cannot Delete", "You must have at least one profile.", "OK"); return; }
 
-        var confirm = MessageBox.Query("Delete Profile",
+        var confirm = Dialogs.Query("Delete Profile",
             $"Delete \"{_selectedProfile.ChannelTitle ?? _selectedProfile.Name}\" and all its playlists?\n\nThis cannot be undone.",
             "Delete", "Cancel");
         if (confirm != 0) return;

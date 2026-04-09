@@ -9,21 +9,24 @@ public sealed class DetailDialog : Dialog
     public DetailDialog(string title, ISystemLauncher? browser, params (string label, string value)[] fields)
         : base()
     {
-        Title = title;
+        Title = "";
         Width = 75;
         BorderStyle = LineStyle.Rounded;
+        Border!.Settings &= ~BorderSettings.Title;
+
+        Add(new Label { Text = " " + title, X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
 
         // Separate description from other fields — it gets a scrollable area
         var normalFields = fields.Where(f => !string.Equals(f.label, "Description", StringComparison.Ordinal)).ToArray();
         var description = fields.FirstOrDefault(f => string.Equals(f.label, "Description", StringComparison.Ordinal)).value;
         bool hasDescription = description is not null and not "-" and not "";
 
-        // Height: fields + description area + chrome
+        // Height: fields + description area + chrome + interior title
         int descHeight = hasDescription ? 6 : 0;
-        Height = Math.Min(normalFields.Length + descHeight + 5, 26);
+        Height = Math.Min(normalFields.Length + descHeight + 6, 27);
 
         string? url = null;
-        int y = 0;
+        int y = 1;
         foreach (var (label, value) in normalFields)
         {
             Add(new Label() { Text = label + ":", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });

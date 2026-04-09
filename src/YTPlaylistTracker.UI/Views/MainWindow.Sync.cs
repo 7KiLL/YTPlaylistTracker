@@ -95,17 +95,17 @@ public partial class MainWindow
     {
         if (_isSyncing)
         {
-            MessageBox.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
+            Dialogs.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
             return;
         }
         if (_youtubeApi is null)
         {
-            MessageBox.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
+            Dialogs.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
             return;
         }
         if (_selectedPlaylist is null)
         {
-            MessageBox.Query("Info", "Select a playlist first.", "OK");
+            Dialogs.Query("Info", "Select a playlist first.", "OK");
             return;
         }
 
@@ -115,7 +115,7 @@ public partial class MainWindow
             var r = remaining.Value;
             var timeLeft = r.TotalHours >= 1 ? $"{(int)r.TotalHours}h {r.Minutes}m" : $"{r.Minutes}m";
             var title = _selectedPlaylist.Title ?? _selectedPlaylist.YouTubePlaylistId;
-            MessageBox.Query("Cooldown",
+            Dialogs.Query("Cooldown",
                 $"{title} can only be synced once per day.\n" +
                 $"Last synced: {SyncService.FormatLastSynced(_selectedPlaylist)}\n" +
                 $"Next sync available in {timeLeft}.", "OK");
@@ -138,7 +138,7 @@ public partial class MainWindow
                 {
                     HideSpinner();
                     RefreshVideosAsync().GetAwaiter().GetResult();
-                    MessageBox.Query("Sync Complete",
+                    Dialogs.Query("Sync Complete",
                         "+" + result.Added + " added, -" + result.Removed + " removed, ~" + result.Updated + " updated", "OK");
                 });
             }
@@ -148,7 +148,7 @@ public partial class MainWindow
                 InvokeUI(() =>
                 {
                     HideSpinner();
-                    MessageBox.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
+                    Dialogs.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
                 });
             }
             finally { _isSyncing = false; }
@@ -159,13 +159,13 @@ public partial class MainWindow
     {
         if (_isSyncing)
         {
-            MessageBox.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
+            Dialogs.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
             return;
         }
         if (_selectedProfile is null) return;
         if (_youtubeApi is null)
         {
-            MessageBox.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
+            Dialogs.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
             return;
         }
 
@@ -189,7 +189,7 @@ public partial class MainWindow
                     RefreshPlaylistsAsync().GetAwaiter().GetResult();
                     RefreshVideosAsync().GetAwaiter().GetResult();
                     SetNeedsDraw();
-                    MessageBox.Query("Sync All Complete",
+                    Dialogs.Query("Sync All Complete",
                         results.Count + " playlists synced\n+" + totalAdded + " added, -" + totalRemoved + " removed", "OK");
                 });
             }
@@ -199,7 +199,7 @@ public partial class MainWindow
                 InvokeUI(() =>
                 {
                     HideSpinner();
-                    MessageBox.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
+                    Dialogs.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
                 });
             }
             finally { _isSyncing = false; }

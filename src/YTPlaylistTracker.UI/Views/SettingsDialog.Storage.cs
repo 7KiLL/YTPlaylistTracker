@@ -36,10 +36,10 @@ public sealed partial class SettingsDialog
         {
             if (selectedPlaylist is null)
             {
-                MessageBox.Query("Info", "Select a playlist first.", "OK");
+                Dialogs.Query("Info", "Select a playlist first.", "OK");
                 return;
             }
-            var confirm = MessageBox.Query("Confirm Purge",
+            var confirm = Dialogs.Query("Confirm Purge",
                 $"Permanently delete all removed videos from\n\"{selectedPlaylist.Title ?? selectedPlaylist.YouTubePlaylistId}\"?\n\nThis cannot be undone.",
                 "Purge", "Cancel");
             if (confirm == 0)
@@ -47,11 +47,11 @@ public sealed partial class SettingsDialog
                 try
                 {
                     playlistRepo.PurgeDeletedVideosAsync(selectedPlaylist.Id).GetAwaiter().GetResult();
-                    MessageBox.Query("Done", "Deleted videos purged.", "OK");
+                    Dialogs.Query("Done", "Deleted videos purged.", "OK");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Query("Error", "Purge failed: " + ex.Message, "OK");
+                    Dialogs.Query("Error", "Purge failed: " + ex.Message, "OK");
                 }
             }
         };
@@ -59,7 +59,7 @@ public sealed partial class SettingsDialog
         var resetBtn = new Button() { Text = "Reset Database", X = 26, Y = y, ColorScheme = Theme.Danger };
         resetBtn.Accepting += (sender, e) =>
         {
-            var confirm = MessageBox.Query("Reset Database",
+            var confirm = Dialogs.Query("Reset Database",
                 "Delete the entire database and restart?\nAll playlists and tracking data will be lost.\n\n" + AppSettings.DbPath,
                 "Reset", "Cancel");
             if (confirm == 0)
@@ -67,12 +67,12 @@ public sealed partial class SettingsDialog
                 try
                 {
                     File.Delete(AppSettings.DbPath);
-                    MessageBox.Query("Done", "Database deleted. The app will now quit.\nRestart to create a fresh database.", "OK");
+                    Dialogs.Query("Done", "Database deleted. The app will now quit.\nRestart to create a fresh database.", "OK");
                     global::Terminal.Gui.Application.RequestStop();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Query("Error", "Failed to delete database: " + ex.Message, "OK");
+                    Dialogs.Query("Error", "Failed to delete database: " + ex.Message, "OK");
                 }
             }
         };

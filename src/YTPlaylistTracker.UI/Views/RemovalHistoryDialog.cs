@@ -15,9 +15,12 @@ public sealed class RemovalHistoryDialog : Dialog
     {
         _removedVideos = removedVideos;
         _browser = browser;
-        Title = "Removal History - All Playlists";
+        Title = "";
         Width = 90;
-        Height = 28;
+        Height = 29;
+        Border!.Settings &= ~BorderSettings.Title;
+
+        Add(new Label { Text = " Removal History - All Playlists", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
 
         var dt = new DataTable();
         dt.Columns.Add("Date", typeof(string));
@@ -50,12 +53,12 @@ public sealed class RemovalHistoryDialog : Dialog
         var countLabel = new Label()
         {
             Text = $"{removedVideos.Count} removed videos across all tracked playlists  │  Enter: details",
-            X = 0, Y = 0, Width = Dim.Fill(),
+            X = 0, Y = 1, Width = Dim.Fill(),
         };
 
         var table = new TableView
         {
-            X = 0, Y = 1,
+            X = 0, Y = 2,
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
             FullRowSelect = true,

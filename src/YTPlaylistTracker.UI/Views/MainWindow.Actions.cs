@@ -15,9 +15,11 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "Add Playlist", Width = 60, Height = 8 };
-        var label = new Label() { Text = "YouTube Playlist URL or ID:", X = 1, Y = 1 };
-        var input = new TextField() { Text = "", X = 1, Y = 2, Width = Dim.Fill(2) };
+        var dialog = new Dialog() { Title = "", Width = 60, Height = 9 };
+        dialog.Border!.Settings &= ~BorderSettings.Title;
+        dialog.Add(new Label { Text = " Add Playlist", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        var label = new Label() { Text = "YouTube Playlist URL or ID:", X = 1, Y = 2 };
+        var input = new TextField() { Text = "", X = 1, Y = 3, Width = Dim.Fill(2) };
         var okBtn = new Button() { Text = "Add", IsDefault = true };
         var cancelBtn = new Button() { Text = "Cancel" };
 
@@ -60,22 +62,22 @@ public partial class MainWindow
 
             await playlistRepo.AddAsync(playlist).ConfigureAwait(false);
             await RefreshPlaylistsAsync().ConfigureAwait(false);
-            MessageBox.Query("Success", "Added playlist: " + (playlist.Title ?? playlistId), "OK");
+            Dialogs.Query("Success", "Added playlist: " + (playlist.Title ?? playlistId), "OK");
         }
         catch (GoogleApiException ex)
         {
             logger.LogError(ex, "YouTube API error adding playlist");
-            MessageBox.Query("YouTube Error", "Could not fetch playlist: " + ex.Message, "OK");
+            Dialogs.Query("YouTube Error", "Could not fetch playlist: " + ex.Message, "OK");
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Network error adding playlist");
-            MessageBox.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
+            Dialogs.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to add playlist");
-            MessageBox.Query("Error", "Failed to add playlist: " + ex.Message, "OK");
+            Dialogs.Query("Error", "Failed to add playlist: " + ex.Message, "OK");
         }
     }
 
@@ -86,8 +88,25 @@ public partial class MainWindow
         var policy = PlaylistPolicy.For(_selectedPlaylist.Kind);
         if (!_selectedPlaylist.IsTracked && policy.TrackingWarning is not null)
         {
-            var result = MessageBox.Query("Large Playlist", policy.TrackingWarning, "Yes", "Cancel");
-            if (result != 0) return;
+            var confirmed = false;
+            var dialog = new Dialog() { Title = "", Width = 56, Height = 12 };
+            dialog.Border!.Settings &= ~BorderSettings.Title;
+            dialog.Add(new Label { Text = " Large Playlist", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+            dialog.Add(new Label()
+            {
+                Text = policy.TrackingWarning,
+                X = 1, Y = 2,
+                Width = Dim.Fill(1),
+                Height = 4,
+            });
+            var yesBtn = new Button() { Text = "Enable Tracking", IsDefault = true };
+            yesBtn.Accepting += (s, e) => { confirmed = true; global::Terminal.Gui.Application.RequestStop(); };
+            var cancelBtn = new Button() { Text = "Cancel" };
+            cancelBtn.Accepting += (s, e) => global::Terminal.Gui.Application.RequestStop();
+            dialog.AddButton(yesBtn);
+            dialog.AddButton(cancelBtn);
+            global::Terminal.Gui.Application.Run(dialog);
+            if (!confirmed) return;
         }
 
         try
@@ -100,7 +119,7 @@ public partial class MainWindow
         {
             _selectedPlaylist.IsTracked = !_selectedPlaylist.IsTracked; // revert
             logger.LogError(ex, "Failed to toggle tracking");
-            MessageBox.Query("Error", "Failed to update: " + ex.Message, "OK");
+            Dialogs.Query("Error", "Failed to update: " + ex.Message, "OK");
         }
     }
 
@@ -121,7 +140,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to toggle all tracking");
-            MessageBox.Query("Error", "Failed to update: " + ex.Message, "OK");
+            Dialogs.Query("Error", "Failed to update: " + ex.Message, "OK");
         }
     }
 
@@ -166,11 +185,13 @@ public partial class MainWindow
 
     private void ShowSortMenu()
     {
-        var dialog = new Dialog() { Title = "Sort by", Width = 30, Height = 10 };
+        var dialog = new Dialog() { Title = "", Width = 30, Height = 11 };
+        dialog.Border!.Settings &= ~BorderSettings.Title;
+        dialog.Add(new Label { Text = " Sort by", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
         string[] options = ["Title", "Channel", "Added Date", "Status"];
         var list = new ListView()
         {
-            Width = Dim.Fill(), Height = Dim.Fill(),
+            Y = 1, Width = Dim.Fill(), Height = Dim.Fill(),
         };
         list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>(options));
         list.OpenSelectedItem += (sender, e) =>

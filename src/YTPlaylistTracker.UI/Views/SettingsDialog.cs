@@ -25,6 +25,7 @@ public sealed partial class SettingsDialog : Dialog
         Width = 70;
         Height = 30;
         BorderStyle = LineStyle.Rounded;
+        Border!.Settings &= ~BorderSettings.Title;
 
         Add(new Label()
         {

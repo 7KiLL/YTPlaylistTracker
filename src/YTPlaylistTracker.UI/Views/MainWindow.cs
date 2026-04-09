@@ -262,7 +262,7 @@ public partial class MainWindow(
             catch (Exception ex)
             {
                 logger.LogError(ex, "UI callback failed");
-                try { MessageBox.Query("Error", ex.Message, "OK"); } catch { /* last resort */ }
+                try { Dialogs.Query("Error", ex.Message, "OK"); } catch { /* last resort */ }
             }
         });
 

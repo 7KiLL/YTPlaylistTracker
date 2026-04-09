@@ -32,7 +32,7 @@ public static class Theme
         Dialog.DefaultShadow = ShadowStyle.None;
         Dialog.DefaultBorderStyle = LineStyle.Rounded;
         Button.DefaultShadow = ShadowStyle.None;
-        MessageBox.DefaultBorderStyle = LineStyle.Rounded;
+        // MessageBox no longer used — replaced by Dialogs.Query with interior titles
 
         ColorScheme OnBg(Color normal, Color focus, Color hotNormal, Color hotFocus) => new()
         {

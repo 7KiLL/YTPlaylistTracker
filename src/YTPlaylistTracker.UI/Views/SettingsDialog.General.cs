@@ -77,14 +77,14 @@ public sealed partial class SettingsDialog
                         }
                         else
                         {
-                            MessageBox.Query("Up to Date", $"You're on the latest version ({update.CurrentVersion}).", "OK");
+                            Dialogs.Query("Up to Date", $"You're on the latest version ({update.CurrentVersion}).", "OK");
                         }
                     });
                 }
                 catch (Exception ex)
                 {
                     global::Terminal.Gui.Application.Invoke(() =>
-                        MessageBox.Query("Error", $"Update check failed: {ex.Message}", "OK"));
+                        Dialogs.Query("Error", $"Update check failed: {ex.Message}", "OK"));
                 }
             });
         };

@@ -22,7 +22,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to show removal history");
-            MessageBox.Query("Error", "Failed to load history: " + ex.Message, "OK");
+            Dialogs.Query("Error", "Failed to load history: " + ex.Message, "OK");
         }
     }
 
@@ -35,18 +35,20 @@ public partial class MainWindow
             var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id).ConfigureAwait(false);
             if (removedVideos.Count == 0)
             {
-                MessageBox.Query("Export", "No removed videos to export.", "OK");
+                Dialogs.Query("Export", "No removed videos to export.", "OK");
                 return;
             }
 
-            var dialog = new Dialog() { Title = "Export Removed Videos", Width = 50, Height = 10 };
-            var formatLabel = new Label() { Text = "Format:", X = 1, Y = 1 };
-            var formatRadio = new RadioGroup() { RadioLabels = new[] { "CSV", "JSON" }, X = 12, Y = 1 };
-            var pathLabel = new Label() { Text = "File:", X = 1, Y = 3 };
+            var dialog = new Dialog() { Title = "", Width = 50, Height = 11 };
+            dialog.Border!.Settings &= ~BorderSettings.Title;
+            dialog.Add(new Label { Text = " Export Removed Videos", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+            var formatLabel = new Label() { Text = "Format:", X = 1, Y = 2 };
+            var formatRadio = new RadioGroup() { RadioLabels = new[] { "CSV", "JSON" }, X = 12, Y = 2 };
+            var pathLabel = new Label() { Text = "File:", X = 1, Y = 4 };
             var defaultPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "ytpt-removed-videos");
-            var pathField = new TextField() { Text = defaultPath, X = 12, Y = 3, Width = Dim.Fill(2) };
+            var pathField = new TextField() { Text = defaultPath, X = 12, Y = 4, Width = Dim.Fill(2) };
             var okBtn = new Button() { Text = "Export", IsDefault = true };
             var cancelBtn = new Button() { Text = "Cancel" };
 
@@ -72,12 +74,12 @@ public partial class MainWindow
                 : ExportService.ToCsv(entries);
 
             await File.WriteAllTextAsync(resultPath, content).ConfigureAwait(false);
-            MessageBox.Query("Export Complete", $"Exported {entries.Count} removed videos to:\n{resultPath}", "OK");
+            Dialogs.Query("Export Complete", $"Exported {entries.Count} removed videos to:\n{resultPath}", "OK");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Export failed");
-            MessageBox.Query("Error", "Export failed: " + ex.Message, "OK");
+            Dialogs.Query("Error", "Export failed: " + ex.Message, "OK");
         }
     }
 
@@ -107,7 +109,7 @@ public partial class MainWindow
 
         if (_latestUpdate is { IsUpdateAvailable: true })
         {
-            var confirm = MessageBox.Query("Update Available",
+            var confirm = Dialogs.Query("Update Available",
                 $"Update to v{_latestUpdate.LatestVersion}?\nThe app will need to restart after updating.",
                 "Update", "Cancel");
 
@@ -117,7 +119,7 @@ public partial class MainWindow
         else
         {
             var currentVersion = UpdateService.GetCurrentVersion();
-            MessageBox.Query("Up to Date", $"You're on the latest version (v{currentVersion}).", "OK");
+            Dialogs.Query("Up to Date", $"You're on the latest version (v{currentVersion}).", "OK");
         }
     }
 
@@ -145,7 +147,7 @@ public partial class MainWindow
                     var msg = ex.ManualDownloadUrl is not null
                         ? $"{ex.Message}\n\nDownload manually:\n{ex.ManualDownloadUrl}"
                         : ex.Message;
-                    MessageBox.Query("Update Failed", msg, "OK");
+                    Dialogs.Query("Update Failed", msg, "OK");
                 });
             }
         });

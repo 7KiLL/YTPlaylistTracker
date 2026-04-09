@@ -9,11 +9,13 @@ public sealed class RemovedVideosDialog : Dialog
     public RemovedVideosDialog(IReadOnlyList<Video> removedVideos, string playlistTitle)
         : base()
     {
-        Title = $"Removed Videos - {playlistTitle}";
+        Title = "";
         Width = 80;
-        Height = 25;
-        
-        
+        Height = 26;
+        Border!.Settings &= ~BorderSettings.Title;
+
+        Add(new Label { Text = $" Removed Videos - {playlistTitle}", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(int));
         dt.Columns.Add("Title", typeof(string));
@@ -35,7 +37,7 @@ public sealed class RemovedVideosDialog : Dialog
 
         var table = new TableView
         {
-            X = 0, Y = 0,
+            X = 0, Y = 1,
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
             FullRowSelect = true,
