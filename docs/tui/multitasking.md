@@ -40,9 +40,9 @@ void StartTimer()
 {
     // ALWAYS clean up previous timer first
     if (_timerToken != null)
-        Application.MainLoop.RemoveTimeout(_timerToken);
+        Application.RemoveTimeout(_timerToken);
 
-    _timerToken = Application.MainLoop.AddTimeout(
+    _timerToken = Application.AddTimeout(
         TimeSpan.FromMilliseconds(200),
         _ => {
             // return true to continue, false to stop

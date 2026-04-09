@@ -49,17 +49,9 @@
 
 Issues that are wrong today and should be fixed.
 
-### B1. Async lambda in `Accepting` handler
-**File**: `SettingsDialog.Storage.cs:35`
+### ~~B1. Async lambda in `Accepting` handler~~ (fixed)
 
-`purgeBtn.Accepting += async (sender, e) =>` is fire-and-forget — exceptions are swallowed. Violates `async-tui-safety.md`. Must use sync lambda with `.GetAwaiter().GetResult()` or offload to `Task.Run` + `Application.Invoke`.
-
-### B2. Stale docs referencing v1 APIs
-Files with outdated Terminal.Gui v1 references:
-- `architecture.md:64` — says "Terminal.Gui v1: v2 is still pre-release" (we're on v2.0.0)
-- `CLAUDE.md:114` — references "MainLoop.Invoke" (should be `Application.Invoke`)
-- `README.md:261` — says "Terminal.Gui v1 limitation" for emoji rendering
-- `multitasking.md:43-46` — uses `Application.MainLoop.RemoveTimeout`/`AddTimeout` (should be `Application.RemoveTimeout`/`AddTimeout`)
+### ~~B2. Stale docs referencing v1 APIs~~ (fixed)
 
 ### B3. `Application.Top` static access (4 locations)
 **See**: improvements.md R1

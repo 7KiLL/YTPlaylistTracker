@@ -61,7 +61,7 @@ Three auth modes (in priority order):
 
 1. **Soft-delete over separate tables**: Videos have nullable `DeletedAt`. Simpler model, no data duplication.
 2. **Profile-per-account**: Supports multiple YouTube accounts with isolated playlists.
-3. **Terminal.Gui v1**: v2 is still pre-release. v1 is stable and sufficient.
+3. **Terminal.Gui v2**: Modern TUI framework with command-based input, declarative layout, and built-in accessibility.
 4. **System.CommandLine for CLI**: Auto-generates help, supports subcommands, minimal boilerplate.
 5. **Serilog with rolling file**: Structured logging, defaults to Information level. `--verbose` flag for debug.
 6. **EF Core Migrations**: Auto-applied on startup. Legacy v0.1.0 databases (created with `EnsureCreated`) are auto-detected and upgraded.

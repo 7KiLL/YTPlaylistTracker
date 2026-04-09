@@ -258,7 +258,7 @@ See [docs/architecture.md](docs/architecture.md) for details.
 
 ## Known Issues
 
-- **Emoji in video titles** — Emoji characters (e.g. 🏕, 🎮) are replaced with spaces in the TUI display. This is a Terminal.Gui v1 limitation: its Unicode width tables (NStack) don't accurately measure modern emoji, causing column misalignment. The original titles with emoji are preserved in the database and in exports.
+- **Emoji in video titles** — Emoji characters (e.g. 🏕, 🎮) are replaced with spaces in the TUI display. This is a Terminal.Gui limitation: its Unicode width tables don't accurately measure modern emoji, causing column misalignment. The original titles with emoji are preserved in the database and in exports.
 
 ## AI Disclosure
 

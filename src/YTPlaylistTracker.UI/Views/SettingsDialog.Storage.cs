@@ -32,7 +32,7 @@ public sealed partial class SettingsDialog
         y += 1;
 
         var purgeBtn = new Button() { Text = "Purge Deleted Videos", X = 2, Y = y, ColorScheme = Theme.Danger };
-        purgeBtn.Accepting += async (sender, e) =>
+        purgeBtn.Accepting += (sender, e) =>
         {
             if (selectedPlaylist is null)
             {
@@ -46,7 +46,7 @@ public sealed partial class SettingsDialog
             {
                 try
                 {
-                    await playlistRepo.PurgeDeletedVideosAsync(selectedPlaylist.Id).ConfigureAwait(false);
+                    playlistRepo.PurgeDeletedVideosAsync(selectedPlaylist.Id).GetAwaiter().GetResult();
                     MessageBox.Query("Done", "Deleted videos purged.", "OK");
                 }
                 catch (Exception ex)
@@ -68,7 +68,6 @@ public sealed partial class SettingsDialog
                 {
                     File.Delete(AppSettings.DbPath);
                     MessageBox.Query("Done", "Database deleted. The app will now quit.\nRestart to create a fresh database.", "OK");
-                    global::Terminal.Gui.Application.Top?.RequestStop();
                     global::Terminal.Gui.Application.RequestStop();
                 }
                 catch (Exception ex)

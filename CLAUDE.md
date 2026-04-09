@@ -111,7 +111,7 @@ Legacy v0.1.0 databases (created with `EnsureCreated`) are auto-detected and upg
 ## Code Review Rules
 
 See `.claude/rules/` (auto-loaded by Claude Code):
-- `async-tui-safety.md` — Terminal.Gui threading rules (no async lambdas in MainLoop.Invoke, timer cleanup, background work patterns)
+- `async-tui-safety.md` — Terminal.Gui threading rules (no async lambdas in Application.Invoke, timer cleanup, background work patterns)
 - `code-review-checklist.md` — General checklist for async, timers, threading, tests, and security
 
 ## Docs
