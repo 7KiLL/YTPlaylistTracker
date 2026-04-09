@@ -83,7 +83,7 @@ public partial class MainWindow
 
     private async void OnSettings()
     {
-        var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService, browser);
+        var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService, browser, this);
         global::Terminal.Gui.Application.Run(settingsDialog);
 
         if (settingsDialog is { UpdateRequested: true, UpdateInfo: not null })

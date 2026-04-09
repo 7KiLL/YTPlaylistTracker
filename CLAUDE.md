@@ -117,3 +117,5 @@ See `.claude/rules/` (auto-loaded by Claude Code):
 ## Docs
 
 `docs/` is the project documentation directory (architecture decisions, DB schema, backlog).
+
+**IMPORTANT**: Before modifying any Terminal.Gui UI code, **read the relevant `docs/tui/` reference pages first**. This includes layout (`layout.md`), navigation/focus (`navigation.md`), scrolling (`scrolling.md`), events (`events.md`), views (`views.md`), keyboard input (`keyboard.md`), and the v2 patterns rule (`.claude/rules/terminal-gui-v2-patterns.md`). Terminal.Gui v2 has many breaking changes from v1 — do not assume APIs, always verify against the docs.

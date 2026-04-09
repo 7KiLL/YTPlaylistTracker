@@ -1,239 +1,108 @@
 using Terminal.Gui;
-using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Domain.Models;
-using YTPlaylistTracker.Infrastructure.Configuration;
 using YTPlaylistTracker.Infrastructure.Platform;
 using YTPlaylistTracker.Infrastructure.Update;
 
 namespace YTPlaylistTracker.UI.Views;
 
-public sealed class SettingsDialog : Dialog
+public sealed partial class SettingsDialog : Dialog
 {
     public bool UpdateRequested { get; private set; }
     public UpdateInfo? UpdateInfo { get; private set; }
 
+    private readonly List<Label> _tabLabels = [];
+    private readonly List<View> _tabPages = [];
+    private int _selectedTab;
+
     public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist,
-        IUserSettings userSettings, IUpdateService updateService, ISystemLauncher? launcher = null)
+        IUserSettings userSettings, IUpdateService updateService, ISystemLauncher? launcher = null,
+        MainWindow? mainWindow = null)
         : base()
     {
-        Title = "Settings";
+        Title = "";
         Width = 70;
-        Height = 37;
-        
-        
-        int y = 0;
+        Height = 30;
+        BorderStyle = LineStyle.Rounded;
 
-        // ── General ──
-        Add(new Label() { Text = "── General ─────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
-        y += 1;
-
-        var autoSyncCheck = new CheckBox() { Text = "Auto-sync on startup", CheckedState = userSettings.AutoSyncOnStartup ? CheckState.Checked : CheckState.UnChecked, X = 2, Y = y };
-        autoSyncCheck.CheckedStateChanged += (sender, e) => { userSettings.AutoSyncOnStartup = autoSyncCheck.CheckedState == CheckState.Checked; userSettings.Save(); };
-        Add(autoSyncCheck);
-        y += 1;
-
-        var autoInstallCheck = new CheckBox() { Text = "Auto-install updates on startup", CheckedState = userSettings.AutoInstallUpdates ? CheckState.Checked : CheckState.UnChecked, X = 2, Y = y };
-        autoInstallCheck.CheckedStateChanged += (sender, e) => { userSettings.AutoInstallUpdates = autoInstallCheck.CheckedState == CheckState.Checked; userSettings.Save(); };
-        Add(autoInstallCheck);
-        y += 1;
-
-        var sortTrackedCheck = new CheckBox() { Text = "Sort tracked playlists first", CheckedState = userSettings.SortTrackedFirst ? CheckState.Checked : CheckState.UnChecked, X = 2, Y = y };
-        sortTrackedCheck.CheckedStateChanged += (sender, e) => { userSettings.SortTrackedFirst = sortTrackedCheck.CheckedState == CheckState.Checked; userSettings.Save(); };
-        Add(sortTrackedCheck);
-        y += 1;
-
-        // Theme selector
-        Add(new Label() { Text = "  Theme:", X = 1, Y = y });
-        var themeNames = ThemePalette.AllNames;
-        var currentIdx = Array.IndexOf(themeNames, Theme.CurrentName);
-        if (currentIdx < 0) currentIdx = 0;
-        var themeRadio = new RadioGroup()
+        Add(new Label()
         {
-            RadioLabels = themeNames,
-            X = 12, Y = y,
-            SelectedItem = currentIdx,
-        };
-        themeRadio.SelectedItemChanged += (sender, e) =>
+            Text = " Settings",
+            X = 0, Y = 0,
+            Width = Dim.Fill(),
+            ColorScheme = Theme.Frame,
+        });
+
+        // Tab labels row
+        var tabNames = new[] { "General", "Display", "Storage", "Sync" };
+        int tabX = 1;
+        for (int i = 0; i < tabNames.Length; i++)
         {
-            var name = themeNames[themeRadio.SelectedItem];
-            userSettings.ThemeName = name;
-            userSettings.Save();
-            Theme.Apply(name);
-            ReapplyAllSchemes(this);
-            SetNeedsDraw();
-
-            if (global::Terminal.Gui.Application.Top is MainWindow mw)
-                mw.ReapplyTheme();
-        };
-        Add(themeRadio);
-        y += themeNames.Length + 1;
-
-        // ── Display ──
-        Add(new Label() { Text = "── Display ─────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
-        y += 1;
-
-        Add(new Label() { Text = "  Icons:", X = 1, Y = y });
-        var glyphLabels = new[] { "Auto-detect", "Full (emoji/braille)", "Basic (ASCII)" };
-        var glyphValues = new[] { "", "full", "basic" };
-        var glyphIdx = Array.IndexOf(glyphValues, userSettings.GlyphMode);
-        if (glyphIdx < 0) glyphIdx = 0;
-        var glyphRadio = new RadioGroup()
-        {
-            RadioLabels = glyphLabels,
-            X = 12, Y = y,
-            SelectedItem = glyphIdx,
-        };
-        glyphRadio.SelectedItemChanged += (sender, e) =>
-        {
-            userSettings.GlyphMode = glyphValues[glyphRadio.SelectedItem];
-            userSettings.Save();
-            GlyphDetector.SetUserOverride(userSettings.GlyphMode);
-        };
-        Add(glyphRadio);
-        y += glyphLabels.Length;
-        Add(new Label() { Text = "  Full requires a font with emoji/CJK support (e.g. Nerd Font)", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
-        y += 2;
-
-        // ── Sync ──
-        Add(new Label() { Text = "── Sync ────────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
-        y += 1;
-
-        var likedPolicy = PlaylistPolicy.For(Domain.Enums.PlaylistKind.Liked);
-        var cooldownText = likedPolicy.ManualCooldown is { } cd ? $"{cd.TotalHours:0}h" : "none";
-        Add(new Label() { Text = $"  Liked Videos cooldown:  {cooldownText}  (large playlist guard)", X = 1, Y = y });
-        y += 1;
-
-        Add(new Label() { Text = $"  Auto-sync cooldown:    {SyncService.AutoSyncCooldown.TotalHours:0}h   (between background syncs)", X = 1, Y = y });
-        y += 2;
-
-        // ── Credentials ──
-        Add(new Label() { Text = "── Credentials ─────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
-        y += 1;
-
-        Add(new Label() { Text = "  YouTube API Key:", X = 1, Y = y });
-        var apiKeyField = new TextField() { Text = userSettings.YouTubeApiKey, X = 21, Y = y, Width = 42, Secret = true };
-        apiKeyField.HasFocusChanged += (sender, e) =>
-        {
-            if (e.NewValue) return; // Only act when losing focus
-            var newKey = apiKeyField.Text?.Trim() ?? "";
-            if (newKey != userSettings.YouTubeApiKey)
+            var idx = i;
+            var text = $" {tabNames[i]} ";
+            var lbl = new Label()
             {
-                userSettings.YouTubeApiKey = newKey;
-                userSettings.Save();
-                AppSettings.LoadApiKey(newKey);
-            }
-        };
-        Add(apiKeyField);
-        y += 1;
-        Add(new Label() { Text = "  Optional. Overrides built-in key for offline profiles.", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
-        y += 2;
+                Text = text,
+                X = tabX, Y = 2,
+                CanFocus = true,
+            };
+            lbl.MouseClick += (sender, e) => SelectTab(idx);
+            lbl.KeyDown += (sender, e) =>
+            {
+                if (e.KeyCode == KeyCode.Enter || e.KeyCode == KeyCode.Space)
+                    SelectTab(idx);
+                else if (e.KeyCode == KeyCode.CursorRight && idx < tabNames.Length - 1)
+                    { SelectTab(idx + 1); e.Handled = true; }
+                else if (e.KeyCode == KeyCode.CursorLeft && idx > 0)
+                    { SelectTab(idx - 1); e.Handled = true; }
+            };
+            _tabLabels.Add(lbl);
+            Add(lbl);
+            tabX += text.Length + 1;
+        }
 
-        // ── Data ──
-        Add(new Label() { Text = "── Data ────────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
-        y += 1;
+        // Tab content pages
+        _tabPages.Add(BuildGeneralTab(userSettings, updateService, mainWindow));
+        _tabPages.Add(BuildDisplayTab(userSettings));
+        _tabPages.Add(BuildStorageTab(playlistRepo, selectedPlaylist, launcher));
+        _tabPages.Add(BuildSyncTab(userSettings));
 
-        Add(new Label() { Text = "  Database:", X = 1, Y = y });
-        var dbBtn = new Button() { Text = AppSettings.DbPath, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
-        dbBtn.Accepting += (sender, e) => launcher?.OpenPath(AppSettings.DbPath);
-        Add(dbBtn);
-        y += 1;
-        Add(new Label() { Text = "  Logs:", X = 1, Y = y });
-        var logBtn = new Button() { Text = AppSettings.LogDir, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
-        logBtn.Accepting += (sender, e) => launcher?.OpenPath(AppSettings.LogDir);
-        Add(logBtn);
-        y += 1;
-
-        var purgeBtn = new Button() { Text = "Purge Deleted Videos", X = 2, Y = y, ColorScheme = Theme.Danger };
-        purgeBtn.Accepting += async (sender, e) =>
+        foreach (var page in _tabPages)
         {
-            if (selectedPlaylist is null)
-            {
-                MessageBox.Query("Info", "Select a playlist first.", "OK");
-                return;
-            }
-            var confirm = MessageBox.Query("Confirm Purge",
-                $"Permanently delete all removed videos from\n\"{selectedPlaylist.Title ?? selectedPlaylist.YouTubePlaylistId}\"?\n\nThis cannot be undone.",
-                "Purge", "Cancel");
-            if (confirm == 0)
-            {
-                try
-                {
-                    await playlistRepo.PurgeDeletedVideosAsync(selectedPlaylist.Id).ConfigureAwait(false);
-                    MessageBox.Query("Done", "Deleted videos purged.", "OK");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Query("Error", "Purge failed: " + ex.Message, "OK");
-                }
-            }
-        };
+            page.X = 0;
+            page.Y = 4;
+            page.Width = Dim.Fill();
+            page.Height = Dim.Fill(1);
+            page.Visible = false;
+            Add(page);
+        }
 
-        var resetBtn = new Button() { Text = "Reset Database", X = 26, Y = y, ColorScheme = Theme.Danger };
-        resetBtn.Accepting += (sender, e) =>
+        SelectTab(0);
+
+        KeyDown += (sender, e) =>
         {
-            var confirm = MessageBox.Query("Reset Database",
-                "Delete the entire database and restart?\nAll playlists and tracking data will be lost.\n\n" + AppSettings.DbPath,
-                "Reset", "Cancel");
-            if (confirm == 0)
-            {
-                try
-                {
-                    File.Delete(AppSettings.DbPath);
-                    MessageBox.Query("Done", "Database deleted. The app will now quit.\nRestart to create a fresh database.", "OK");
-                    global::Terminal.Gui.Application.Top?.RequestStop();
-                    global::Terminal.Gui.Application.RequestStop();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Query("Error", "Failed to delete database: " + ex.Message, "OK");
-                }
-            }
+            if (e.KeyCode == KeyCode.CursorLeft && _selectedTab > 0)
+                { SelectTab(_selectedTab - 1); e.Handled = true; }
+            else if (e.KeyCode == KeyCode.CursorRight && _selectedTab < _tabLabels.Count - 1)
+                { SelectTab(_selectedTab + 1); e.Handled = true; }
         };
-        Add(purgeBtn, resetBtn);
-        y += 2;
-
-        // ── About ──
-        Add(new Label() { Text = "── About ───────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
-        y += 1;
-
-        Add(new Label() { Text = $"  Version:  {UpdateService.GetCurrentVersion()}", X = 1, Y = y });
-        y += 1;
-        var updateNowBtn = new Button() { Text = "Update Now", X = 2, Y = y };
-        updateNowBtn.Accepting += (sender, e) =>
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var update = await updateService.CheckForUpdateAsync().ConfigureAwait(false);
-                    global::Terminal.Gui.Application.Invoke(() =>
-                    {
-                        if (update.IsUpdateAvailable)
-                        {
-                            UpdateRequested = true;
-                            UpdateInfo = update;
-                            global::Terminal.Gui.Application.RequestStop();
-                        }
-                        else
-                        {
-                            MessageBox.Query("Up to Date", $"You're on the latest version ({update.CurrentVersion}).", "OK");
-                        }
-                    });
-                }
-                catch (Exception ex)
-                {
-                    global::Terminal.Gui.Application.Invoke(() =>
-                        MessageBox.Query("Error", $"Update check failed: {ex.Message}", "OK"));
-                }
-            });
-        };
-        Add(updateNowBtn);
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
+    }
+
+    private void SelectTab(int index)
+    {
+        _selectedTab = index;
+        for (int i = 0; i < _tabLabels.Count; i++)
+        {
+            _tabLabels[i].ColorScheme = i == index ? Theme.SectionHeader : Theme.Frame;
+            _tabPages[i].Visible = i == index;
+        }
+        _tabPages[index].SetFocus();
+        SetNeedsDraw();
     }
 
     private static void ReapplyAllSchemes(View root)
