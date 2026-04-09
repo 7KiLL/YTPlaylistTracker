@@ -55,14 +55,6 @@ public sealed class HelpDialog : Dialog
             ("? F12", "This help"),
             ("q F10", "Quit"));
 
-        // Separator
-        Add(new Label
-        {
-            Text = "\u2502", X = ColWidth - 1, Y = 2,
-            Height = Dim.Fill(2),
-            ColorScheme = Theme.Frame,
-        });
-
         var closeBtn = new Button { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
