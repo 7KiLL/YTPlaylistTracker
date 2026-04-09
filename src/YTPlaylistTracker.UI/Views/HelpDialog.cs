@@ -7,53 +7,72 @@ public sealed class HelpDialog : Dialog
     public HelpDialog() : base()
     {
         Title = "";
-        Width = 52;
-        Height = 33;
+        Width = 62;
+        Height = 35;
         Border!.Settings &= ~BorderSettings.Title;
 
         Add(new Label { Text = " Keybindings", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
 
-        (string, string)[] keys =
-        [
-            ("── Navigation ──", ""),
-            ("h / l / Left / Right", "Switch panes"),
-            ("j / k / Up / Down", "Navigate within pane"),
-            ("J / K / Shift+Up/Down", "Fast scroll (5 rows)"),
-            ("Tab / Shift+Tab", "Cycle panes"),
-            ("Enter", "Details / profile menu"),
-            ("── Profiles (when focused) ──", ""),
+        int y = 2;
+
+        y = AddSection("Navigation", y,
+            ("h  l  \u2190  \u2192", "Switch panes"),
+            ("j  k  \u2191  \u2193", "Navigate list"),
+            ("J  K  Shift+\u2191/\u2193", "Fast scroll (5 rows)"),
+            ("Tab  Shift+Tab", "Cycle panes"),
+            ("Enter", "Open details / profile menu"));
+
+        y = AddSection("Profiles", y,
             ("n", "New profile"),
             ("L", "Login / Logout"),
-            ("r", "Rename profile"),
+            ("r", "Rename"),
             ("d", "Set as default"),
-            ("x", "Delete profile"),
-            ("/ / F3", "Search / filter videos"),
-            ("o / F4", "Sort videos"),
-            ("a / F1", "Add playlist by URL"),
-            ("t / F2", "Toggle tracking"),
-            ("T", "Track / untrack all"),
-            ("s / F5", "Sync selected playlist"),
-            ("S / F6", "Sync all tracked"),
-            ("e / F7", "Export removed videos"),
-            ("F8", "Toggle removed videos"),
-            ("F9", "Settings"),
-            ("H / F11", "Removal history"),
-            ("? / F12", "This help"),
-            ("u", "Check for updates"),
-            ("q / F10", "Quit"),
-            ("Ctrl+C (x2)", "Quit"),
-        ];
+            ("x", "Delete"));
 
-        int y = 1;
-        foreach (var (key, action) in keys)
-        {
-            Add(new Label() { Text = key, X = 1, Y = y, ColorScheme = Theme.HintKey });
-            Add(new Label() { Text = action, X = 26, Y = y });
-            y++;
-        }
+        y = AddSection("Playlists", y,
+            ("a  F1", "Add by URL"),
+            ("t  F2", "Toggle tracking"),
+            ("T", "Track / untrack all"),
+            ("s  F5", "Sync selected"),
+            ("S  F6", "Sync all tracked"));
+
+        y = AddSection("Videos", y,
+            ("/  F3", "Search / filter"),
+            ("o  F4", "Sort"),
+            ("F8", "Show removed only"),
+            ("e  F7", "Export removed"),
+            ("H  F11", "Removal history"));
+
+        AddSection("App", y,
+            ("F9  Ctrl+,", "Settings"),
+            ("u", "Check for updates"),
+            ("?  F12", "This help"),
+            ("q  F10", "Quit"),
+            ("Ctrl+C (x2)", "Force quit"));
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
         AddButton(closeBtn);
+    }
+
+    private int AddSection(string title, int startY, params (string key, string desc)[] bindings)
+    {
+        Add(new Label
+        {
+            Text = " " + title,
+            X = 1, Y = startY,
+            Width = Dim.Fill(1),
+            ColorScheme = Theme.SectionHeader,
+        });
+
+        int y = startY + 1;
+        foreach (var (key, desc) in bindings)
+        {
+            Add(new Label { Text = "  " + key, X = 1, Y = y, ColorScheme = Theme.HintKey });
+            Add(new Label { Text = desc, X = 30, Y = y });
+            y++;
+        }
+
+        return y + 1; // gap between sections
     }
 }
