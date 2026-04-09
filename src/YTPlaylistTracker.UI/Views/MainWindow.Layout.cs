@@ -126,7 +126,24 @@ public partial class MainWindow
             Width = Dim.Fill(),
             ColorScheme = Theme.HintKey,
         };
-        Add(_hintBar1, _hintBar2);
+        _spinner = new SpinnerView
+        {
+            Style = new SpinnerStyle.Dots(),
+            AutoSpin = false,
+            X = 1,
+            Y = Pos.AnchorEnd(3),
+            Visible = false,
+        };
+        _spinnerMessage = new Label
+        {
+            Text = "",
+            X = Pos.Right(_spinner) + 1,
+            Y = Pos.AnchorEnd(3),
+            Width = Dim.Fill(),
+            Visible = false,
+            ColorScheme = Theme.HintKey,
+        };
+        Add(_spinner, _spinnerMessage, _hintBar1, _hintBar2);
         UpdateHintBar();
     }
 
@@ -153,30 +170,26 @@ public partial class MainWindow
         _videoTable.ColorScheme = Colors.ColorSchemes["Base"];
         _hintBar1.ColorScheme = Theme.HintKey;
         _hintBar2.ColorScheme = Theme.HintKey;
+        _spinnerMessage.ColorScheme = Theme.HintKey;
         ApplyDefaultColorScheme();
         SetNeedsDraw();
     }
 
     private void ShowSpinner(string message)
     {
-        HideSpinner();
-        _spinnerFrame = 0;
+        _spinnerMessage.Text = " " + message;
+        _spinner.Visible = true;
+        _spinnerMessage.Visible = true;
+        _spinner.AutoSpin = true;
         ColorScheme = Theme.Syncing;
-        _spinnerTimer = global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromMilliseconds(200), () =>
-        {
-            Title = " ytpt " + SpinnerFrames[_spinnerFrame % SpinnerFrames.Length] + " " + message + " ";
-            _spinnerFrame++;
-            return true;
-        });
+        Title = " ytpt - syncing ";
     }
 
     private void HideSpinner()
     {
-        if (_spinnerTimer is not null)
-        {
-            global::Terminal.Gui.Application.RemoveTimeout(_spinnerTimer);
-            _spinnerTimer = null;
-        }
+        _spinner.AutoSpin = false;
+        _spinner.Visible = false;
+        _spinnerMessage.Visible = false;
         Title = DefaultTitle;
         ApplyDefaultColorScheme();
         SetNeedsDraw();

@@ -86,12 +86,7 @@ Target: `AddCommand()` + `KeyBindings.Add()` for declarative, user-configurable 
 
 Benefits: JSON-configurable, self-documenting, no manual text-field guards.
 
-### V3. Custom spinner -> `SpinnerView`
-**See**: improvements.md P2
-
-**Files**: `MainWindow.cs:41` (SpinnerFrames), `MainWindow.Layout.cs:160-180` (ShowSpinner/HideSpinner)
-
-v2 provides built-in `SpinnerView` with multiple animation styles. Eliminates custom timer management and the `AddTimeout`/`RemoveTimeout` dance.
+### ~~V3. Custom spinner -> `SpinnerView`~~ (done)
 
 ### V4. `ContextMenu` -> `PopoverMenu`
 **See**: improvements.md P3

@@ -36,9 +36,8 @@ public partial class MainWindow(
     private Playlist? _selectedPlaylist;
     private bool _showDeletedOnly;
     private DateTime _lastCtrlC = DateTime.MinValue;
-    private object? _spinnerTimer;
-    private int _spinnerFrame;
-    private static readonly string[] SpinnerFrames = Glyphs.SpinnerFrames;
+    private SpinnerView _spinner = null!;
+    private Label _spinnerMessage = null!;
     private bool _suppressEvents;
 
     private IDisposable SuppressEvents()
