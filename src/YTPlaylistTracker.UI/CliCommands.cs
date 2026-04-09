@@ -118,7 +118,7 @@ internal static class CliCommands
                     var videos = await playlistRepo.GetVideosAsync(pl.Id).ConfigureAwait(false);
                     var active = videos.Count(v => v.DeletedAt == null);
                     var deleted = videos.Count(v => v.DeletedAt != null);
-                    Console.WriteLine($"  {(pl.IsTracked ? "✓" : " ")} {pl.Title ?? pl.YouTubePlaylistId} — {active} active, {deleted} removed, last sync: {pl.LastSyncedAt?.ToString("g") ?? "never"}");
+                    Console.WriteLine($"  {(pl.IsTracked ? Glyphs.Check : " ")} {pl.Title ?? pl.YouTubePlaylistId} — {active} active, {deleted} removed, last sync: {pl.LastSyncedAt?.ToString("g") ?? "never"}");
                 }
             }
         }

@@ -66,7 +66,7 @@ public partial class MainWindow
             };
         }
 
-        string Arrow(string col) => string.Equals(_sortColumn, col, StringComparison.Ordinal) ? (_sortAscending ? " ▲" : " ▼") : "";
+        string Arrow(string col) => string.Equals(_sortColumn, col, StringComparison.Ordinal) ? (_sortAscending ? Glyphs.SortAscending : Glyphs.SortDescending) : "";
 
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(string));

@@ -13,6 +13,7 @@ public class UserSettings : IUserSettings
     public bool SortTrackedFirst { get; set; } = true;
     public string ThemeName { get; set; } = "";
     public string YouTubeApiKey { get; set; } = "";
+    public string GlyphMode { get; set; } = "";
 
     public void Save()
     {
@@ -24,6 +25,7 @@ public class UserSettings : IUserSettings
             sortTrackedFirst = SortTrackedFirst,
             themeName = ThemeName,
             youtubeApiKey = YouTubeApiKey,
+            glyphMode = GlyphMode,
         }, JsonOptions);
         File.WriteAllText(SettingsPath, json);
 
@@ -49,6 +51,8 @@ public class UserSettings : IUserSettings
                 settings.ThemeName = val5.GetString() ?? "";
             if (doc.RootElement.TryGetProperty("youtubeApiKey", out var val6))
                 settings.YouTubeApiKey = val6.GetString() ?? "";
+            if (doc.RootElement.TryGetProperty("glyphMode", out var val7))
+                settings.GlyphMode = val7.GetString() ?? "";
         }
         catch
         {

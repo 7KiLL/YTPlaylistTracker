@@ -7,5 +7,6 @@ public interface IUserSettings
     bool SortTrackedFirst { get; set; }
     string ThemeName { get; set; }
     string YouTubeApiKey { get; set; }
+    string GlyphMode { get; set; }
     void Save();
 }

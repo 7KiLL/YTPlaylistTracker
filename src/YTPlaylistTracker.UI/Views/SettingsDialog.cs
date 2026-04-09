@@ -20,7 +20,7 @@ public sealed class SettingsDialog : Dialog
     {
         Title = "Settings";
         Width = 70;
-        Height = 30;
+        Height = 37;
         
         
         int y = 0;
@@ -69,6 +69,32 @@ public sealed class SettingsDialog : Dialog
         };
         Add(themeRadio);
         y += themeNames.Length + 1;
+
+        // ── Display ──
+        Add(new Label() { Text = "── Display ─────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
+        y += 1;
+
+        Add(new Label() { Text = "  Icons:", X = 1, Y = y });
+        var glyphLabels = new[] { "Auto-detect", "Full (emoji/braille)", "Basic (ASCII)" };
+        var glyphValues = new[] { "", "full", "basic" };
+        var glyphIdx = Array.IndexOf(glyphValues, userSettings.GlyphMode);
+        if (glyphIdx < 0) glyphIdx = 0;
+        var glyphRadio = new RadioGroup()
+        {
+            RadioLabels = glyphLabels,
+            X = 12, Y = y,
+            SelectedItem = glyphIdx,
+        };
+        glyphRadio.SelectedItemChanged += (sender, e) =>
+        {
+            userSettings.GlyphMode = glyphValues[glyphRadio.SelectedItem];
+            userSettings.Save();
+            GlyphDetector.SetUserOverride(userSettings.GlyphMode);
+        };
+        Add(glyphRadio);
+        y += glyphLabels.Length;
+        Add(new Label() { Text = "  Full requires a font with emoji/CJK support (e.g. Nerd Font)", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
+        y += 2;
 
         // ── Sync ──
         Add(new Label() { Text = "── Sync ────────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });

@@ -21,6 +21,7 @@ AppSettings.EnsureDirectories();
 AppSettings.LoadCredentials();
 var userSettingsBootstrap = UserSettings.Load();
 AppSettings.LoadApiKey(userSettingsBootstrap.YouTubeApiKey);
+GlyphDetector.SetUserOverride(userSettingsBootstrap.GlyphMode);
 AppSettings.YouTubeApiKey = string.IsNullOrWhiteSpace(AppSettings.YouTubeApiKey) ? BuildConstants.YouTubeApiKey : AppSettings.YouTubeApiKey;
 
 var isVerbose = args.Contains("--verbose", StringComparer.Ordinal) || args.Contains("-v", StringComparer.Ordinal);

@@ -38,7 +38,7 @@ public partial class MainWindow(
     private DateTime _lastCtrlC = DateTime.MinValue;
     private object? _spinnerTimer;
     private int _spinnerFrame;
-    private static readonly string[] SpinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    private static readonly string[] SpinnerFrames = Glyphs.SpinnerFrames;
     private bool _suppressEvents;
 
     private IDisposable SuppressEvents()
@@ -272,7 +272,7 @@ public partial class MainWindow(
         var names = _profiles.Select(p =>
         {
             var name = p.ChannelTitle ?? p.Name;
-            var prefix = p.IsDefault ? "▸ " : "  ";
+            var prefix = p.IsDefault ? Glyphs.DefaultMarker : "  ";
             var suffix = p.IsOffline && !youtubeApiFactory.IsAuthenticated(p) ? " (offline)" : "";
             return prefix + name + suffix;
         }).ToList();
@@ -298,7 +298,7 @@ public partial class MainWindow(
         {
             var policy = PlaylistPolicy.For(p.Kind);
             var prefix = p.IsTracked ? "[x] " : "[ ] ";
-            var icon = policy.Icon is { Length: > 0 } ic ? ic + " " : "";
+            var icon = Glyphs.PlaylistIcon(p.Kind) is { Length: > 0 } ic ? ic + " " : "";
             return prefix + icon + (p.Title ?? p.YouTubePlaylistId);
         }).ToList();
         if (names.Count == 0)
