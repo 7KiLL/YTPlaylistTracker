@@ -22,7 +22,7 @@ public partial class MainWindow
         _profileFrame = new FrameView()
         {
             X = 0, Y = 0,
-            Width = 18,
+            Width = Dim.Func(() => Math.Max(18, Viewport.Width * 15 / 100)),
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
@@ -48,7 +48,7 @@ public partial class MainWindow
         {
             X = Pos.Right(_profileFrame),
             Y = 0,
-            Width = 28,
+            Width = Dim.Func(() => Math.Max(28, Viewport.Width * 25 / 100)),
             Height = Dim.Fill(2),
             ColorScheme = Theme.Frame,
             BorderStyle = LineStyle.Rounded,
