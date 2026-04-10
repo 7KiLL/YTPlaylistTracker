@@ -302,7 +302,7 @@ public partial class MainWindow(
         var names = _playlists.Select(p =>
         {
             var policy = PlaylistPolicy.For(p.Kind);
-            var prefix = p.IsTracked ? "[x] " : "[ ] ";
+            var prefix = !policy.AllowAutoSync ? "    " : p.IsTracked ? "[x] " : "[ ] ";
             var icon = Glyphs.PlaylistIcon(p.Kind) is { Length: > 0 } ic ? ic + " " : "";
             return prefix + icon + (p.Title ?? p.YouTubePlaylistId);
         }).ToList();

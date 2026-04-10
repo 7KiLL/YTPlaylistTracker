@@ -86,6 +86,7 @@ public partial class MainWindow
         if (_selectedPlaylist is null) return;
 
         var policy = PlaylistPolicy.For(_selectedPlaylist.Kind);
+        if (!policy.AllowAutoSync) return;
         if (!_selectedPlaylist.IsTracked && policy.TrackingWarning is not null)
         {
             var confirmed = false;
@@ -128,9 +129,11 @@ public partial class MainWindow
         if (_selectedProfile is null || _playlists.Count == 0) return;
         try
         {
-            // If any are untracked, track all. Otherwise untrack all.
-            bool newState = _playlists.Exists(p => !p.IsTracked);
-            foreach (var p in _playlists)
+            // If any trackable are untracked, track all. Otherwise untrack all.
+            var trackable = _playlists.Where(p => PlaylistPolicy.For(p.Kind).AllowAutoSync).ToList();
+            if (trackable.Count == 0) return;
+            bool newState = trackable.Exists(p => !p.IsTracked);
+            foreach (var p in trackable)
             {
                 p.IsTracked = newState;
                 await playlistRepo.UpdateAsync(p).ConfigureAwait(false);
