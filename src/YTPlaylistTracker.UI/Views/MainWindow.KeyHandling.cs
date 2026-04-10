@@ -39,6 +39,7 @@ public partial class MainWindow
         [(Key)'q'] = AppCommand.Quit,
         [(Key)'/'] = AppCommand.Search,
         [(Key)'?'] = AppCommand.Help,
+        [(Key)'p'] = AppCommand.ToggleProfilePane,
 
         // F-key aliases
         [Key.F1] = AppCommand.AddPlaylist,
@@ -101,6 +102,7 @@ public partial class MainWindow
             [AppCommand.UpdateCheck] = () => { OnUpdateCheck(); return true; },
             [AppCommand.Help] = () => { global::Terminal.Gui.Application.Run(new HelpDialog()); return true; },
             [AppCommand.Quit] = () => { global::Terminal.Gui.Application.RequestStop(); return true; },
+            [AppCommand.ToggleProfilePane] = () => { ToggleProfilePane(); return true; },
 
             // Profile-specific
             [AppCommand.NewProfile] = () => { OnNewProfile(); return true; },
@@ -177,16 +179,19 @@ public partial class MainWindow
         return true;
     }
 
-    private View GetFocusedPane() => (_profileList.HasFocus, _playlistList.HasFocus) switch
+    private View[] GetVisiblePanes() =>
+        _profileFrame.Visible ? [_profileList, _playlistList, _videoTable] : [_playlistList, _videoTable];
+
+    private View GetFocusedPane()
     {
-        (true, _) => _profileList,
-        (_, true) => _playlistList,
-        _ => _videoTable,
-    };
+        if (_profileFrame.Visible && _profileList.HasFocus) return _profileList;
+        if (_playlistList.HasFocus) return _playlistList;
+        return _videoTable;
+    }
 
     private bool SwitchPane(int direction)
     {
-        View[] panes = [_profileList, _playlistList, _videoTable];
+        var panes = GetVisiblePanes();
         var current = Array.FindIndex(panes, p => p.HasFocus);
         var target = current + direction;
         if (target < 0 || target >= panes.Length) return false;
@@ -197,7 +202,7 @@ public partial class MainWindow
 
     private bool CyclePane(int direction)
     {
-        View[] panes = [_profileList, _playlistList, _videoTable];
+        var panes = GetVisiblePanes();
         var current = Array.FindIndex(panes, p => p.HasFocus);
         if (current < 0) current = 0;
         var next = direction > 0

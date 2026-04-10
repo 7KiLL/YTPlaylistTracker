@@ -22,6 +22,8 @@ internal enum AppCommand
     Help,
     Quit,
 
+    ToggleProfilePane,
+
     // Pane navigation
     PaneLeft,
     PaneRight,

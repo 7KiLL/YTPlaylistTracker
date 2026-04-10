@@ -287,6 +287,11 @@ public partial class MainWindow(
             var idx = _profiles.IndexOf(_selectedProfile!);
             if (idx >= 0) _profileList.SelectedItem = idx;
         }
+
+        // Auto-show/hide profile pane based on profile count
+        var shouldShow = _profiles.Count > 1;
+        if (shouldShow != _profilePaneVisible)
+            ToggleProfilePane();
     }
 
     private async Task RefreshPlaylistsAsync()

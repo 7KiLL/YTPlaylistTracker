@@ -12,6 +12,7 @@ public partial class MainWindow
     private Label _videoStatusLabel = null!;
     private Label _hintBar1 = null!;
     private Label _hintBar2 = null!;
+    private bool _profilePaneVisible = true;
 
     private void SetupUI()
     {
@@ -124,7 +125,7 @@ public partial class MainWindow
         };
         _hintBar2 = new Label()
         {
-            Text = " e F7 export │ H F11 hist │ F9 settings │ ? F12 help │ q quit",
+            Text = " e F7 export │ H F11 hist │ F9 settings │ p profile │ ? F12 help │ q quit",
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
             ColorScheme = Theme.HintKey,
@@ -152,12 +153,24 @@ public partial class MainWindow
 
     private void UpdateHintBar()
     {
-        if (_profileList.HasFocus)
+        var profileHint = !_profilePaneVisible ? " p profiles │" : "";
+        if (_profilePaneVisible && _profileList.HasFocus)
             _hintBar1.Text = " n new │ L login │ r rename │ d default │ x delete │ Enter menu │ h/l pane │ j/k nav";
         else if (_playlistList.HasFocus)
-            _hintBar1.Text = " a F1 add │ t F2 track │ T all │ s F5 sync │ S F6 all │ Enter detail │ h/l pane │ j/k nav";
+            _hintBar1.Text = profileHint + " a F1 add │ t F2 track │ T all │ s F5 sync │ S F6 all │ Enter detail │ h/l pane │ j/k nav";
         else
-            _hintBar1.Text = " / F3 search │ o F4 sort │ F8 deleted │ Enter detail │ h/l pane │ j/k nav";
+            _hintBar1.Text = profileHint + " / F3 search │ o F4 sort │ F8 deleted │ Enter detail │ h/l pane │ j/k nav";
+    }
+
+    private void ToggleProfilePane()
+    {
+        _profilePaneVisible = !_profilePaneVisible;
+        _profileFrame.Visible = _profilePaneVisible;
+        _playlistFrame.X = _profilePaneVisible ? Pos.Right(_profileFrame) : 0;
+        if (!_profilePaneVisible && _profileList.HasFocus)
+            _playlistList.SetFocus();
+        UpdateHintBar();
+        SetNeedsDraw();
     }
 
     internal void ReapplyTheme()
