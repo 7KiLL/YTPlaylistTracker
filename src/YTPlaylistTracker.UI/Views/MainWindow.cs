@@ -1,4 +1,5 @@
 using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
@@ -12,11 +13,11 @@ namespace YTPlaylistTracker.UI.Views;
 public partial class MainWindow(
     IPlaylistRepository playlistRepo,
     IProfileRepository profileRepo,
-    ISyncService syncService,
     IYouTubeApiServiceFactory youtubeApiFactory,
     ISystemLauncher browser,
     IUserSettings userSettings,
     IUpdateService updateService,
+    IServiceScopeFactory scopeFactory,
     ILogger<MainWindow> logger) : Window()
 {
     private IYouTubeApiService? _youtubeApi;
@@ -124,9 +125,14 @@ public partial class MainWindow(
             ShowSpinner("Fetching playlists...");
             _ = Task.Run(async () =>
             {
+                await using var bgScope = scopeFactory.CreateAsyncScope();
+                var bgPlaylistRepo = bgScope.ServiceProvider.GetRequiredService<IPlaylistRepository>();
+                var bgProfileRepo = bgScope.ServiceProvider.GetRequiredService<IProfileRepository>();
+                var bgSyncService = bgScope.ServiceProvider.GetRequiredService<ISyncService>();
+
                 try
                 {
-                    await FetchAndImportAllPlaylists(capturedProfile).ConfigureAwait(false);
+                    await FetchAndImportAllPlaylists(capturedProfile, bgPlaylistRepo).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -144,7 +150,7 @@ public partial class MainWindow(
                             capturedProfile.YouTubeChannelId = channel.ChannelId;
                             capturedProfile.ChannelTitle = channel.Title;
                             capturedProfile.ChannelThumbnailUrl = channel.ThumbnailUrl;
-                            await profileRepo.UpdateAsync(capturedProfile).ConfigureAwait(false);
+                            await bgProfileRepo.UpdateAsync(capturedProfile).ConfigureAwait(false);
                             global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
                         }
                     }
@@ -154,7 +160,7 @@ public partial class MainWindow(
                 await CheckForUpdatesAsync().ConfigureAwait(false);
 
                 if (userSettings.AutoSyncOnStartup && capturedProfile is not null && _youtubeApi is not null)
-                    await AutoSyncAllAsync(capturedProfile).ConfigureAwait(false);
+                    await AutoSyncAllAsync(capturedProfile, bgSyncService).ConfigureAwait(false);
                 else
                     InvokeUI(() =>
                     {
@@ -215,7 +221,7 @@ public partial class MainWindow(
         catch (Exception ex) { logger.LogWarning(ex, "Update check failed"); }
     }
 
-    private async Task AutoSyncAllAsync(Profile profile)
+    private async Task AutoSyncAllAsync(Profile profile, ISyncService bgSyncService)
     {
         if (_youtubeApi is null) return;
         _isSyncing = true;
@@ -224,7 +230,7 @@ public partial class MainWindow(
         {
             var syncProgress = new Progress<string>(msg =>
                 global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
-            var results = await syncService.SyncAllTrackedAsync(profile.Id, _youtubeApi, syncProgress).ConfigureAwait(false);
+            var results = await bgSyncService.SyncAllTrackedAsync(profile.Id, _youtubeApi, syncProgress).ConfigureAwait(false);
             int totalAdded = results.Values.Sum(r => r.Added);
             int totalRemoved = results.Values.Sum(r => r.Removed);
             logger.LogInformation("Auto-sync complete: {Count} playlists, +{Added} -{Removed}",

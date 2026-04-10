@@ -1,5 +1,6 @@
 using System.Net.Http;
 using Google;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
@@ -11,7 +12,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public partial class MainWindow
 {
-    private async Task FetchAndImportAllPlaylists(Profile? profile)
+    private async Task FetchAndImportAllPlaylists(Profile? profile, IPlaylistRepository bgPlaylistRepo)
     {
         if (profile is null || _youtubeApi is null) return;
 
@@ -19,7 +20,7 @@ public partial class MainWindow
         {
             var userPlaylists = await _youtubeApi.GetUserPlaylistsAsync().ConfigureAwait(false);
 
-            var dbPlaylists = await playlistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
+            var dbPlaylists = await bgPlaylistRepo.GetByProfileAsync(profile.Id).ConfigureAwait(false);
             var existingIds = dbPlaylists.Select(p => p.YouTubePlaylistId).ToHashSet(StringComparer.Ordinal);
 
             var newPlaylists = new List<Playlist>();
@@ -76,7 +77,7 @@ public partial class MainWindow
 
             if (newPlaylists.Count > 0)
             {
-                await playlistRepo.AddPlaylistsAsync(newPlaylists).ConfigureAwait(false);
+                await bgPlaylistRepo.AddPlaylistsAsync(newPlaylists).ConfigureAwait(false);
                 logger.LogInformation("Imported {Count} new playlists from YouTube", newPlaylists.Count);
                 InvokeUI(() => RefreshPlaylistsAsync().GetAwaiter().GetResult());
             }
@@ -131,9 +132,11 @@ public partial class MainWindow
         {
             try
             {
+                await using var bgScope = scopeFactory.CreateAsyncScope();
+                var bgSync = bgScope.ServiceProvider.GetRequiredService<ISyncService>();
                 var syncProgress = new Progress<string>(msg =>
                     global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
-                var result = await syncService.SyncPlaylistAsync(playlist, youtube, syncProgress).ConfigureAwait(false);
+                var result = await bgSync.SyncPlaylistAsync(playlist, youtube, syncProgress).ConfigureAwait(false);
                 InvokeUI(() =>
                 {
                     HideSpinner();
@@ -178,9 +181,11 @@ public partial class MainWindow
         {
             try
             {
+                await using var bgScope = scopeFactory.CreateAsyncScope();
+                var bgSync = bgScope.ServiceProvider.GetRequiredService<ISyncService>();
                 var syncProgress = new Progress<string>(msg =>
                     global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
-                var results = await syncService.SyncAllTrackedAsync(profileId, youtube, syncProgress).ConfigureAwait(false);
+                var results = await bgSync.SyncAllTrackedAsync(profileId, youtube, syncProgress).ConfigureAwait(false);
                 int totalAdded = results.Values.Sum(r => r.Added);
                 int totalRemoved = results.Values.Sum(r => r.Removed);
                 InvokeUI(() =>

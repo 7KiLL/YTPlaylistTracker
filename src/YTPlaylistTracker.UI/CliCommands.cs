@@ -28,11 +28,11 @@ internal static class CliCommands
                 var mainWindow = new MainWindow(
                     s.GetRequiredService<IPlaylistRepository>(),
                     s.GetRequiredService<IProfileRepository>(),
-                    s.GetRequiredService<ISyncService>(),
                     sp.GetRequiredService<IYouTubeApiServiceFactory>(),
                     sp.GetRequiredService<ISystemLauncher>(),
                     sp.GetRequiredService<IUserSettings>(),
                     sp.GetRequiredService<IUpdateService>(),
+                    sp.GetRequiredService<IServiceScopeFactory>(),
                     s.GetRequiredService<ILogger<MainWindow>>());
                 await mainWindow.InitializeAsync().ConfigureAwait(false);
                 App.Run(mainWindow);

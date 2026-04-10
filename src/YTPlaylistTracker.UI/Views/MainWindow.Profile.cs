@@ -1,6 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
+using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Configuration;
 using YTPlaylistTracker.Infrastructure.YouTube;
 
@@ -78,9 +80,11 @@ public partial class MainWindow
 
         _ = Task.Run(async () =>
         {
+            await using var bgScope = scopeFactory.CreateAsyncScope();
+            var bgProfileRepo = bgScope.ServiceProvider.GetRequiredService<IProfileRepository>();
             var profile = new Profile { Name = inputValue!, IsDefault = false, IsOffline = true };
-            await profileRepo.AddAsync(profile).ConfigureAwait(false);
-            _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
+            await bgProfileRepo.AddAsync(profile).ConfigureAwait(false);
+            _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
 
             global::Terminal.Gui.Application.Invoke(() =>
             {
@@ -228,8 +232,10 @@ public partial class MainWindow
         _selectedProfile.Name = inputValue!;
         _ = Task.Run(async () =>
         {
-            await profileRepo.UpdateAsync(_selectedProfile).ConfigureAwait(false);
-            _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
+            await using var bgScope = scopeFactory.CreateAsyncScope();
+            var bgProfileRepo = bgScope.ServiceProvider.GetRequiredService<IProfileRepository>();
+            await bgProfileRepo.UpdateAsync(_selectedProfile).ConfigureAwait(false);
+            _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
             global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
         });
     }
@@ -239,8 +245,10 @@ public partial class MainWindow
         if (_selectedProfile is null || _selectedProfile.IsDefault) return;
         _ = Task.Run(async () =>
         {
-            await profileRepo.SetDefaultAsync(_selectedProfile.Id).ConfigureAwait(false);
-            _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
+            await using var bgScope = scopeFactory.CreateAsyncScope();
+            var bgProfileRepo = bgScope.ServiceProvider.GetRequiredService<IProfileRepository>();
+            await bgProfileRepo.SetDefaultAsync(_selectedProfile.Id).ConfigureAwait(false);
+            _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
             _selectedProfile = _profiles.FirstOrDefault(p => p.Id == _selectedProfile.Id) ?? _selectedProfile;
             global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
         });
@@ -260,11 +268,13 @@ public partial class MainWindow
         var deletedId = _selectedProfile.Id;
         _ = Task.Run(async () =>
         {
+            await using var bgScope = scopeFactory.CreateAsyncScope();
+            var bgProfileRepo = bgScope.ServiceProvider.GetRequiredService<IProfileRepository>();
             var slug = YouTubeApiServiceFactory.ToProfileSlug(_selectedProfile.Name);
             var tokenDir = Path.Combine(AppSettings.OAuthTokenDir, slug);
             if (Directory.Exists(tokenDir)) Directory.Delete(tokenDir, recursive: true);
-            await profileRepo.DeleteAsync(deletedId).ConfigureAwait(false);
-            _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
+            await bgProfileRepo.DeleteAsync(deletedId).ConfigureAwait(false);
+            _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
 
             var newDefault = _profiles.FirstOrDefault(p => p.IsDefault) ?? _profiles[0];
             _selectedProfile = newDefault;

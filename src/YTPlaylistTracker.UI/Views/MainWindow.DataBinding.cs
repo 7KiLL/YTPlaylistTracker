@@ -1,8 +1,10 @@
 using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
+using YTPlaylistTracker.Domain.Interfaces;
 
 namespace YTPlaylistTracker.UI.Views;
 
@@ -201,9 +203,11 @@ public partial class MainWindow
         {
             try
             {
+                await using var bgScope = scopeFactory.CreateAsyncScope();
+                var bgRepo = bgScope.ServiceProvider.GetRequiredService<IPlaylistRepository>();
                 var videos = (_showDeletedOnly
-                    ? await playlistRepo.GetDeletedVideosAsync(playlist.Id)
-.ConfigureAwait(false) : await playlistRepo.GetVideosAsync(playlist.Id).ConfigureAwait(false)).ToList();
+                    ? await bgRepo.GetDeletedVideosAsync(playlist.Id)
+.ConfigureAwait(false) : await bgRepo.GetVideosAsync(playlist.Id).ConfigureAwait(false)).ToList();
 
                 global::Terminal.Gui.Application.Invoke(() =>
                 {
