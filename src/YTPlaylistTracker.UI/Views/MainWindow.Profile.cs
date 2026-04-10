@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Configuration;
@@ -40,42 +39,23 @@ public partial class MainWindow
         var isAuth = youtubeApiFactory.IsAuthenticated(_selectedProfile);
         var loginLabel = isAuth ? "Logout" : "Login with Google";
 
-        var menu = new ContextMenu();
-        menu.Show(new MenuBarItem("", new MenuItem[]
-            {
-                new("View _Details", "", () => ShowDetail()),
-                new(loginLabel + " (_L)", "", () => OnToggleLogin()),
-                new("_Rename (r)", "", () => OnRenameProfile()),
-                new("_New profile (n)", "", () => OnNewProfile()),
-                new("Set _default (d)", "", () => OnSetDefaultProfile()),
-                new("Delete (x)", "", () => OnDeleteProfile()),
-            })
-        );
+        var popover = new PopoverMenu(new MenuItem[]
+        {
+            new("View _Details", "", () => ShowDetail()),
+            new(loginLabel + " (_L)", "", () => OnToggleLogin()),
+            new("_Rename (r)", "", () => OnRenameProfile()),
+            new("_New profile (n)", "", () => OnNewProfile()),
+            new("Set _default (d)", "", () => OnSetDefaultProfile()),
+            new("Delete (x)", "", () => OnDeleteProfile()),
+        });
+        TGuiApp.Popovers?.Register(popover);
+        popover.MakeVisible();
     }
 
     private void OnNewProfile()
     {
-        var dialog = new Dialog() { Title = "", Width = 50, Height = 9 };
-        dialog.Border!.Settings &= ~BorderSettings.Title;
-        dialog.Add(new Label { Text = " New Profile", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
-        var label = new Label() { Text = "Name:", X = 1, Y = 1 };
-        var input = new TextField() { Text = "", X = 8, Y = 1, Width = 36 };
-        dialog.Add(label, input);
-
-        var okBtn = new Button() { Text = "Create", IsDefault = true };
-        string? inputValue = null;
-        okBtn.Accepting += (sender, e) =>
-        {
-            inputValue = input.Text?.Trim();
-            global::Terminal.Gui.Application.RequestStop();
-        };
-        var cancelBtn = new Button() { Text = "Cancel" };
-        cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
-        dialog.AddButton(cancelBtn);
-        dialog.AddButton(okBtn);
-
-        global::Terminal.Gui.Application.Run(dialog);
-
+        var inputValue = Dialogs.PromptForText(this, "New Profile", "Create",
+            fieldLabel: "Name:", height: 9);
         if (string.IsNullOrWhiteSpace(inputValue)) return;
 
         _ = Task.Run(async () =>
@@ -86,7 +66,7 @@ public partial class MainWindow
             await bgProfileRepo.AddAsync(profile).ConfigureAwait(false);
             _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
 
-            global::Terminal.Gui.Application.Invoke(() =>
+            TGuiApp.Invoke(() =>
             {
                 RefreshProfileList();
                 // Select the new profile
@@ -126,11 +106,11 @@ public partial class MainWindow
             {
                 var service = await youtubeApiFactory.LoginAsync(profile, authUrl =>
                 {
-                    global::Terminal.Gui.Application.Invoke(() =>
+                    TGuiApp.Invoke(() =>
                     {
                         urlDialog = new Dialog() { Title = "", Width = Dim.Percent(80), Height = 11 };
                         urlDialog.Border!.Settings &= ~BorderSettings.Title;
-                        urlDialog.Add(new Label { Text = " Login with Google", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+                        urlDialog.Add(new Label { Text = " Login with Google", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
                         urlDialog.Add(new Label() { Text = "A browser window should open. If not, copy this URL:", X = 1, Y = 1 });
                         var urlField = new TextField() { Text = authUrl, X = 1, Y = 3, Width = Dim.Fill(2), ReadOnly = true };
                         urlDialog.Add(urlField);
@@ -143,8 +123,8 @@ public partial class MainWindow
                         var openBtn = new Button() { Text = "Open in Browser", X = 16, Y = 5 };
                         openBtn.Accepting += (sender, e) => browser.OpenUrl(authUrl);
                         urlDialog.Add(copyBtn, openBtn);
-                        urlDialog.Add(new Label() { Text = "Waiting for sign-in...", X = 38, Y = 5, ColorScheme = Colors.ColorSchemes["Menu"] });
-                        global::Terminal.Gui.Application.Run(urlDialog);
+                        urlDialog.Add(new Label() { Text = "Waiting for sign-in...", X = 38, Y = 5, SchemeName = "Menu" });
+                        TGuiApp.Run(urlDialog);
                     });
                 }).ConfigureAwait(false);
 
@@ -152,7 +132,7 @@ public partial class MainWindow
 
                 InvokeUI(() =>
                 {
-                    if (urlDialog is not null) global::Terminal.Gui.Application.RequestStop();
+                    if (urlDialog is not null) TGuiApp.RequestStop();
                     _youtubeApi = service;
                     profile.IsOffline = false;
                     if (channel is not null)
@@ -175,7 +155,7 @@ public partial class MainWindow
                 logger.LogError(ex, "Login failed for profile {Profile}", profile.Name);
                 InvokeUI(() =>
                 {
-                    if (urlDialog is not null) global::Terminal.Gui.Application.RequestStop();
+                    if (urlDialog is not null) TGuiApp.RequestStop();
                     Title = DefaultTitle;
                     Dialogs.Query("Login Failed", ex.Message, "OK");
                 });
@@ -199,7 +179,7 @@ public partial class MainWindow
         _ = Task.Run(async () =>
         {
             _youtubeApi = await youtubeApiFactory.CreateForProfileAsync(_selectedProfile).ConfigureAwait(false);
-            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
+            TGuiApp.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -207,27 +187,8 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "", Width = 50, Height = 8 };
-        dialog.Border!.Settings &= ~BorderSettings.Title;
-        dialog.Add(new Label { Text = " Rename Profile", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
-        var label = new Label() { Text = "Name:", X = 1, Y = 1 };
-        var input = new TextField() { Text = _selectedProfile.Name, X = 8, Y = 1, Width = 36 };
-        dialog.Add(label, input);
-
-        var okBtn = new Button() { Text = "Save", IsDefault = true };
-        string? inputValue = null;
-        okBtn.Accepting += (sender, e) =>
-        {
-            inputValue = input.Text?.Trim();
-            global::Terminal.Gui.Application.RequestStop();
-        };
-        var cancelBtn = new Button() { Text = "Cancel" };
-        cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
-        dialog.AddButton(cancelBtn);
-        dialog.AddButton(okBtn);
-
-        global::Terminal.Gui.Application.Run(dialog);
-
+        var inputValue = Dialogs.PromptForText(this, "Rename Profile", "Save",
+            fieldLabel: "Name:", defaultValue: _selectedProfile.Name);
         if (string.IsNullOrWhiteSpace(inputValue) || inputValue == _selectedProfile.Name) return;
         _selectedProfile.Name = inputValue!;
         _ = Task.Run(async () =>
@@ -236,7 +197,7 @@ public partial class MainWindow
             var bgProfileRepo = bgScope.ServiceProvider.GetRequiredService<IProfileRepository>();
             await bgProfileRepo.UpdateAsync(_selectedProfile).ConfigureAwait(false);
             _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
-            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
+            TGuiApp.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -250,7 +211,7 @@ public partial class MainWindow
             await bgProfileRepo.SetDefaultAsync(_selectedProfile.Id).ConfigureAwait(false);
             _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
             _selectedProfile = _profiles.FirstOrDefault(p => p.Id == _selectedProfile.Id) ?? _selectedProfile;
-            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
+            TGuiApp.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -280,7 +241,7 @@ public partial class MainWindow
             _selectedProfile = newDefault;
             _youtubeApi = await youtubeApiFactory.CreateForProfileAsync(newDefault).ConfigureAwait(false);
 
-            global::Terminal.Gui.Application.Invoke(() =>
+            TGuiApp.Invoke(() =>
             {
                 RefreshProfileList();
                 RefreshPlaylistsAsync().GetAwaiter().GetResult();

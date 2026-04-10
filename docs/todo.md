@@ -49,6 +49,16 @@
 - V2: Command-based key bindings with `AppCommand` enum + dictionary dispatch
 - V3: Replace custom spinner with `SpinnerView`
 
+### v0.10.0
+- Upgrade Terminal.Gui to 2.0.0-develop.5245 (breaking: namespace restructuring)
+- V1: Migrate `Colors.ColorSchemes` → `SchemeManager` + `SchemeName` (25 sites)
+- V4: Replace `ContextMenu` → `PopoverMenu` for profile context menu
+- RadioGroup → `OptionSelector` (theme selector, glyph mode, export format)
+- Fix breaking API renames: `CheckedState` → `Value`, `SelectedItemChanged` → `ValueChanged`, `MouseClick` → `MouseEvent`, `CursorPosition` → `InsertionPoint`, `ShadowStyle` → `ShadowStyles`, `Dim.Func` signature, nullable `SelectedItem`
+- U1: Proportional pane widths with minimum floor
+- Collapsible profile pane with auto-hide for single profile
+- V5: Replace ad-hoc input dialogs with `Prompt<T>` API
+
 </details>
 
 ---
@@ -67,30 +77,21 @@ Replaced with `IsCurrentTop`, `Application.Navigation.GetFocused()`, and `SetNee
 
 Patterns that work today but use deprecated/v1 APIs. Not bugs, but tech debt.
 
-### V1. `Colors.ColorSchemes["..."]` dictionary access (20+ sites)
-**See**: improvements.md R2
+### ~~V1. `Colors.ColorSchemes["..."]` dictionary access (25 sites)~~ (done)
 
-**Files**: `Theme.cs:47-50`, `MainWindow.Layout.cs`, `DetailDialog.cs`, `SettingsDialog.cs`, `WelcomeDialog.cs`, and more.
-
-v2 replacement: `Scheme` / `SchemeManager` / `VisualRole`. The dictionary still works in 2.0.0 but is the v1 pattern.
+Migrated to `SchemeManager.AddScheme()` + `View.SchemeName` string-based lookups. Custom schemes registered with `ytpt.*` prefix. `ColorScheme` type replaced by `Scheme`.
 
 ### ~~V2. Manual `KeyDown` event handling -> Command-based bindings~~ (done)
 
 Replaced imperative if-chain with `AppCommand` enum + dictionary-based dispatch in `OnKeyDown`. Eliminated `Application.KeyDown` subscription and all three manual guards.
 
-### V4. `ContextMenu` -> `PopoverMenu`
-**See**: improvements.md P3
+### ~~V4. `ContextMenu` -> `PopoverMenu`~~ (done)
 
-**File**: `MainWindow.Profile.cs` (profile context menu)
+Replaced `ContextMenu` with `PopoverMenu` + `Application.Popovers.Register()` in profile context menu.
 
-v2's `PopoverMenu` provides richer cascading menus, better keyboard support, and consistent styling.
+### ~~V5. Ad-hoc input dialogs -> `Prompt<T>`~~ (done)
 
-### V5. Ad-hoc input dialogs -> `Prompt<T>`
-**See**: improvements.md P6
-
-**Files**: `MainWindow.Actions.cs:14-32` (OnAddByUrlAsync), `MainWindow.Profile.cs` (rename dialog)
-
-Several places build `Dialog` + `TextField` + OK/Cancel manually. v2's `Prompt<T>` does this in one call.
+Replaced 3 manual Dialog+TextField+OK/Cancel patterns with `Dialogs.PromptForText()` helper wrapping `host.Prompt<TextField, string?>()`. Callsites: OnAddByUrlAsync, OnNewProfile, OnRenameProfile.
 
 ---
 
@@ -106,12 +107,9 @@ Fetch `contentDetails`/`statistics` from YouTube API and store in DB for richer 
 
 ## Polish & UX
 
-### U1. Responsive pane widths
-**See**: improvements.md G2
+### ~~U1. Responsive pane widths~~ (done)
 
-**File**: `MainWindow.Layout.cs:22,47`
-
-Profile/playlist panes use fixed widths (`Width = 18`, `Width = 28`). Use `Dim.Auto()` or `Dim.Percent()` to adapt to terminal size.
+Replaced fixed widths with `Dim.Func` percentage-based sizing with minimum floors.
 
 ### U2. Built-in scrollbars
 **See**: improvements.md G1
@@ -196,9 +194,7 @@ v2's `Logging` class is compatible with `Microsoft.Extensions.Logging`. Could un
 
 ## Priority Order
 
-1. **V4** — PopoverMenu for context menus
-2. **V1** — Colors.ColorSchemes migration (20+ sites, batch refactor)
-3. **V5** — Prompt\<T\> for input dialogs
-4. **U1** — Responsive pane widths
-5. **F1-F2** — New features as time permits
-6. Everything else by category priority
+1. **U2** — Built-in scrollbars (now available in develop build)
+2. **F1-F2** — New features as time permits
+3. **I1** — Instance-based Application pattern (migrate off deprecated static API)
+4. Everything else by category priority

@@ -1,5 +1,3 @@
-using Terminal.Gui;
-
 namespace YTPlaylistTracker.UI;
 
 /// <summary>
@@ -24,7 +22,7 @@ internal static class Dialogs
             Text = " " + title,
             X = 0, Y = 0,
             Width = Dim.Fill(),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
         });
 
         dialog.Add(new Label
@@ -42,12 +40,52 @@ internal static class Dialogs
             btn.Accepting += (s, e) =>
             {
                 result = idx;
-                global::Terminal.Gui.Application.RequestStop();
+                TGuiApp.RequestStop();
             };
             dialog.AddButton(btn);
         }
 
-        global::Terminal.Gui.Application.Run(dialog);
+        TGuiApp.Run(dialog);
         return result;
+    }
+
+    internal static string? PromptForText(
+        IRunnable host,
+        string title,
+        string okLabel,
+        string? fieldLabel = null,
+        string? description = null,
+        string defaultValue = "",
+        int width = 50,
+        int height = 8)
+    {
+        var input = description is not null
+            ? new TextField { Text = defaultValue, X = 1, Y = 3, Width = Dim.Fill(2) }
+            : new TextField { Text = defaultValue, X = 8, Y = 1, Width = width - 14 };
+
+        return host.Prompt<TextField, string?>(
+            input,
+            tf => tf.Text?.Trim(),
+            null,
+            p =>
+            {
+                p.Title = "";
+                p.Width = width;
+                p.Height = height;
+                p.Border!.Settings &= ~BorderSettings.Title;
+                p.Add(new Label
+                {
+                    Text = " " + title, X = 0, Y = 0,
+                    Width = Dim.Fill(), SchemeName = Theme.SchemeFrame,
+                });
+
+                if (description is not null)
+                    p.Add(new Label { Text = description, X = 1, Y = 2 });
+                else if (fieldLabel is not null)
+                    p.Add(new Label { Text = fieldLabel, X = 1, Y = 1 });
+
+                var okBtn = p.Buttons?.FirstOrDefault(b => b.IsDefault);
+                if (okBtn is not null) okBtn.Text = okLabel;
+            });
     }
 }

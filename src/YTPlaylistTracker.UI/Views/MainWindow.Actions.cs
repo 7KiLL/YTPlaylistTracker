@@ -1,7 +1,6 @@
 using System.Net.Http;
 using Google;
 using Microsoft.Extensions.Logging;
-using Terminal.Gui;
 using YTPlaylistTracker.Application.Helpers;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
@@ -15,23 +14,8 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var dialog = new Dialog() { Title = "", Width = 60, Height = 9 };
-        dialog.Border!.Settings &= ~BorderSettings.Title;
-        dialog.Add(new Label { Text = " Add Playlist", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
-        var label = new Label() { Text = "YouTube Playlist URL or ID:", X = 1, Y = 2 };
-        var input = new TextField() { Text = "", X = 1, Y = 3, Width = Dim.Fill(2) };
-        var okBtn = new Button() { Text = "Add", IsDefault = true };
-        var cancelBtn = new Button() { Text = "Cancel" };
-
-        string? inputValue = null;
-        okBtn.Accepting += (sender, e) => { inputValue = input.Text; global::Terminal.Gui.Application.RequestStop(); };
-        cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
-
-        dialog.Add(label, input);
-        dialog.AddButton(okBtn);
-        dialog.AddButton(cancelBtn);
-        global::Terminal.Gui.Application.Run(dialog);
-
+        var inputValue = Dialogs.PromptForText(this, "Add Playlist", "Add",
+            description: "YouTube Playlist URL or ID:", width: 60, height: 9);
         if (string.IsNullOrWhiteSpace(inputValue)) return;
 
         var playlistId = PlaylistUrlParser.ExtractPlaylistId(inputValue);
@@ -92,7 +76,7 @@ public partial class MainWindow
             var confirmed = false;
             var dialog = new Dialog() { Title = "", Width = 56, Height = 12 };
             dialog.Border!.Settings &= ~BorderSettings.Title;
-            dialog.Add(new Label { Text = " Large Playlist", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+            dialog.Add(new Label { Text = " Large Playlist", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
             dialog.Add(new Label()
             {
                 Text = policy.TrackingWarning,
@@ -101,12 +85,12 @@ public partial class MainWindow
                 Height = 4,
             });
             var yesBtn = new Button() { Text = "Enable Tracking", IsDefault = true };
-            yesBtn.Accepting += (s, e) => { confirmed = true; global::Terminal.Gui.Application.RequestStop(); };
+            yesBtn.Accepting += (s, e) => { confirmed = true; TGuiApp.RequestStop(); };
             var cancelBtn = new Button() { Text = "Cancel" };
-            cancelBtn.Accepting += (s, e) => global::Terminal.Gui.Application.RequestStop();
+            cancelBtn.Accepting += (s, e) => TGuiApp.RequestStop();
             dialog.AddButton(yesBtn);
             dialog.AddButton(cancelBtn);
-            global::Terminal.Gui.Application.Run(dialog);
+            TGuiApp.Run(dialog);
             if (!confirmed) return;
         }
 
@@ -163,7 +147,7 @@ public partial class MainWindow
                 var playlists = await playlistRepo.GetByProfileAsync(_selectedProfile.Id).ConfigureAwait(false);
                 var tracked = playlists.Count(p => p.IsTracked);
                 var dialog = DetailDialog.ForProfile(_selectedProfile, playlists.Count, tracked, browser);
-                global::Terminal.Gui.Application.Run(dialog);
+                TGuiApp.Run(dialog);
             }
             else if (_playlistList.HasFocus && _selectedPlaylist is not null)
             {
@@ -171,13 +155,13 @@ public partial class MainWindow
                 var active = videos.Count(v => v.DeletedAt == null);
                 var removed = videos.Count(v => v.DeletedAt != null);
                 var dialog = DetailDialog.ForPlaylist(_selectedPlaylist, active, removed, browser);
-                global::Terminal.Gui.Application.Run(dialog);
+                TGuiApp.Run(dialog);
             }
             else if (_videoTable.HasFocus && _videoTable.SelectedRow >= 0 && _videoTable.SelectedRow < _filteredVideos.Count)
             {
                 var video = _filteredVideos[_videoTable.SelectedRow];
                 var dialog = DetailDialog.ForVideo(video, browser);
-                global::Terminal.Gui.Application.Run(dialog);
+                TGuiApp.Run(dialog);
             }
         }
         catch (Exception ex)
@@ -190,16 +174,16 @@ public partial class MainWindow
     {
         var dialog = new Dialog() { Title = "", Width = 30, Height = 11 };
         dialog.Border!.Settings &= ~BorderSettings.Title;
-        dialog.Add(new Label { Text = " Sort by", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        dialog.Add(new Label { Text = " Sort by", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
         string[] options = ["Title", "Channel", "Added Date", "Status"];
         var list = new ListView()
         {
             Y = 1, Width = Dim.Fill(), Height = Dim.Fill(),
         };
         list.SetSource(new System.Collections.ObjectModel.ObservableCollection<string>(options));
-        list.OpenSelectedItem += (sender, e) =>
+        list.Accepting += (sender, e) =>
         {
-            var selected = options[list.SelectedItem];
+            var selected = options[list.SelectedItem ?? 0];
             if (string.Equals(_sortColumn, selected, StringComparison.Ordinal))
                 _sortAscending = !_sortAscending;
             else
@@ -207,13 +191,13 @@ public partial class MainWindow
                 _sortColumn = selected;
                 _sortAscending = true;
             }
-            global::Terminal.Gui.Application.RequestStop();
+            TGuiApp.RequestStop();
         };
         dialog.Add(list);
         var cancelBtn2 = new Button() { Text = "Cancel" };
-        cancelBtn2.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
+        cancelBtn2.Accepting += (sender, e) => TGuiApp.RequestStop();
         dialog.AddButton(cancelBtn2);
-        global::Terminal.Gui.Application.Run(dialog);
+        TGuiApp.Run(dialog);
         ApplyFilterAndSort();
     }
 
@@ -232,9 +216,9 @@ public partial class MainWindow
             _searchQuery = _searchField.Text ?? "";
 
             if (_searchDebounceTimer is not null)
-                global::Terminal.Gui.Application.RemoveTimeout(_searchDebounceTimer);
+                TGuiApp.RemoveTimeout(_searchDebounceTimer);
 
-            _searchDebounceTimer = global::Terminal.Gui.Application.AddTimeout(
+            _searchDebounceTimer = TGuiApp.AddTimeout(
                 TimeSpan.FromMilliseconds(150), () =>
                 {
                     ApplyFilterAndSort();
@@ -246,14 +230,14 @@ public partial class MainWindow
             if (e == Key.Backspace.WithCtrl)
             {
                 var text = _searchField.Text ?? "";
-                var pos = _searchField.CursorPosition;
+                var pos = _searchField.InsertionPoint;
                 if (pos > 0)
                 {
                     int end = pos;
                     while (end > 0 && char.IsWhiteSpace(text[end - 1])) end--;
                     while (end > 0 && !char.IsWhiteSpace(text[end - 1])) end--;
                     _searchField.Text = text.Remove(end, pos - end);
-                    _searchField.CursorPosition = end;
+                    _searchField.InsertionPoint = end;
                 }
                 e.Handled = true;
             }
@@ -282,7 +266,7 @@ public partial class MainWindow
 
         if (_searchDebounceTimer is not null)
         {
-            global::Terminal.Gui.Application.RemoveTimeout(_searchDebounceTimer);
+            TGuiApp.RemoveTimeout(_searchDebounceTimer);
             _searchDebounceTimer = null;
         }
 
