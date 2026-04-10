@@ -4,6 +4,8 @@ set -euo pipefail
 # ytpt installer — https://github.com/7KiLL/YTPlaylistTracker
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash
+#   curl -fsSL ... | bash -s -- --version v0.2.0
+#   curl -fsSL ... | YTPT_VERSION=v0.2.0 bash
 #
 # Environment variables:
 #   YTPT_VERSION      Install a specific version (e.g. v0.2.0). Default: latest.
@@ -160,6 +162,15 @@ main() {
     need_cmd mktemp
     need_cmd grep
     need_cmd sed
+
+    # Parse arguments (--version v0.2.0, --install-dir /path)
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --version|-v)   YTPT_VERSION="$2"; shift 2 ;;
+            --install-dir)  YTPT_INSTALL_DIR="$2"; shift 2 ;;
+            *)              err "unknown argument: $1" ;;
+        esac
+    done
 
     local os arch rid install_dir version
 

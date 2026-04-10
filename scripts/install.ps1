@@ -1,9 +1,17 @@
 # ytpt installer for Windows — https://github.com/7KiLL/YTPlaylistTracker
 # Usage:
 #   irm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.ps1 | iex
+#   & ([scriptblock]::Create((irm https://.../install.ps1))) -Version v0.2.0
+#
+# Parameters:
+#   -Version       Install a specific version (e.g. v0.2.0). Default: latest.
 #
 # Environment variables:
-#   YTPT_VERSION  Install a specific version (e.g. v0.2.0). Default: latest.
+#   YTPT_VERSION   Install a specific version. Overridden by -Version parameter.
+
+param(
+    [string]$Version
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -15,6 +23,9 @@ $GitHubApi = "https://api.github.com/repos/$Repo/releases"
 # ---------------------------------------------------------------------------
 
 function Resolve-YtptVersion {
+    if ($Version) {
+        return $Version
+    }
     if ($env:YTPT_VERSION) {
         return $env:YTPT_VERSION
     }
