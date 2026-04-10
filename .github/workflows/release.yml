@@ -62,7 +62,7 @@ jobs:
           -r ${{ matrix.rid }}
           --self-contained true
           -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:IncludeAllContentForSelfExtract=true
           -p:OAuthClientId=$OAuthClientId
           -p:OAuthClientSecret=$OAuthClientSecret
           -p:YouTubeApiKey=$YouTubeApiKey
