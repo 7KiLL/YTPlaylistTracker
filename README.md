@@ -111,7 +111,11 @@ irm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/insta
 ### Install a specific version
 
 ```bash
-YTPT_VERSION=v0.3.0 curl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash -s -- --version v0.3.0
+
+# Windows (PowerShell)
+$env:YTPT_VERSION = "v0.3.0"; irm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.ps1 | iex
 ```
 
 ### Supported platforms
