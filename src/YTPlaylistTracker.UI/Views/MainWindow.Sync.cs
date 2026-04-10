@@ -109,7 +109,6 @@ public partial class MainWindow
             Dialogs.Query("Info", "Select a playlist first.", "OK");
             return;
         }
-
         var remaining = SyncService.GetRemainingCooldown(_selectedPlaylist);
         if (remaining.HasValue)
         {
