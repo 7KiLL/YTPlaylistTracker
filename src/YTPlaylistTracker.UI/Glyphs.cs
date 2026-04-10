@@ -32,4 +32,13 @@ internal static class Glyphs
     internal static string DefaultMarker => Mode == GlyphMode.Full ? "▸ " : "> ";
 
     internal static string Check => Mode == GlyphMode.Full ? "✓" : "+";
+
+    // Status indicators (ASCII-safe, no Full/Basic distinction needed)
+    internal static string Tracked => "[x] ";
+    internal static string Untracked => "[ ] ";
+    internal static string ManualOnly => "    ";
+    internal static string StatusActive => "Active";
+    internal static string StatusRemoved => "X ";
+    internal static string StatusRemovedFallback => "Removed";
+    internal static string OfflineSuffix => " (offline)";
 }

@@ -278,7 +278,7 @@ public partial class MainWindow(
         {
             var name = p.ChannelTitle ?? p.Name;
             var prefix = p.IsDefault ? Glyphs.DefaultMarker : "  ";
-            var suffix = p.IsOffline && !youtubeApiFactory.IsAuthenticated(p) ? " (offline)" : "";
+            var suffix = p.IsOffline && !youtubeApiFactory.IsAuthenticated(p) ? Glyphs.OfflineSuffix : "";
             return prefix + name + suffix;
         }).ToList();
         using (SuppressEvents())
@@ -302,7 +302,7 @@ public partial class MainWindow(
         var names = _playlists.Select(p =>
         {
             var policy = PlaylistPolicy.For(p.Kind);
-            var prefix = !policy.AllowAutoSync ? "    " : p.IsTracked ? "[x] " : "[ ] ";
+            var prefix = !policy.AllowAutoSync ? Glyphs.ManualOnly : p.IsTracked ? Glyphs.Tracked : Glyphs.Untracked;
             var icon = Glyphs.PlaylistIcon(p.Kind) is { Length: > 0 } ic ? ic + " " : "";
             return prefix + icon + (p.Title ?? p.YouTubePlaylistId);
         }).ToList();

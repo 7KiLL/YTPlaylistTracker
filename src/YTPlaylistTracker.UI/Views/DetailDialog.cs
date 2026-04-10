@@ -47,7 +47,7 @@ public sealed class DetailDialog : Dialog
             {
                 var valueLabel = new Label() { Text = UnicodeWidth.Truncate(value, 52), X = 20, Y = y };
                 if (string.Equals(label, "Status", StringComparison.Ordinal))
-                    valueLabel.ColorScheme = string.Equals(value, "Active", StringComparison.Ordinal) ? Theme.StatusActive : Theme.StatusRemoved;
+                    valueLabel.ColorScheme = string.Equals(value, Glyphs.StatusActive, StringComparison.Ordinal) ? Theme.StatusActive : Theme.StatusRemoved;
                 Add(valueLabel);
             }
 
@@ -135,13 +135,13 @@ public sealed class DetailDialog : Dialog
 
         if (video.DeletedAt.HasValue)
         {
-            fields.Add(("Status", "Removed"));
+            fields.Add(("Status", Glyphs.StatusRemovedFallback));
             fields.Add(("Removed At", video.DeletedAt.Value.ToString("yyyy-MM-dd HH:mm")));
             fields.Add(("Reason", video.RemovalReason?.ToString() ?? "Unknown"));
         }
         else
         {
-            fields.Add(("Status", "Active"));
+            fields.Add(("Status", Glyphs.StatusActive));
         }
 
         fields.Add(("Description", video.Description ?? "-"));

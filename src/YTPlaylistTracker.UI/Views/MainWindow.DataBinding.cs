@@ -97,8 +97,8 @@ public partial class MainWindow
                     UnicodeWidth.Truncate(v.ChannelTitle ?? "", _lastLayout.ChannelWidth),
                     (v.AddedAt?.ToString("yyyy-MM-dd") ?? "") + "  ",
                     v.DeletedAt.HasValue
-                        ? "X " + (v.RemovalReason?.ToString() ?? "Removed")
-                        : "Active");
+                        ? Glyphs.StatusRemoved + (v.RemovalReason?.ToString() ?? Glyphs.StatusRemovedFallback)
+                        : Glyphs.StatusActive);
             }
         }
 
@@ -154,8 +154,8 @@ public partial class MainWindow
             ColorGetter = args =>
             {
                 var val = args.CellValue?.ToString() ?? "";
-                if (val.StartsWith("X ", StringComparison.Ordinal)) return Theme.StatusRemoved;
-                if (string.Equals(val, "Active", StringComparison.Ordinal)) return Theme.StatusActive;
+                if (val.StartsWith(Glyphs.StatusRemoved, StringComparison.Ordinal)) return Theme.StatusRemoved;
+                if (string.Equals(val, Glyphs.StatusActive, StringComparison.Ordinal)) return Theme.StatusActive;
                 return null;
             },
         };
