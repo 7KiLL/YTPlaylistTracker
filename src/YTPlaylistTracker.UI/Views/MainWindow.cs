@@ -65,14 +65,14 @@ public partial class MainWindow(
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) CleanupKeyHandling();
+        if (disposing) CleanupCommands();
         base.Dispose(disposing);
     }
 
     public async Task InitializeAsync()
     {
         SetupUI();
-        SetupKeyHandling();
+        RegisterCommands();
         _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
 
         // First-run: show welcome dialog

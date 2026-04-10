@@ -104,6 +104,9 @@ public partial class MainWindow
                 ColumnStyles = new Dictionary<int, ColumnStyle>(),
             },
         };
+        // Remove arrow key bindings so they propagate to MainWindow for pane switching
+        _videoTable.KeyBindings.Remove(Key.CursorLeft);
+        _videoTable.KeyBindings.Remove(Key.CursorRight);
         _videoTable.CellActivated += (sender, e) => ShowDetail();
         _videoFrame.Add(_videoStatusLabel, _videoTable);
         _videoTable.DrawComplete += (sender, e) => OnVideoTableResized();

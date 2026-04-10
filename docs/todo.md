@@ -46,6 +46,7 @@
 - B4: Fix EF Core cross-context tracking conflict in single-playlist sync
 - B5: Disable tracking for manual-only playlists (Liked Videos)
 - Centralize UI status literals (`[x]`, `Active`, `Removed`, etc.) in `Glyphs.cs`
+- V2: Command-based key bindings with `AppCommand` enum + dictionary dispatch
 - V3: Replace custom spinner with `SpinnerView`
 
 </details>
@@ -73,15 +74,9 @@ Patterns that work today but use deprecated/v1 APIs. Not bugs, but tech debt.
 
 v2 replacement: `Scheme` / `SchemeManager` / `VisualRole`. The dictionary still works in 2.0.0 but is the v1 pattern.
 
-### V2. Manual `KeyDown` event handling -> Command-based bindings
-**See**: improvements.md P1
+### ~~V2. Manual `KeyDown` event handling -> Command-based bindings~~ (done)
 
-**File**: `MainWindow.KeyHandling.cs` (entire file)
-
-Current: imperative `Application.KeyDown` with key comparisons and `key.Handled = true`.
-Target: `AddCommand()` + `KeyBindings.Add()` for declarative, user-configurable bindings.
-
-Benefits: JSON-configurable, self-documenting, no manual text-field guards.
+Replaced imperative if-chain with `AppCommand` enum + dictionary-based dispatch in `OnKeyDown`. Eliminated `Application.KeyDown` subscription and all three manual guards.
 
 ### V4. `ContextMenu` -> `PopoverMenu`
 **See**: improvements.md P3
@@ -201,10 +196,9 @@ v2's `Logging` class is compatible with `Microsoft.Extensions.Logging`. Could un
 
 ## Priority Order
 
-1. **V2** — Command-based key bindings (declarative, configurable)
-2. **V4** — PopoverMenu for context menus
-3. **V1** — Colors.ColorSchemes migration (20+ sites, batch refactor)
-4. **V5** — Prompt\<T\> for input dialogs
-5. **U1** — Responsive pane widths
-6. **F1-F2** — New features as time permits
-7. Everything else by category priority
+1. **V4** — PopoverMenu for context menus
+2. **V1** — Colors.ColorSchemes migration (20+ sites, batch refactor)
+3. **V5** — Prompt\<T\> for input dialogs
+4. **U1** — Responsive pane widths
+5. **F1-F2** — New features as time permits
+6. Everything else by category priority
