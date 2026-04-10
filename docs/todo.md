@@ -40,6 +40,9 @@
 - Video detail Status field formatting fix
 - Settings dialog tabbed layout
 - Glyph fallback for terminals without emoji support
+- B1: Fix async lambda in `Accepting` handler
+- B2: Fix stale docs referencing v1 APIs
+- V3: Replace custom spinner with `SpinnerView`
 
 </details>
 
@@ -48,10 +51,6 @@
 ## Bugs & Anti-patterns
 
 Issues that are wrong today and should be fixed.
-
-### ~~B1. Async lambda in `Accepting` handler~~ (fixed)
-
-### ~~B2. Stale docs referencing v1 APIs~~ (fixed)
 
 ### B3. `Application.Top` static access (4 locations)
 **See**: improvements.md R1
@@ -85,8 +84,6 @@ Current: imperative `Application.KeyDown` with key comparisons and `key.Handled 
 Target: `AddCommand()` + `KeyBindings.Add()` for declarative, user-configurable bindings.
 
 Benefits: JSON-configurable, self-documenting, no manual text-field guards.
-
-### ~~V3. Custom spinner -> `SpinnerView`~~ (done)
 
 ### V4. `ContextMenu` -> `PopoverMenu`
 **See**: improvements.md P3
@@ -156,6 +153,8 @@ Expose themes via `~/.tui/ytpt.config.json` for user customization without code 
 
 ## Testing
 
+> **Deferred**: E2E tests planned for full Terminal.Gui v2 release.
+
 ### E1. E2E scenario test project + harness
 **See**: improvements.md T1
 
@@ -204,11 +203,11 @@ v2's `Logging` class is compatible with `Microsoft.Extensions.Logging`. Could un
 
 ## Priority Order
 
-1. **B1-B2** — Fix async bug and stale docs (minimal effort, high value)
-2. **E1-E2** — E2E scenario test infrastructure + scenarios
-3. **V3** — Replace custom spinner with SpinnerView (eliminates timer complexity)
-4. **V2** — Command-based key bindings (declarative, configurable)
-5. **B3** — Application.Top migration (when upgrading Terminal.Gui)
-6. **V4** — PopoverMenu for context menus
+1. **B3** — Application.Top migration (3 locations, minimal effort)
+2. **V2** — Command-based key bindings (declarative, configurable)
+3. **V4** — PopoverMenu for context menus
+4. **V1** — Colors.ColorSchemes migration (20+ sites, batch refactor)
+5. **V5** — Prompt\<T\> for input dialogs
+6. **U1** — Responsive pane widths
 7. **F1-F2** — New features as time permits
 8. Everything else by category priority
