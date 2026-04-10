@@ -20,11 +20,11 @@ public partial class MainWindow
     private void OnApplicationKeyDown(object? sender, Key key)
     {
         // Only intercept when MainWindow is the active toplevel (not during modal dialogs)
-        if (global::Terminal.Gui.Application.Top != this)
+        if (!IsCurrentTop)
             return;
 
         // Don't intercept when any text input has focus
-        if (global::Terminal.Gui.Application.Top?.MostFocused is TextField or TextView)
+        if (global::Terminal.Gui.Application.Navigation?.GetFocused() is TextField or TextView)
             return;
 
         // Don't intercept when search field is active

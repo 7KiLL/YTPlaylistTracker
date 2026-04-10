@@ -166,7 +166,7 @@ public partial class MainWindow
                     RefreshProfileList();
                     RefreshPlaylistsAsync().GetAwaiter().GetResult();
                     Title = DefaultTitle;
-                    global::Terminal.Gui.Application.Top?.SetNeedsDraw();
+                    SetNeedsDraw();
                     StartBackgroundWork();
                 });
             }

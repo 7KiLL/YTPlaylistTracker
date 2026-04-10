@@ -42,6 +42,7 @@
 - Glyph fallback for terminals without emoji support
 - B1: Fix async lambda in `Accepting` handler
 - B2: Fix stale docs referencing v1 APIs
+- B3: Replace `Application.Top` with `IsCurrentTop`, `Application.Navigation`, `SetNeedsDraw()`
 - V3: Replace custom spinner with `SpinnerView`
 
 </details>
@@ -52,15 +53,9 @@
 
 Issues that are wrong today and should be fixed.
 
-### B3. `Application.Top` static access (4 locations)
-**See**: improvements.md R1
+### ~~B3. `Application.Top` static access~~ (fixed)
 
-`Application.Top` is legacy in v2. Current usages:
-- `MainWindow.KeyHandling.cs:23,27` — guard checks
-- `MainWindow.Profile.cs:161` — `SetNeedsDraw()`
-- `SettingsDialog.Storage.cs:71` — `RequestStop()`
-
-Replace with `View.App?.TopRunnableView` and `Application.Navigation.GetFocused()` when upgrading Terminal.Gui.
+Replaced with `IsCurrentTop`, `Application.Navigation.GetFocused()`, and `SetNeedsDraw()` on `this`.
 
 ---
 
@@ -203,11 +198,10 @@ v2's `Logging` class is compatible with `Microsoft.Extensions.Logging`. Could un
 
 ## Priority Order
 
-1. **B3** — Application.Top migration (3 locations, minimal effort)
-2. **V2** — Command-based key bindings (declarative, configurable)
-3. **V4** — PopoverMenu for context menus
-4. **V1** — Colors.ColorSchemes migration (20+ sites, batch refactor)
-5. **V5** — Prompt\<T\> for input dialogs
-6. **U1** — Responsive pane widths
-7. **F1-F2** — New features as time permits
-8. Everything else by category priority
+1. **V2** — Command-based key bindings (declarative, configurable)
+2. **V4** — PopoverMenu for context menus
+3. **V1** — Colors.ColorSchemes migration (20+ sites, batch refactor)
+4. **V5** — Prompt\<T\> for input dialogs
+5. **U1** — Responsive pane widths
+6. **F1-F2** — New features as time permits
+7. Everything else by category priority
