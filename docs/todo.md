@@ -43,6 +43,7 @@
 - B1: Fix async lambda in `Accepting` handler
 - B2: Fix stale docs referencing v1 APIs
 - B3: Replace `Application.Top` with `IsCurrentTop`, `Application.Navigation`, `SetNeedsDraw()`
+- B4: Fix EF Core cross-context tracking conflict in single-playlist sync
 - V3: Replace custom spinner with `SpinnerView`
 
 </details>

@@ -7,6 +7,11 @@ namespace YTPlaylistTracker.Infrastructure.Data;
 
 public class PlaylistRepository(AppDbContext db, ILogger<PlaylistRepository> logger) : IPlaylistRepository
 {
+    public async Task<Playlist?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        return await db.Playlists.FindAsync([id], ct).ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<Playlist>> GetByProfileAsync(int profileId, CancellationToken ct = default)
     {
         return await db.Playlists

@@ -4,6 +4,7 @@ namespace YTPlaylistTracker.Domain.Interfaces;
 
 public interface IPlaylistRepository
 {
+    Task<Playlist?> GetByIdAsync(int id, CancellationToken ct = default);
     Task<IReadOnlyList<Playlist>> GetByProfileAsync(int profileId, CancellationToken ct = default);
     Task<IReadOnlyList<Playlist>> GetTrackedByProfileAsync(int profileId, CancellationToken ct = default);
     Task AddAsync(Playlist playlist, CancellationToken ct = default);

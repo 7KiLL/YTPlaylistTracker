@@ -134,12 +134,18 @@ public partial class MainWindow
             {
                 await using var bgScope = scopeFactory.CreateAsyncScope();
                 var bgSync = bgScope.ServiceProvider.GetRequiredService<ISyncService>();
+                var bgPlaylistRepo = bgScope.ServiceProvider.GetRequiredService<IPlaylistRepository>();
+                // Re-load playlist in background DbContext to avoid cross-context tracking conflicts
+                var bgPlaylist = await bgPlaylistRepo.GetByIdAsync(playlist.Id).ConfigureAwait(false);
+                if (bgPlaylist is null) { InvokeUI(() => { HideSpinner(); Dialogs.Query("Error", "Playlist not found.", "OK"); }); return; }
                 var syncProgress = new Progress<string>(msg =>
                     global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
-                var result = await bgSync.SyncPlaylistAsync(playlist, youtube, syncProgress).ConfigureAwait(false);
+                var result = await bgSync.SyncPlaylistAsync(bgPlaylist, youtube, syncProgress).ConfigureAwait(false);
                 InvokeUI(() =>
                 {
                     HideSpinner();
+                    // Update UI-side playlist with new LastSyncedAt
+                    playlist.LastSyncedAt = bgPlaylist.LastSyncedAt;
                     RefreshVideosAsync().GetAwaiter().GetResult();
                     Dialogs.Query("Sync Complete",
                         "+" + result.Added + " added, -" + result.Removed + " removed, ~" + result.Updated + " updated", "OK");
