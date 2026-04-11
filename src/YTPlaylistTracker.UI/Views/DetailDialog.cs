@@ -1,4 +1,3 @@
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Infrastructure.Platform;
 
@@ -14,7 +13,7 @@ public sealed class DetailDialog : Dialog
         BorderStyle = LineStyle.Rounded;
         Border!.Settings &= ~BorderSettings.Title;
 
-        Add(new Label { Text = " " + title, X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        Add(new Label { Text = " " + title, X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
 
         // Separate description from other fields — it gets a scrollable area
         var normalFields = fields.Where(f => !string.Equals(f.label, "Description", StringComparison.Ordinal)).ToArray();
@@ -29,7 +28,7 @@ public sealed class DetailDialog : Dialog
         int y = 1;
         foreach (var (label, value) in normalFields)
         {
-            Add(new Label() { Text = label + ":", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
+            Add(new Label() { Text = label + ":", X = 1, Y = y, SchemeName = "Menu" });
 
             if (browser is not null && IsLink(label))
             {
@@ -38,7 +37,7 @@ public sealed class DetailDialog : Dialog
                 {
                     Text = UnicodeWidth.Truncate(value, 50),
                     X = 20, Y = y,
-                    ColorScheme = Theme.Link,
+                    SchemeName = Theme.SchemeLink,
                 };
                 link.Accepting += (sender, e) => browser.OpenUrl(linkUrl);
                 Add(link);
@@ -47,7 +46,7 @@ public sealed class DetailDialog : Dialog
             {
                 var valueLabel = new Label() { Text = UnicodeWidth.Truncate(value, 52), X = 20, Y = y };
                 if (string.Equals(label, "Status", StringComparison.Ordinal))
-                    valueLabel.ColorScheme = string.Equals(value, Glyphs.StatusActive, StringComparison.Ordinal) ? Theme.StatusActive : Theme.StatusRemoved;
+                    valueLabel.SchemeName = string.Equals(value, Glyphs.StatusActive, StringComparison.Ordinal) ? Theme.SchemeStatusActive : Theme.SchemeStatusRemoved;
                 Add(valueLabel);
             }
 
@@ -58,7 +57,7 @@ public sealed class DetailDialog : Dialog
         if (hasDescription)
         {
             y++;
-            Add(new Label() { Text = "Description:", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
+            Add(new Label() { Text = "Description:", X = 1, Y = y, SchemeName = "Menu" });
             y++;
             var descView = new TextView()
             {
@@ -68,7 +67,9 @@ public sealed class DetailDialog : Dialog
                 Height = Dim.Fill(2),
                 ReadOnly = true,
                 WordWrap = true,
-                ColorScheme = Colors.ColorSchemes["Base"],
+                CanFocus = true,
+                TabKeyAddsTab = false,
+                SchemeName = "Base",
             };
             Add(descView);
         }
@@ -82,7 +83,7 @@ public sealed class DetailDialog : Dialog
         }
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
+        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
         AddButton(closeBtn);
     }
 
