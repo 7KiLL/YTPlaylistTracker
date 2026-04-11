@@ -4,4 +4,8 @@
     <ProjectReference Include="..\..\src\YTPlaylistTracker.UI\YTPlaylistTracker.UI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Verify.TUnit" Version="31.15.0" />
+  </ItemGroup>
+
 </Project>

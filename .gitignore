@@ -26,3 +26,6 @@ appsettings.json
 .env
 *.db
 logs/
+
+# Verify snapshot diffs (only .verified.txt is committed)
+*.received.txt
