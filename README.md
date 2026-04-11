@@ -112,10 +112,10 @@ irm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/insta
 
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash -s -- --version v0.3.0
+curl -fsSL https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.sh | bash -s -- --version v1.2.0
 
 # Windows (PowerShell)
-$env:YTPT_VERSION = "v0.3.0"; irm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.ps1 | iex
+$env:YTPT_VERSION = "v1.2.0"; irm https://raw.githubusercontent.com/7KiLL/YTPlaylistTracker/main/scripts/install.ps1 | iex
 ```
 
 ### Supported platforms
@@ -172,6 +172,7 @@ Add `--verbose` or `-v` to any command for debug logging.
 | `j` / `k` | Navigate up/down in focused pane |
 | `J` / `K` / Shift+Up/Down | Fast scroll (5 rows) |
 | Tab / Shift+Tab | Cycle focus between panes |
+| `p` | Toggle profile pane visibility |
 | `Enter` | View details / open context menu (profiles) |
 
 ### Actions
@@ -247,6 +248,8 @@ Contents:
 - `tracker.db` — SQLite database (playlists, videos, removal history)
 - `logs/` — Rolling log files (7 day retention)
 - `oauth-tokens/` — Google OAuth refresh tokens (per profile)
+- `credentials.json` — OAuth client credentials (owner-only permissions)
+- `settings.json` — User preferences (auto-sync, theme, glyph mode)
 
 File permissions are set to owner-only (700/600) on Linux/macOS.
 
@@ -284,7 +287,7 @@ dotnet test --filter "SyncService"  # Run specific tests
 Test projects:
 - **Unit tests** — SyncService diff logic, URL parsing, error scenarios (NSubstitute mocks)
 - **Integration tests** — Repository CRUD, end-to-end sync flow (in-memory SQLite)
-- **Scenario tests** — TUI interaction scenarios
+- **E2E tests** — TUI interaction scenarios, layout snapshot tests (Verify.TUnit)
 
 ### Building with OAuth credentials
 
@@ -314,7 +317,9 @@ See [docs/architecture.md](docs/architecture.md) for details.
 - **EF Core + SQLite** — local database
 - **Google.Apis.YouTube.v3** — YouTube Data API client
 - **Serilog** — structured logging
-- **xUnit + NSubstitute** — testing
+- **TUnit + NSubstitute** — testing
+- **Verify.TUnit** — snapshot testing
+- **MinVer** — semantic versioning from git tags
 
 ## Known Issues
 
