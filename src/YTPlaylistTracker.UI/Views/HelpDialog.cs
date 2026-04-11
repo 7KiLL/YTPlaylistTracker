@@ -1,4 +1,3 @@
-using Terminal.Gui;
 
 namespace YTPlaylistTracker.UI.Views;
 
@@ -15,7 +14,7 @@ public sealed class HelpDialog : Dialog
         Height = 22;
         Border!.Settings &= ~BorderSettings.Title;
 
-        Add(new Label { Text = " Keybindings", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        Add(new Label { Text = " Keybindings", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
 
         // Left column
         int xOff = 0;
@@ -56,7 +55,7 @@ public sealed class HelpDialog : Dialog
             ("q F10", "Quit"));
 
         var closeBtn = new Button { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
+        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
         AddButton(closeBtn);
     }
 
@@ -67,13 +66,13 @@ public sealed class HelpDialog : Dialog
             Text = " " + title,
             X = xOffset + 1, Y = startY,
             Width = ColWidth - 2,
-            ColorScheme = Theme.SectionHeader,
+            SchemeName = Theme.SchemeSectionHeader,
         });
 
         int y = startY + 1;
         foreach (var (key, desc) in bindings)
         {
-            Add(new Label { Text = key, X = xOffset + KeyCol, Y = y, ColorScheme = Theme.HintKey });
+            Add(new Label { Text = key, X = xOffset + KeyCol, Y = y, SchemeName = Theme.SchemeHintKey });
             Add(new Label { Text = desc, X = xOffset + DescCol, Y = y });
             y++;
         }

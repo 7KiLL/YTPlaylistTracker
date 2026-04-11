@@ -9,7 +9,7 @@ using YTPlaylistTracker.Infrastructure.Platform;
 using YTPlaylistTracker.Infrastructure.Update;
 using YTPlaylistTracker.Infrastructure.YouTube;
 using YTPlaylistTracker.UI.Views;
-using App = Terminal.Gui.Application;
+using App = Terminal.Gui.App.Application; // alias for static API
 
 namespace YTPlaylistTracker.UI;
 

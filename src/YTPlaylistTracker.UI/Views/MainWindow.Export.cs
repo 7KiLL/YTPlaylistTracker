@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Domain.Models;
@@ -17,7 +16,7 @@ public partial class MainWindow
         {
             var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id).ConfigureAwait(false);
             var dialog = new RemovalHistoryDialog(removedVideos, browser);
-            global::Terminal.Gui.Application.Run(dialog);
+            TGuiApp.Run(dialog);
         }
         catch (Exception ex)
         {
@@ -41,9 +40,14 @@ public partial class MainWindow
 
             var dialog = new Dialog() { Title = "", Width = 50, Height = 11 };
             dialog.Border!.Settings &= ~BorderSettings.Title;
-            dialog.Add(new Label { Text = " Export Removed Videos", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+            dialog.Add(new Label { Text = " Export Removed Videos", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
             var formatLabel = new Label() { Text = "Format:", X = 1, Y = 2 };
-            var formatRadio = new RadioGroup() { RadioLabels = new[] { "CSV", "JSON" }, X = 12, Y = 2 };
+            var formatSelector = new OptionSelector()
+            {
+                Labels = new List<string> { "CSV", "JSON" },
+                X = 12, Y = 2,
+                Value = 0,
+            };
             var pathLabel = new Label() { Text = "File:", X = 1, Y = 4 };
             var defaultPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
@@ -54,13 +58,13 @@ public partial class MainWindow
 
             string? resultPath = null;
             int selectedFormat = 0;
-            okBtn.Accepting += (sender, e) => { resultPath = pathField.Text; selectedFormat = formatRadio.SelectedItem; global::Terminal.Gui.Application.RequestStop(); };
-            cancelBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
+            okBtn.Accepting += (sender, e) => { resultPath = pathField.Text; selectedFormat = (int)(formatSelector.Value ?? 0); TGuiApp.RequestStop(); };
+            cancelBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
 
-            dialog.Add(formatLabel, formatRadio, pathLabel, pathField);
+            dialog.Add(formatLabel, formatSelector, pathLabel, pathField);
             dialog.AddButton(okBtn);
             dialog.AddButton(cancelBtn);
-            global::Terminal.Gui.Application.Run(dialog);
+            TGuiApp.Run(dialog);
 
             if (resultPath is null) return;
 
@@ -86,7 +90,7 @@ public partial class MainWindow
     private async void OnSettings()
     {
         var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService, browser, this);
-        global::Terminal.Gui.Application.Run(settingsDialog);
+        TGuiApp.Run(settingsDialog);
 
         if (settingsDialog is { UpdateRequested: true, UpdateInfo: not null })
         {
@@ -131,17 +135,17 @@ public partial class MainWindow
             try
             {
                 await updateService.ApplyUpdateAsync(update).ConfigureAwait(false);
-                global::Terminal.Gui.Application.Invoke(() =>
+                TGuiApp.Invoke(() =>
                 {
                     HideSpinner();
-                    ColorScheme = Theme.UpdateInstalled;
+                    SchemeName = Theme.SchemeUpdateInstalled;
                     SetNeedsDraw();
                     RestartApp();
                 });
             }
             catch (UpdateException ex)
             {
-                global::Terminal.Gui.Application.Invoke(() =>
+                TGuiApp.Invoke(() =>
                 {
                     HideSpinner();
                     var msg = ex.ManualDownloadUrl is not null
@@ -165,6 +169,6 @@ public partial class MainWindow
             });
         }
 
-        global::Terminal.Gui.Application.RequestStop();
+        TGuiApp.RequestStop();
     }
 }

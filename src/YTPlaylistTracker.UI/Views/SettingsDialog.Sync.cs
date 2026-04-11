@@ -1,4 +1,3 @@
-using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Domain.Models;
@@ -23,7 +22,7 @@ public sealed partial class SettingsDialog
         y += 2;
 
         // Credentials
-        view.Add(new Label() { Text = "── Credentials ─────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
+        view.Add(new Label() { Text = "── Credentials ─────────────────────────────────────────────", X = 1, Y = y, SchemeName = Theme.SchemeSectionHeader });
         y += 1;
 
         view.Add(new Label() { Text = "  YouTube API Key:", X = 1, Y = y });
@@ -41,7 +40,7 @@ public sealed partial class SettingsDialog
         };
         view.Add(apiKeyField);
         y += 1;
-        view.Add(new Label() { Text = "  Optional. Overrides built-in key for offline profiles.", X = 1, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] });
+        view.Add(new Label() { Text = "  Optional. Overrides built-in key for offline profiles.", X = 1, Y = y, SchemeName = "Menu" });
 
         return view;
     }

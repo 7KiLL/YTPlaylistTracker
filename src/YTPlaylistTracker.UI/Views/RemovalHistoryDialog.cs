@@ -1,5 +1,4 @@
 using System.Data;
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Infrastructure.Platform;
 
@@ -20,7 +19,7 @@ public sealed class RemovalHistoryDialog : Dialog
         Height = 29;
         Border!.Settings &= ~BorderSettings.Title;
 
-        Add(new Label { Text = " Removal History - All Playlists", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        Add(new Label { Text = " Removal History - All Playlists", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
 
         var dt = new DataTable();
         dt.Columns.Add("Date", typeof(string));
@@ -79,7 +78,7 @@ public sealed class RemovalHistoryDialog : Dialog
                         {
                             var val = args.CellValue?.ToString() ?? "";
                             return val is "Deleted" or "Private" or "Unknown"
-                                ? Theme.StatusRemoved
+                                ? SchemeManager.GetScheme(Theme.SchemeStatusRemoved)
                                 : null;
                         },
                     },
@@ -90,7 +89,7 @@ public sealed class RemovalHistoryDialog : Dialog
         table.CellActivated += (sender, e) => ShowVideoDetail(table.SelectedRow);
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
+        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
 
         Add(countLabel, table);
         AddButton(closeBtn);
@@ -101,6 +100,6 @@ public sealed class RemovalHistoryDialog : Dialog
         if (row < 0 || row >= _removedVideos.Count) return;
         var (_, video) = _removedVideos[row];
         var dialog = DetailDialog.ForVideo(video, _browser);
-        global::Terminal.Gui.Application.Run(dialog);
+        TGuiApp.Run(dialog);
     }
 }

@@ -1,7 +1,6 @@
 using System.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
@@ -154,21 +153,22 @@ public partial class MainWindow
             ColorGetter = args =>
             {
                 var val = args.CellValue?.ToString() ?? "";
-                if (val.StartsWith(Glyphs.StatusRemoved, StringComparison.Ordinal)) return Theme.StatusRemoved;
-                if (string.Equals(val, Glyphs.StatusActive, StringComparison.Ordinal)) return Theme.StatusActive;
+                if (val.StartsWith(Glyphs.StatusRemoved, StringComparison.Ordinal)) return SchemeManager.GetScheme(Theme.SchemeStatusRemoved);
+                if (string.Equals(val, Glyphs.StatusActive, StringComparison.Ordinal)) return SchemeManager.GetScheme(Theme.SchemeStatusActive);
                 return null;
             },
         };
     }
 
-    private async void OnProfileSelected(object? sender, ListViewItemEventArgs e)
+    private async void OnProfileSelected(object? sender, ValueChangedEventArgs<int?> e)
     {
         if (_suppressEvents) return;
         try
         {
-            if (e.Item >= 0 && e.Item < _profiles.Count)
+            var idx = e.NewValue ?? -1;
+            if (idx >= 0 && idx < _profiles.Count)
             {
-                var profile = _profiles[e.Item];
+                var profile = _profiles[idx];
                 if (profile == _selectedProfile) return;
                 _selectedProfile = profile;
                 _selectedPlaylist = null;
@@ -184,12 +184,13 @@ public partial class MainWindow
         }
     }
 
-    private void OnPlaylistSelected(object? sender, ListViewItemEventArgs e)
+    private void OnPlaylistSelected(object? sender, ValueChangedEventArgs<int?> e)
     {
         if (_suppressEvents) return;
-        if (e.Item < 0 || e.Item >= _playlists.Count) return;
+        var idx = e.NewValue ?? -1;
+        if (idx < 0 || idx >= _playlists.Count) return;
 
-        _selectedPlaylist = _playlists[e.Item];
+        _selectedPlaylist = _playlists[idx];
         LoadVideosForSelectedPlaylist();
     }
 
@@ -209,7 +210,7 @@ public partial class MainWindow
                     ? await bgRepo.GetDeletedVideosAsync(playlist.Id)
 .ConfigureAwait(false) : await bgRepo.GetVideosAsync(playlist.Id).ConfigureAwait(false)).ToList();
 
-                global::Terminal.Gui.Application.Invoke(() =>
+                TGuiApp.Invoke(() =>
                 {
                     if (_selectedPlaylist?.Id != playlist.Id) return;
                     _videos = videos;

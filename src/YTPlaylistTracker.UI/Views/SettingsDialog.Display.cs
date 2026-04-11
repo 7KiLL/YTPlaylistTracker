@@ -1,4 +1,3 @@
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Interfaces;
 
 namespace YTPlaylistTracker.UI.Views;
@@ -11,7 +10,7 @@ public sealed partial class SettingsDialog
         int y = 0;
 
         // ── Icons ──
-        view.Add(new Label() { Text = "── Icons ───────────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
+        view.Add(new Label() { Text = "── Icons ───────────────────────────────────────────────────", X = 1, Y = y, SchemeName = Theme.SchemeSectionHeader });
         y += 1;
 
         view.Add(new Label() { Text = "  Mode:", X = 1, Y = y });
@@ -19,19 +18,19 @@ public sealed partial class SettingsDialog
         var glyphValues = new[] { "", "full", "basic" };
         var glyphIdx = Array.IndexOf(glyphValues, userSettings.GlyphMode);
         if (glyphIdx < 0) glyphIdx = 0;
-        var glyphRadio = new RadioGroup()
+        var glyphSelector = new OptionSelector()
         {
-            RadioLabels = glyphLabels,
+            Labels = glyphLabels.ToList(),
             X = 12, Y = y,
-            SelectedItem = glyphIdx,
+            Value = glyphIdx,
         };
-        glyphRadio.SelectedItemChanged += (sender, e) =>
+        glyphSelector.ValueChanged += (sender, e) =>
         {
-            userSettings.GlyphMode = glyphValues[glyphRadio.SelectedItem];
+            userSettings.GlyphMode = glyphValues[(int)(glyphSelector.Value ?? 0)];
             userSettings.Save();
             GlyphDetector.SetUserOverride(userSettings.GlyphMode);
         };
-        view.Add(glyphRadio);
+        view.Add(glyphSelector);
         y += glyphLabels.Length + 1;
 
         view.Add(new Label()
@@ -41,7 +40,7 @@ public sealed partial class SettingsDialog
                  + "  Full mode requires a font with emoji and CJK glyph support\n"
                  + "  (e.g. Nerd Font, Cascadia Code, Fira Code).",
             X = 1, Y = y,
-            ColorScheme = Colors.ColorSchemes["Menu"],
+            SchemeName = "Menu",
         });
 
         return view;

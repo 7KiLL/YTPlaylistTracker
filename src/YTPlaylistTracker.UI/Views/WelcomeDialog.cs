@@ -1,4 +1,3 @@
-using Terminal.Gui;
 
 namespace YTPlaylistTracker.UI.Views;
 
@@ -19,7 +18,7 @@ public sealed class WelcomeDialog : Dialog
         Height = 13;
         Border!.Settings &= ~BorderSettings.Title;
 
-        Add(new Label { Text = " Welcome to ytpt", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        Add(new Label { Text = " Welcome to ytpt", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
         Add(new Label() { Text = "Track YouTube playlists and detect removed videos.", X = 1, Y = 1 });
         Add(new Label() { Text = "How do you want to start?", X = 1, Y = 3 });
 
@@ -27,17 +26,17 @@ public sealed class WelcomeDialog : Dialog
         signInBtn.Accepting += (sender, e) =>
         {
             Choice = WelcomeChoice.SignIn;
-            global::Terminal.Gui.Application.RequestStop();
+            TGuiApp.RequestStop();
         };
 
         var offlineBtn = new Button() { Text = "Start offline", X = 26, Y = 5 };
         offlineBtn.Accepting += (sender, e) =>
         {
             Choice = WelcomeChoice.Offline;
-            global::Terminal.Gui.Application.RequestStop();
+            TGuiApp.RequestStop();
         };
 
         Add(signInBtn, offlineBtn);
-        Add(new Label() { Text = "You can always sign in later from the profile menu.", X = 1, Y = 8, ColorScheme = Colors.ColorSchemes["Menu"] });
+        Add(new Label() { Text = "You can always sign in later from the profile menu.", X = 1, Y = 8, SchemeName = "Menu" });
     }
 }

@@ -1,5 +1,4 @@
 using System.Data;
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 
 namespace YTPlaylistTracker.UI.Views;
@@ -14,7 +13,7 @@ public sealed class RemovedVideosDialog : Dialog
         Height = 26;
         Border!.Settings &= ~BorderSettings.Title;
 
-        Add(new Label { Text = $" Removed Videos - {playlistTitle}", X = 0, Y = 0, Width = Dim.Fill(), ColorScheme = Theme.Frame });
+        Add(new Label { Text = $" Removed Videos - {playlistTitle}", X = 0, Y = 0, Width = Dim.Fill(), SchemeName = Theme.SchemeFrame });
 
         var dt = new DataTable();
         dt.Columns.Add("#", typeof(int));
@@ -55,7 +54,7 @@ public sealed class RemovedVideosDialog : Dialog
         };
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
+        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
 
         Add(table);
 
@@ -74,7 +73,7 @@ public sealed class RemovedVideosDialog : Dialog
             table.Style.ColumnStyles[3] = new ColumnStyle
             {
                 MinWidth = 14, MaxWidth = 14,
-                ColorGetter = args => Theme.StatusRemoved,
+                ColorGetter = args => SchemeManager.GetScheme(Theme.SchemeStatusRemoved),
             };
             table.Style.ColumnStyles[4] = new ColumnStyle
                 { MinWidth = 18, MaxWidth = 18 };

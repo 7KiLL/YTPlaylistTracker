@@ -2,7 +2,6 @@ using System.Net.Http;
 using Google;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Terminal.Gui;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
@@ -138,7 +137,7 @@ public partial class MainWindow
                 var bgPlaylist = await bgPlaylistRepo.GetByIdAsync(playlist.Id).ConfigureAwait(false);
                 if (bgPlaylist is null) { InvokeUI(() => { HideSpinner(); Dialogs.Query("Error", "Playlist not found.", "OK"); }); return; }
                 var syncProgress = new Progress<string>(msg =>
-                    global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
+                    TGuiApp.Invoke(() => ShowSpinner(msg)));
                 var result = await bgSync.SyncPlaylistAsync(bgPlaylist, youtube, syncProgress).ConfigureAwait(false);
                 InvokeUI(() =>
                 {
@@ -189,7 +188,7 @@ public partial class MainWindow
                 await using var bgScope = scopeFactory.CreateAsyncScope();
                 var bgSync = bgScope.ServiceProvider.GetRequiredService<ISyncService>();
                 var syncProgress = new Progress<string>(msg =>
-                    global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
+                    TGuiApp.Invoke(() => ShowSpinner(msg)));
                 var results = await bgSync.SyncAllTrackedAsync(profileId, youtube, syncProgress).ConfigureAwait(false);
                 int totalAdded = results.Values.Sum(r => r.Added);
                 int totalRemoved = results.Values.Sum(r => r.Removed);

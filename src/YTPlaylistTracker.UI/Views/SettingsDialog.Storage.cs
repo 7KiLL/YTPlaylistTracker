@@ -1,4 +1,3 @@
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Infrastructure.Configuration;
@@ -16,22 +15,22 @@ public sealed partial class SettingsDialog
 
         // Paths
         view.Add(new Label() { Text = "  Database:", X = 1, Y = y });
-        var dbBtn = new Button() { Text = AppSettings.DbPath, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
+        var dbBtn = new Button() { Text = AppSettings.DbPath, X = 14, Y = y, SchemeName = "Menu" };
         dbBtn.Accepting += (sender, e) => launcher?.OpenPath(AppSettings.DbPath);
         view.Add(dbBtn);
         y += 1;
 
         view.Add(new Label() { Text = "  Logs:", X = 1, Y = y });
-        var logBtn = new Button() { Text = AppSettings.LogDir, X = 14, Y = y, ColorScheme = Colors.ColorSchemes["Menu"] };
+        var logBtn = new Button() { Text = AppSettings.LogDir, X = 14, Y = y, SchemeName = "Menu" };
         logBtn.Accepting += (sender, e) => launcher?.OpenPath(AppSettings.LogDir);
         view.Add(logBtn);
         y += 2;
 
         // Danger zone
-        view.Add(new Label() { Text = "── Danger Zone ─────────────────────────────────────────────", X = 1, Y = y, ColorScheme = Theme.SectionHeader });
+        view.Add(new Label() { Text = "── Danger Zone ─────────────────────────────────────────────", X = 1, Y = y, SchemeName = Theme.SchemeSectionHeader });
         y += 1;
 
-        var purgeBtn = new Button() { Text = "Purge Deleted Videos", X = 2, Y = y, ColorScheme = Theme.Danger };
+        var purgeBtn = new Button() { Text = "Purge Deleted Videos", X = 2, Y = y, SchemeName = Theme.SchemeDanger };
         purgeBtn.Accepting += (sender, e) =>
         {
             if (selectedPlaylist is null)
@@ -56,7 +55,7 @@ public sealed partial class SettingsDialog
             }
         };
 
-        var resetBtn = new Button() { Text = "Reset Database", X = 26, Y = y, ColorScheme = Theme.Danger };
+        var resetBtn = new Button() { Text = "Reset Database", X = 26, Y = y, SchemeName = Theme.SchemeDanger };
         resetBtn.Accepting += (sender, e) =>
         {
             var confirm = Dialogs.Query("Reset Database",
@@ -68,7 +67,7 @@ public sealed partial class SettingsDialog
                 {
                     File.Delete(AppSettings.DbPath);
                     Dialogs.Query("Done", "Database deleted. The app will now quit.\nRestart to create a fresh database.", "OK");
-                    global::Terminal.Gui.Application.RequestStop();
+                    TGuiApp.RequestStop();
                 }
                 catch (Exception ex)
                 {

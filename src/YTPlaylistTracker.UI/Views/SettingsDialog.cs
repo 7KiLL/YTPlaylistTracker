@@ -1,4 +1,3 @@
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Domain.Models;
@@ -32,7 +31,7 @@ public sealed partial class SettingsDialog : Dialog
             Text = " Settings",
             X = 0, Y = 0,
             Width = Dim.Fill(),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
         });
 
         // Tab labels row
@@ -48,7 +47,7 @@ public sealed partial class SettingsDialog : Dialog
                 X = tabX, Y = 2,
                 CanFocus = true,
             };
-            lbl.MouseClick += (sender, e) => SelectTab(idx);
+            lbl.MouseEvent += (sender, e) => { if (e.Flags.HasFlag(MouseFlags.LeftButtonClicked)) SelectTab(idx); };
             lbl.KeyDown += (sender, e) =>
             {
                 if (e.KeyCode == KeyCode.Enter || e.KeyCode == KeyCode.Space)
@@ -81,17 +80,25 @@ public sealed partial class SettingsDialog : Dialog
 
         SelectTab(0);
 
-        KeyDown += (sender, e) =>
-        {
-            if (e.KeyCode == KeyCode.CursorLeft && _selectedTab > 0)
-                { SelectTab(_selectedTab - 1); e.Handled = true; }
-            else if (e.KeyCode == KeyCode.CursorRight && _selectedTab < _tabLabels.Count - 1)
-                { SelectTab(_selectedTab + 1); e.Handled = true; }
-        };
-
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => global::Terminal.Gui.Application.RequestStop();
+        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
         AddButton(closeBtn);
+
+        // Application.KeyDown fires before any view — needed because
+        // OptionSelector consumes Left/Right before OnKeyDown fires.
+        TGuiApp.KeyDown += OnSettingsKeyDown;
+        Disposing += (_, _) => TGuiApp.KeyDown -= OnSettingsKeyDown;
+    }
+
+    private void OnSettingsKeyDown(object? sender, Key key)
+    {
+        if (!IsCurrentTop) return;
+        if (TGuiApp.Navigation?.GetFocused() is TextField or TextView) return;
+
+        if (key.KeyCode == KeyCode.CursorLeft && _selectedTab > 0)
+            { SelectTab(_selectedTab - 1); key.Handled = true; }
+        else if (key.KeyCode == KeyCode.CursorRight && _selectedTab < _tabLabels.Count - 1)
+            { SelectTab(_selectedTab + 1); key.Handled = true; }
     }
 
     private void SelectTab(int index)
@@ -99,7 +106,7 @@ public sealed partial class SettingsDialog : Dialog
         _selectedTab = index;
         for (int i = 0; i < _tabLabels.Count; i++)
         {
-            _tabLabels[i].ColorScheme = i == index ? Theme.SectionHeader : Theme.Frame;
+            _tabLabels[i].SchemeName = i == index ? Theme.SchemeSectionHeader : Theme.SchemeFrame;
             _tabPages[i].Visible = i == index;
         }
         _tabPages[index].SetFocus();
@@ -108,16 +115,16 @@ public sealed partial class SettingsDialog : Dialog
 
     private static void ReapplyAllSchemes(View root)
     {
-        root.ColorScheme = Colors.ColorSchemes["Dialog"];
-        foreach (var view in root.Subviews)
+        root.SchemeName = "Dialog";
+        foreach (var view in root.SubViews)
         {
             if (view is Label lbl && lbl.Text?.ToString()?.StartsWith("──", StringComparison.Ordinal) == true)
-                lbl.ColorScheme = Theme.SectionHeader;
+                lbl.SchemeName = Theme.SchemeSectionHeader;
             else if (view is Button btn && (btn.Text?.ToString()?.Contains("Purge", StringComparison.Ordinal) == true
                 || btn.Text?.ToString()?.Contains("Reset", StringComparison.Ordinal) == true))
-                btn.ColorScheme = Theme.Danger;
+                btn.SchemeName = Theme.SchemeDanger;
             else
-                view.ColorScheme = Colors.ColorSchemes["Dialog"];
+                view.SchemeName = "Dialog";
 
             ReapplyAllSchemes(view);
         }

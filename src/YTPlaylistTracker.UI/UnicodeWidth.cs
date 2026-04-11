@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Text;
-using Terminal.Gui;
 using TextRune = System.Text.Rune;
 
 namespace YTPlaylistTracker.UI;
