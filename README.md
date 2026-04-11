@@ -84,15 +84,18 @@ All original titles and metadata are preserved forever in your local database �
 ## TUI Preview
 
 ```
-┌─ Profiles ─┬─ Playlists ────┬─ Videos ("Music 2026") ───────────────┐
-│ > Personal │ [x] Music 2026 │ #  │ Title         │ Channel │ Status │
-│   Work     │ [x] Tech Talks │ 1  │ Song A        │ ArtistX │ Active │
-│            │ [ ] Cooking    │ 2  │ Song B        │ ArtistY │ Active │
-│            │                │ 3  │ Old Song      │ ArtistZ │ X Gone │
-├────────────┴────────────────┴────┴───────────────┴─────────┴────────┤
-│ h/l:pane  j/k:nav  Enter:detail  /:search  o:sort  ?:help  q:quit  │
-└─────────────────────────────────────────────────────────────────────┘
+╭─ Playlists ──────╮╭─ Videos (Music 2026) [5] | synced: 2 min ago ──────────────╮
+│ [x] Music 2026   ││ #    Title                Channel        Added ▼    Status  │
+│ [x] Tech Talks   ││ 1    Never Gonna Give..   Rick Astley    2026-03-01 Active  │
+│ [ ] Cooking      ││ 2    Bohemian Rhapsody     Queen          2026-02-15 Active  │
+│                   ││ 3    Imagine               John Lennon    2026-01-20 Active  │
+│                   ││ 4    Old Song              ArtistZ        2025-12-01 X Deleted│
+│                   ││ 5    Gone Private          ArtistY        2025-11-10 X Private│
+╰───────────────────╯╰───────────────────────────────────────────────────────────────╯
+ a F1 add │ t F2 track │ s F5 sync │ S F6 all │ / F3 search │ o F4 sort │ ? help │ q quit
 ```
+
+Profile pane appears when multiple Google accounts are configured (toggle with `p`).
 
 ## Install
 
