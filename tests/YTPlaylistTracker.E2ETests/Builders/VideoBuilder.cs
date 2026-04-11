@@ -17,6 +17,7 @@ internal sealed class VideoBuilder
     public VideoBuilder WithYouTubeId(string id) { _youtubeId = id; return this; }
     public VideoBuilder WithTitle(string title) { _title = title; return this; }
     public VideoBuilder WithChannel(string channel) { _channel = channel; return this; }
+    public VideoBuilder WithAddedAt(DateTime addedAt) { _addedAt = addedAt; return this; }
     public VideoBuilder Deleted(RemovalReason reason = RemovalReason.Deleted)
     {
         _deletedAt = DateTime.UtcNow.AddDays(-1);

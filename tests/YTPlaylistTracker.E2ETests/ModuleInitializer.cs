@@ -8,7 +8,7 @@ internal static class VerifyConfig
     public static void Init()
     {
         // Store snapshots in Snapshots/ subdirectory relative to each test file
-        Verifier.DerivePathInfo(
+        DerivePathInfo(
             (sourceFile, _, type, method) =>
                 new PathInfo(
                     directory: Path.Combine(Path.GetDirectoryName(sourceFile)!, "Snapshots"),
