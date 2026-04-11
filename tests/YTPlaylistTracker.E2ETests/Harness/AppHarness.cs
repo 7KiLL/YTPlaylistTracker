@@ -17,9 +17,13 @@ internal sealed class AppHarness : IAsyncDisposable
         Screen = new MainScreen(window);
     }
 
-    internal static async Task<AppHarness> CreateAsync(MockFactory mocks)
+    internal static async Task<AppHarness> CreateAsync(MockFactory mocks, int cols = 120, int rows = 30)
     {
         TGuiApp.Init(driverName: DriverRegistry.Names.ANSI);
+
+        // Set deterministic terminal size for snapshot testing
+        TGuiApp.Driver!.GetOutputBuffer().SetSize(cols, rows);
+
         Theme.Apply(mocks.UserSettings.ThemeName);
 
         var window = new MainWindow(
