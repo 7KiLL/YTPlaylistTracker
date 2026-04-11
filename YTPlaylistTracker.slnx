@@ -6,6 +6,7 @@
     <Project Path="src/YTPlaylistTracker.UI/YTPlaylistTracker.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/YTPlaylistTracker.E2ETests/YTPlaylistTracker.E2ETests.csproj" />
     <Project Path="tests/YTPlaylistTracker.IntegrationTests/YTPlaylistTracker.IntegrationTests.csproj" />
     <Project Path="tests/YTPlaylistTracker.UnitTests/YTPlaylistTracker.UnitTests.csproj" />
   </Folder>

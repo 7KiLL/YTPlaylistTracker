@@ -1,6 +1,5 @@
 using System.Data;
 using Microsoft.Extensions.DependencyInjection;
-using Terminal.Gui;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
 using YTPlaylistTracker.Domain.Models;
@@ -24,21 +23,21 @@ public partial class MainWindow(
     private UpdateInfo? _latestUpdate;
     private bool _updateInstalled;
 
-    private ListView _profileList = null!;
-    private ListView _playlistList = null!;
-    private TableView _videoTable = null!;
-    private FrameView _videoFrame = null!;
+    internal ListView _profileList = null!;
+    internal ListView _playlistList = null!;
+    internal TableView _videoTable = null!;
+    internal FrameView _videoFrame = null!;
 
     private List<Profile> _profiles = [];
     private List<Playlist> _playlists = [];
     private List<Video> _videos = [];
-    private List<Video> _filteredVideos = [];
-    private Profile? _selectedProfile;
-    private Playlist? _selectedPlaylist;
-    private bool _showDeletedOnly;
+    internal List<Video> _filteredVideos = [];
+    internal Profile? _selectedProfile;
+    internal Playlist? _selectedPlaylist;
+    internal bool _showDeletedOnly;
     private DateTime _lastCtrlC = DateTime.MinValue;
-    private SpinnerView _spinner = null!;
-    private Label _spinnerMessage = null!;
+    internal SpinnerView _spinner = null!;
+    internal Label _spinnerMessage = null!;
     private bool _suppressEvents;
 
     private IDisposable SuppressEvents()
@@ -51,7 +50,7 @@ public partial class MainWindow(
     {
         public void Dispose() => owner._suppressEvents = false;
     }
-    private TextField? _searchField;
+    internal TextField? _searchField;
     private string _searchQuery = "";
     private object? _searchDebounceTimer;
     private string _sortColumn = "Added Date";
@@ -78,10 +77,10 @@ public partial class MainWindow(
         // First-run: show welcome dialog
         if (_profiles.Count == 0)
         {
-            global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
+            TGuiApp.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
             {
                 var welcome = new WelcomeDialog();
-                global::Terminal.Gui.Application.Run(welcome);
+                TGuiApp.Run(welcome);
                 HandleWelcomeChoice(welcome.Choice);
                 return false;
             });
@@ -120,7 +119,7 @@ public partial class MainWindow(
     private void StartBackgroundWork()
     {
         var capturedProfile = _selectedProfile;
-        global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
+        TGuiApp.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
         {
             ShowSpinner("Fetching playlists...");
             _ = Task.Run(async () =>
@@ -151,7 +150,7 @@ public partial class MainWindow(
                             capturedProfile.ChannelTitle = channel.Title;
                             capturedProfile.ChannelThumbnailUrl = channel.ThumbnailUrl;
                             await bgProfileRepo.UpdateAsync(capturedProfile).ConfigureAwait(false);
-                            global::Terminal.Gui.Application.Invoke(() => RefreshProfileList());
+                            TGuiApp.Invoke(() => RefreshProfileList());
                         }
                     }
                     catch (Exception ex) { logger.LogWarning(ex, "Failed to fetch channel info"); }
@@ -183,36 +182,36 @@ public partial class MainWindow(
                 try
                 {
                     await updateService.ApplyUpdateAsync(updateResult).ConfigureAwait(false);
-                    global::Terminal.Gui.Application.Invoke(() =>
+                    TGuiApp.Invoke(() =>
                     {
                         _latestUpdate = updateResult;
                         _updateInstalled = true;
                         Title = $" ytpt — v{updateResult.LatestVersion} installed, restart to apply ";
-                        ColorScheme = Theme.UpdateInstalled;
+                        SchemeName = Theme.SchemeUpdateInstalled;
                         SetNeedsDraw();
                     });
                 }
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
-                    global::Terminal.Gui.Application.Invoke(() =>
+                    TGuiApp.Invoke(() =>
                     {
                         _latestUpdate = updateResult;
                         Title = DefaultTitle;
-                        ColorScheme = Theme.UpdateAvailable;
+                        SchemeName = Theme.SchemeUpdateAvailable;
                         SetNeedsDraw();
                     });
                 }
             }
             else
             {
-                global::Terminal.Gui.Application.Invoke(() =>
+                TGuiApp.Invoke(() =>
                 {
                     _latestUpdate = updateResult;
                     if (updateResult.IsUpdateAvailable)
                     {
                         Title = DefaultTitle;
-                        ColorScheme = Theme.UpdateAvailable;
+                        SchemeName = Theme.SchemeUpdateAvailable;
                         SetNeedsDraw();
                     }
                 });
@@ -225,11 +224,11 @@ public partial class MainWindow(
     {
         if (_youtubeApi is null) return;
         _isSyncing = true;
-        global::Terminal.Gui.Application.Invoke(() => ShowSpinner("Auto-syncing all playlists..."));
+        TGuiApp.Invoke(() => ShowSpinner("Auto-syncing all playlists..."));
         try
         {
             var syncProgress = new Progress<string>(msg =>
-                global::Terminal.Gui.Application.Invoke(() => ShowSpinner(msg)));
+                TGuiApp.Invoke(() => ShowSpinner(msg)));
             var results = await bgSyncService.SyncAllTrackedAsync(profile.Id, _youtubeApi, syncProgress).ConfigureAwait(false);
             int totalAdded = results.Values.Sum(r => r.Added);
             int totalRemoved = results.Values.Sum(r => r.Removed);
@@ -242,7 +241,7 @@ public partial class MainWindow(
                 RefreshVideosAsync().GetAwaiter().GetResult();
                 Title = $" ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved}) ";
                 SetNeedsDraw();
-                global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromSeconds(5), () =>
+                TGuiApp.AddTimeout(TimeSpan.FromSeconds(5), () =>
                 {
                     Title = DefaultTitle;
                     SetNeedsDraw();
@@ -253,7 +252,7 @@ public partial class MainWindow(
         catch (Exception ex)
         {
             logger.LogError(ex, "Auto-sync failed");
-            global::Terminal.Gui.Application.Invoke(() => HideSpinner());
+            TGuiApp.Invoke(() => HideSpinner());
         }
         finally
         {
@@ -262,7 +261,7 @@ public partial class MainWindow(
     }
 
     private void InvokeUI(Action action) =>
-        global::Terminal.Gui.Application.Invoke(() =>
+        TGuiApp.Invoke(() =>
         {
             try { action(); }
             catch (Exception ex)
@@ -297,7 +296,7 @@ public partial class MainWindow(
     private async Task RefreshPlaylistsAsync()
     {
         if (_selectedProfile is null) return;
-        var prevIdx = _playlistList.SelectedItem;
+        var prevIdx = _playlistList.SelectedItem ?? -1;
         var sortTracked = userSettings.SortTrackedFirst;
         _playlists = (await playlistRepo.GetByProfileAsync(_selectedProfile.Id).ConfigureAwait(false))
             .OrderBy(p => PlaylistPolicy.For(p.Kind).SortOrder)

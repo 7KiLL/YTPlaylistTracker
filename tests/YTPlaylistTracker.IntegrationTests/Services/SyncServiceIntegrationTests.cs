@@ -10,15 +10,16 @@ using YTPlaylistTracker.Infrastructure.Data;
 
 namespace YTPlaylistTracker.IntegrationTests.Services;
 
-public class SyncServiceIntegrationTests : IDisposable
+public class SyncServiceIntegrationTests
 {
-    private readonly AppDbContext _db;
-    private readonly PlaylistRepository _playlistRepo;
+    private AppDbContext _db = null!;
+    private PlaylistRepository _playlistRepo = null!;
     private readonly IYouTubeApiService _youtubeApi = Substitute.For<IYouTubeApiService>();
-    private readonly SyncService _syncService;
-    private readonly Playlist _testPlaylist;
+    private SyncService _syncService = null!;
+    private Playlist _testPlaylist = null!;
 
-    public SyncServiceIntegrationTests()
+    [Before(Test)]
+    public void Setup()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite("Data Source=:memory:")
@@ -44,7 +45,7 @@ public class SyncServiceIntegrationTests : IDisposable
         _db.SaveChanges();
     }
 
-    [Fact]
+    [Test]
     public async Task FirstSync_PopulatesDb()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLintegration").Returns([
@@ -55,15 +56,15 @@ public class SyncServiceIntegrationTests : IDisposable
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(3, result.Added);
-        Assert.Equal(0, result.Removed);
+        await Assert.That(result.Added).IsEqualTo(3);
+        await Assert.That(result.Removed).IsEqualTo(0);
 
         var all = await _playlistRepo.GetVideosAsync(_testPlaylist.Id);
         var videos = all.Where(v => v.DeletedAt == null).ToList();
-        Assert.Equal(3, videos.Count);
+        await Assert.That(videos.Count).IsEqualTo(3);
     }
 
-    [Fact]
+    [Test]
     public async Task SecondSync_WithRemovedVideo_SetsDeletedAt()
     {
         // First sync: 3 videos
@@ -83,16 +84,16 @@ public class SyncServiceIntegrationTests : IDisposable
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Added);
-        Assert.Equal(1, result.Removed);
+        await Assert.That(result.Added).IsEqualTo(0);
+        await Assert.That(result.Removed).IsEqualTo(1);
 
         var deleted = await _playlistRepo.GetDeletedVideosAsync(_testPlaylist.Id);
-        Assert.Single(deleted);
-        Assert.Equal("Second", deleted[0].Title); // Title preserved!
-        Assert.Equal(RemovalReason.Deleted, deleted[0].RemovalReason);
+        await Assert.That(deleted).HasCount().EqualTo(1);
+        await Assert.That(deleted[0].Title).IsEqualTo("Second"); // Title preserved!
+        await Assert.That(deleted[0].RemovalReason).IsEqualTo(RemovalReason.Deleted);
     }
 
-    [Fact]
+    [Test]
     public async Task ReAddedVideo_ClearsDeletedAt()
     {
         // First sync
@@ -107,7 +108,7 @@ public class SyncServiceIntegrationTests : IDisposable
         await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
         var deleted = await _playlistRepo.GetDeletedVideosAsync(_testPlaylist.Id);
-        Assert.Single(deleted);
+        await Assert.That(deleted).HasCount().EqualTo(1);
 
         // Third sync: re-added
         _youtubeApi.GetPlaylistVideosAsync("PLintegration").Returns([
@@ -115,16 +116,17 @@ public class SyncServiceIntegrationTests : IDisposable
         ]);
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(1, result.Added);
+        await Assert.That(result.Added).IsEqualTo(1);
         var allVideos = await _playlistRepo.GetVideosAsync(_testPlaylist.Id);
         var active = allVideos.Where(v => v.DeletedAt == null).ToList();
-        Assert.Single(active);
-        Assert.Equal("Video Restored", active[0].Title);
-        Assert.Null(active[0].DeletedAt);
-        Assert.Null(active[0].RemovalReason);
+        await Assert.That(active).HasCount().EqualTo(1);
+        await Assert.That(active[0].Title).IsEqualTo("Video Restored");
+        await Assert.That(active[0].DeletedAt).IsNull();
+        await Assert.That(active[0].RemovalReason).IsNull();
     }
 
-    public void Dispose()
+    [After(Test)]
+    public void Cleanup()
     {
         _db.Dispose();
     }

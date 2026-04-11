@@ -1,4 +1,3 @@
-using Terminal.Gui;
 
 namespace YTPlaylistTracker.UI.Views;
 
@@ -100,8 +99,8 @@ public partial class MainWindow
             [AppCommand.ToggleDeleted] = () => { OnToggleDeleted(); return true; },
             [AppCommand.Settings] = () => { OnSettings(); return true; },
             [AppCommand.UpdateCheck] = () => { OnUpdateCheck(); return true; },
-            [AppCommand.Help] = () => { global::Terminal.Gui.Application.Run(new HelpDialog()); return true; },
-            [AppCommand.Quit] = () => { global::Terminal.Gui.Application.RequestStop(); return true; },
+            [AppCommand.Help] = () => { TGuiApp.Run(new HelpDialog()); return true; },
+            [AppCommand.Quit] = () => { TGuiApp.RequestStop(); return true; },
             [AppCommand.ToggleProfilePane] = () => { ToggleProfilePane(); return true; },
 
             // Profile-specific
@@ -112,50 +111,61 @@ public partial class MainWindow
             [AppCommand.DeleteProfile] = () => { OnDeleteProfile(); return true; },
             [AppCommand.ProfileMenu] = () => { ShowProfileContextMenu(); return true; },
         };
-
-        // Application.KeyDown fires BEFORE view hierarchy — required for
-        // letter keys that child views (ListView/TableView) would consume.
-        global::Terminal.Gui.Application.KeyDown += OnApplicationKeyDown;
+        // Application.KeyDown fires BEFORE the view hierarchy, so letter
+        // keys are intercepted before ListView's collection navigator eats them.
+        // OnKeyDown (below) is the fallback for anything Application.KeyDown misses.
+        TGuiApp.KeyDown += OnApplicationKeyDown;
     }
 
     private void CleanupCommands()
     {
-        global::Terminal.Gui.Application.KeyDown -= OnApplicationKeyDown;
+        TGuiApp.KeyDown -= OnApplicationKeyDown;
+    }
+
+    /// <summary>
+    /// Key matching that works around develop.5245 Key equality issues.
+    /// Arrow/special key events carry extra flags that cause == to fail
+    /// against Key.CursorLeft etc. Match by KeyCode + modifiers instead.
+    /// </summary>
+    private static bool KeyMatch(Key pressed, Key binding) =>
+        pressed.KeyCode == binding.KeyCode;
+
+    internal bool DispatchKey(Key key)
+    {
+        // Skip when text input has focus
+        if (TGuiApp.Navigation?.GetFocused() is TextField or TextView) return false;
+
+        // Profile-specific bindings (only when profile pane focused)
+        if (_profileList.HasFocus)
+        {
+            foreach (var (k, c) in s_profileKeys)
+            {
+                if (KeyMatch(key, k) && _commands.TryGetValue(c, out var h)) { h(); return true; }
+            }
+        }
+
+        // Global bindings
+        foreach (var (k, c) in s_globalKeys)
+        {
+            if (KeyMatch(key, k) && _commands.TryGetValue(c, out var h)) { h(); return true; }
+        }
+
+        return false;
     }
 
     private void OnApplicationKeyDown(object? sender, Key key)
     {
-        // Skip during modal dialogs
         if (!IsCurrentTop) return;
-
-        // Skip when text input has focus (search field, dialog input)
-        if (global::Terminal.Gui.Application.Navigation?.GetFocused() is TextField or TextView) return;
-
-        // Profile-specific bindings (only when profile pane focused)
-        if (_profileList.HasFocus
-            && s_profileKeys.TryGetValue(key, out var profileCmd)
-            && _commands.TryGetValue(profileCmd, out var profileHandler))
-        {
-            profileHandler();
-            key.Handled = true;
-            return;
-        }
-
-        // Global bindings
-        if (s_globalKeys.TryGetValue(key, out var cmd)
-            && _commands.TryGetValue(cmd, out var handler))
-        {
-            handler();
-            key.Handled = true;
-        }
+        if (key == Key.C.WithCtrl) { HandleCtrlC(); key.Handled = true; return; }
+        if (DispatchKey(key)) key.Handled = true;
     }
 
     protected override bool OnKeyDown(Key key)
     {
-        // Ctrl+C double-press to quit (stateful, needs to pre-empt default Ctrl+C)
-        if (key == Key.C.WithCtrl)
-            return HandleCtrlC();
-
+        // Ctrl+C double-press to quit
+        if (key == Key.C.WithCtrl) return HandleCtrlC();
+        // Fallback: catches keys that Application.KeyDown missed
+        if (DispatchKey(key)) return true;
         return base.OnKeyDown(key);
     }
 
@@ -164,13 +174,13 @@ public partial class MainWindow
         var now = DateTime.UtcNow;
         if ((now - _lastCtrlC).TotalMilliseconds < 1000)
         {
-            global::Terminal.Gui.Application.RequestStop();
+            TGuiApp.RequestStop();
             return true;
         }
         _lastCtrlC = now;
         Title = "ytpt - Press Ctrl+C again to quit";
         SetNeedsDraw();
-        global::Terminal.Gui.Application.AddTimeout(TimeSpan.FromSeconds(2), () =>
+        TGuiApp.AddTimeout(TimeSpan.FromSeconds(2), () =>
         {
             Title = DefaultTitle;
             SetNeedsDraw();

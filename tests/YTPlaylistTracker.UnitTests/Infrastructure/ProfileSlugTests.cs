@@ -4,17 +4,17 @@ namespace YTPlaylistTracker.UnitTests.Infrastructure;
 
 public class ProfileSlugTests
 {
-    [Theory]
-    [InlineData("Default", "default")]
-    [InlineData("My Work Account", "my_work_account")]
-    [InlineData("  spaces  ", "spaces")]
-    [InlineData("café", "caf_")]
-    [InlineData("user@name!", "user_name_")]
-    [InlineData("UPPER-case_123", "upper-case_123")]
-    [InlineData("", "default")]
-    [InlineData("   ", "default")]
-    public void ToProfileSlug_NormalizesCorrectly(string input, string expected)
+    [Test]
+    [Arguments("Default", "default")]
+    [Arguments("My Work Account", "my_work_account")]
+    [Arguments("  spaces  ", "spaces")]
+    [Arguments("caf\u00e9", "caf_")]
+    [Arguments("user@name!", "user_name_")]
+    [Arguments("UPPER-case_123", "upper-case_123")]
+    [Arguments("", "default")]
+    [Arguments("   ", "default")]
+    public async Task ToProfileSlug_NormalizesCorrectly(string input, string expected)
     {
-        Assert.Equal(expected, YouTubeApiServiceFactory.ToProfileSlug(input));
+        await Assert.That(YouTubeApiServiceFactory.ToProfileSlug(input)).IsEqualTo(expected);
     }
 }

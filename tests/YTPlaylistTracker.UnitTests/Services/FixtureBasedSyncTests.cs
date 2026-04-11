@@ -35,7 +35,7 @@ public class FixtureBasedSyncTests
         _syncService = new SyncService(_playlistRepo, logger);
     }
 
-    [Fact]
+    [Test]
     public async Task FirstSync_AllVideosAdded()
     {
         var fixtureVideos = FixtureLoader.LoadPlaylistVideos(TestPlaylistId);
@@ -44,13 +44,13 @@ public class FixtureBasedSyncTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(fixtureVideos.Count, result.Added);
-        Assert.Equal(0, result.Removed);
-        Assert.Equal(0, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(fixtureVideos.Count);
+        await Assert.That(result.Removed).IsEqualTo(0);
+        await Assert.That(result.Updated).IsEqualTo(0);
         await _playlistRepo.Received(1).AddVideosAsync(Arg.Is<IEnumerable<Video>>(v => v.Count() == fixtureVideos.Count));
     }
 
-    [Fact]
+    [Test]
     public async Task FirstSync_AddedAtPassedThrough()
     {
         var now = new DateTime(2025, 6, 15, 12, 0, 0, DateTimeKind.Utc);
@@ -66,7 +66,7 @@ public class FixtureBasedSyncTests
         await _playlistRepo.Received(1).AddVideosAsync(Arg.Is<IEnumerable<Video>>(vs => vs.Any(v => v.AddedAt == now)));
     }
 
-    [Fact]
+    [Test]
     public async Task ReSync_SameData_NoChanges()
     {
         var fixtureVideos = FixtureLoader.LoadPlaylistVideos(TestPlaylistId);
@@ -86,12 +86,12 @@ public class FixtureBasedSyncTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Added);
-        Assert.Equal(0, result.Removed);
-        Assert.Equal(0, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(0);
+        await Assert.That(result.Removed).IsEqualTo(0);
+        await Assert.That(result.Updated).IsEqualTo(0);
     }
 
-    [Fact]
+    [Test]
     public async Task Sync_VideoRemoved_DetectedAsRemoval()
     {
         var fixtureVideos = FixtureLoader.LoadPlaylistVideos(TestPlaylistId);
@@ -114,13 +114,13 @@ public class FixtureBasedSyncTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Added);
-        Assert.Equal(1, result.Removed);
-        Assert.Equal(0, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(0);
+        await Assert.That(result.Removed).IsEqualTo(1);
+        await Assert.That(result.Updated).IsEqualTo(0);
         await _youtubeApi.Received(1).CheckVideoStatusAsync(fixtureVideos[0].VideoId);
     }
 
-    [Fact]
+    [Test]
     public async Task Sync_VideoAdded_DetectedAsAddition()
     {
         var fixtureVideos = FixtureLoader.LoadPlaylistVideos(TestPlaylistId);
@@ -140,12 +140,12 @@ public class FixtureBasedSyncTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(1, result.Added);
-        Assert.Equal(0, result.Removed);
-        Assert.Equal(0, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(1);
+        await Assert.That(result.Removed).IsEqualTo(0);
+        await Assert.That(result.Updated).IsEqualTo(0);
     }
 
-    [Fact]
+    [Test]
     public async Task Sync_TitleChanged_DetectedAsUpdate()
     {
         var fixtureVideos = FixtureLoader.LoadPlaylistVideos(TestPlaylistId);
@@ -165,9 +165,9 @@ public class FixtureBasedSyncTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Added);
-        Assert.Equal(0, result.Removed);
-        Assert.Equal(1, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(0);
+        await Assert.That(result.Removed).IsEqualTo(0);
+        await Assert.That(result.Updated).IsEqualTo(1);
         await _playlistRepo.Received(1).UpdateVideoAsync(
             Arg.Is<Video>(v => v.Title == fixtureVideos[0].Title));
     }

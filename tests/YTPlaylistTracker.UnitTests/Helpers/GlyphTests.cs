@@ -5,107 +5,110 @@ namespace YTPlaylistTracker.UnitTests.Helpers;
 
 public class GlyphDetectorTests
 {
-    [Fact]
-    public void NonWindows_ReturnsFullMode()
+    [Test]
+    public async Task NonWindows_ReturnsFullMode()
     {
         if (OperatingSystem.IsWindows()) return;
 
         var mode = GlyphDetector.Detect(_ => null);
-        Assert.Equal(GlyphMode.Full, mode);
+        await Assert.That(mode).IsEqualTo(GlyphMode.Full);
     }
 
-    [Fact]
-    public void NonWindows_IgnoresEnvVars()
+    [Test]
+    public async Task NonWindows_IgnoresEnvVars()
     {
         if (OperatingSystem.IsWindows()) return;
 
         // Even with no env vars set, non-Windows is always Full
         var mode = GlyphDetector.Detect(_ => null);
-        Assert.Equal(GlyphMode.Full, mode);
+        await Assert.That(mode).IsEqualTo(GlyphMode.Full);
     }
 
-    [Fact]
-    public void Windows_NoModernTerminal_ReturnsBasic()
+    [Test]
+    public async Task Windows_NoModernTerminal_ReturnsBasic()
     {
         if (!OperatingSystem.IsWindows()) return;
 
         var mode = GlyphDetector.Detect(_ => null);
-        Assert.Equal(GlyphMode.Basic, mode);
+        await Assert.That(mode).IsEqualTo(GlyphMode.Basic);
     }
 
-    [Fact]
-    public void Windows_WithWtSession_ReturnsFull()
+    [Test]
+    public async Task Windows_WithWtSession_ReturnsFull()
     {
         if (!OperatingSystem.IsWindows()) return;
 
         var mode = GlyphDetector.Detect(key => key == "WT_SESSION" ? "some-guid" : null);
-        Assert.Equal(GlyphMode.Full, mode);
+        await Assert.That(mode).IsEqualTo(GlyphMode.Full);
     }
 
-    [Fact]
-    public void Windows_WithConEmu_ReturnsFull()
+    [Test]
+    public async Task Windows_WithConEmu_ReturnsFull()
     {
         if (!OperatingSystem.IsWindows()) return;
 
         var mode = GlyphDetector.Detect(key => key == "ConEmuPID" ? "1234" : null);
-        Assert.Equal(GlyphMode.Full, mode);
+        await Assert.That(mode).IsEqualTo(GlyphMode.Full);
     }
 
-    [Theory]
-    [InlineData("mintty")]
-    [InlineData("WezTerm")]
-    [InlineData("Alacritty")]
-    [InlineData("ghostty")]
-    public void Windows_WithTermProgram_ReturnsFull(string termProgram)
+    [Test]
+    [Arguments("mintty")]
+    [Arguments("WezTerm")]
+    [Arguments("Alacritty")]
+    [Arguments("ghostty")]
+    public async Task Windows_WithTermProgram_ReturnsFull(string termProgram)
     {
         if (!OperatingSystem.IsWindows()) return;
 
         var mode = GlyphDetector.Detect(key => key == "TERM_PROGRAM" ? termProgram : null);
-        Assert.Equal(GlyphMode.Full, mode);
+        await Assert.That(mode).IsEqualTo(GlyphMode.Full);
     }
 }
 
 public class GlyphsTests
 {
-    [Fact]
-    public void SpinnerFrames_AreNonEmpty()
+    [Test]
+    public async Task SpinnerFrames_AreNonEmpty()
     {
         var frames = Glyphs.SpinnerFrames;
-        Assert.NotEmpty(frames);
-        Assert.All(frames, f => Assert.False(string.IsNullOrEmpty(f)));
+        await Assert.That(frames).IsNotEmpty();
+        foreach (var f in frames)
+        {
+            await Assert.That(string.IsNullOrEmpty(f)).IsFalse();
+        }
     }
 
-    [Fact]
-    public void PlaylistIcon_RegularKind_ReturnsEmpty()
+    [Test]
+    public async Task PlaylistIcon_RegularKind_ReturnsEmpty()
     {
-        Assert.Equal("", Glyphs.PlaylistIcon(PlaylistKind.Regular));
+        await Assert.That(Glyphs.PlaylistIcon(PlaylistKind.Regular)).IsEqualTo("");
     }
 
-    [Theory]
-    [InlineData(PlaylistKind.Liked)]
-    [InlineData(PlaylistKind.WatchLater)]
-    [InlineData(PlaylistKind.Uploads)]
-    public void PlaylistIcon_SpecialKinds_ReturnNonEmpty(PlaylistKind kind)
+    [Test]
+    [Arguments(PlaylistKind.Liked)]
+    [Arguments(PlaylistKind.WatchLater)]
+    [Arguments(PlaylistKind.Uploads)]
+    public async Task PlaylistIcon_SpecialKinds_ReturnNonEmpty(PlaylistKind kind)
     {
-        Assert.False(string.IsNullOrEmpty(Glyphs.PlaylistIcon(kind)));
+        await Assert.That(string.IsNullOrEmpty(Glyphs.PlaylistIcon(kind))).IsFalse();
     }
 
-    [Fact]
-    public void SortArrows_AreNonEmpty()
+    [Test]
+    public async Task SortArrows_AreNonEmpty()
     {
-        Assert.False(string.IsNullOrWhiteSpace(Glyphs.SortAscending));
-        Assert.False(string.IsNullOrWhiteSpace(Glyphs.SortDescending));
+        await Assert.That(string.IsNullOrWhiteSpace(Glyphs.SortAscending)).IsFalse();
+        await Assert.That(string.IsNullOrWhiteSpace(Glyphs.SortDescending)).IsFalse();
     }
 
-    [Fact]
-    public void DefaultMarker_HasTrailingSpace()
+    [Test]
+    public async Task DefaultMarker_HasTrailingSpace()
     {
-        Assert.EndsWith(" ", Glyphs.DefaultMarker);
+        await Assert.That(Glyphs.DefaultMarker).EndsWith(" ");
     }
 
-    [Fact]
-    public void Check_IsNonEmpty()
+    [Test]
+    public async Task Check_IsNonEmpty()
     {
-        Assert.False(string.IsNullOrEmpty(Glyphs.Check));
+        await Assert.That(string.IsNullOrEmpty(Glyphs.Check)).IsFalse();
     }
 }

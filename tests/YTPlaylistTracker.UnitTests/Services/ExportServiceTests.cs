@@ -30,23 +30,23 @@ public class ExportServiceTests
         ];
     }
 
-    [Fact]
-    public void BuildEntries_MapsFieldsCorrectly()
+    [Test]
+    public async Task BuildEntries_MapsFieldsCorrectly()
     {
         var data = CreateTestData();
         var entries = ExportService.BuildEntries(data);
 
-        Assert.Equal(2, entries.Count);
-        Assert.Equal("My Favorites", entries[0].PlaylistTitle);
-        Assert.Equal("abc123", entries[0].VideoId);
-        Assert.Equal("Deleted Video", entries[0].VideoTitle);
-        Assert.Equal("TestChannel", entries[0].Channel);
-        Assert.Equal("Deleted", entries[0].RemovalReason);
-        Assert.Equal("2025-06-15 10:30:00", entries[0].RemovedAt);
+        await Assert.That(entries.Count).IsEqualTo(2);
+        await Assert.That(entries[0].PlaylistTitle).IsEqualTo("My Favorites");
+        await Assert.That(entries[0].VideoId).IsEqualTo("abc123");
+        await Assert.That(entries[0].VideoTitle).IsEqualTo("Deleted Video");
+        await Assert.That(entries[0].Channel).IsEqualTo("TestChannel");
+        await Assert.That(entries[0].RemovalReason).IsEqualTo("Deleted");
+        await Assert.That(entries[0].RemovedAt).IsEqualTo("2025-06-15 10:30:00");
     }
 
-    [Fact]
-    public void BuildEntries_UsesPlaylistIdWhenTitleNull()
+    [Test]
+    public async Task BuildEntries_UsesPlaylistIdWhenTitleNull()
     {
         var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PLnoTitle", Title = null, Profile = _testProfile };
         var video = new Video
@@ -57,11 +57,11 @@ public class ExportServiceTests
 
         var entries = ExportService.BuildEntries([(playlist, video)]);
 
-        Assert.Equal("PLnoTitle", entries[0].PlaylistTitle);
+        await Assert.That(entries[0].PlaylistTitle).IsEqualTo("PLnoTitle");
     }
 
-    [Fact]
-    public void BuildEntries_HandlesNullChannelAndReason()
+    [Test]
+    public async Task BuildEntries_HandlesNullChannelAndReason()
     {
         var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "Test", Profile = _testProfile };
         var video = new Video
@@ -72,25 +72,25 @@ public class ExportServiceTests
 
         var entries = ExportService.BuildEntries([(playlist, video)]);
 
-        Assert.Equal("", entries[0].Channel);
-        Assert.Equal("Unknown", entries[0].RemovalReason);
+        await Assert.That(entries[0].Channel).IsEqualTo("");
+        await Assert.That(entries[0].RemovalReason).IsEqualTo("Unknown");
     }
 
-    [Fact]
-    public void ToCsv_ContainsHeaderAndRows()
+    [Test]
+    public async Task ToCsv_ContainsHeaderAndRows()
     {
         var entries = ExportService.BuildEntries(CreateTestData());
         var csv = ExportService.ToCsv(entries);
         var lines = csv.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-        Assert.Equal(3, lines.Length); // header + 2 rows
-        Assert.Equal("PlaylistTitle,VideoId,VideoTitle,Channel,RemovalReason,RemovedAt", lines[0]);
-        Assert.Contains("abc123", lines[1]);
-        Assert.Contains("def456", lines[2]);
+        await Assert.That(lines.Length).IsEqualTo(3); // header + 2 rows
+        await Assert.That(lines[0]).IsEqualTo("PlaylistTitle,VideoId,VideoTitle,Channel,RemovalReason,RemovedAt");
+        await Assert.That(lines[1]).Contains("abc123");
+        await Assert.That(lines[2]).Contains("def456");
     }
 
-    [Fact]
-    public void ToCsv_EscapesCommasAndQuotes()
+    [Test]
+    public async Task ToCsv_EscapesCommasAndQuotes()
     {
         var playlist = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "Rock, Pop & Jazz", Profile = _testProfile };
         var video = new Video
@@ -103,38 +103,38 @@ public class ExportServiceTests
         var csv = ExportService.ToCsv(entries);
 
         // Commas in playlist title should be quoted
-        Assert.Contains("\"Rock, Pop & Jazz\"", csv);
+        await Assert.That(csv).Contains("\"Rock, Pop & Jazz\"");
         // Quotes in video title should be doubled and quoted
-        Assert.Contains("\"He said \"\"hello\"\"\"", csv);
+        await Assert.That(csv).Contains("\"He said \"\"hello\"\"\"");
     }
 
-    [Fact]
-    public void ToCsv_EmptyList_ReturnsHeaderOnly()
+    [Test]
+    public async Task ToCsv_EmptyList_ReturnsHeaderOnly()
     {
         var csv = ExportService.ToCsv([]);
         var lines = csv.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-        Assert.Single(lines);
-        Assert.StartsWith("PlaylistTitle", lines[0]);
+        await Assert.That(lines).HasSingleItem();
+        await Assert.That(lines[0]).StartsWith("PlaylistTitle");
     }
 
-    [Fact]
-    public void ToJson_ValidJson_DeserializesBackCorrectly()
+    [Test]
+    public async Task ToJson_ValidJson_DeserializesBackCorrectly()
     {
         var entries = ExportService.BuildEntries(CreateTestData());
         var json = ExportService.ToJson(entries);
 
         var deserialized = System.Text.Json.JsonSerializer.Deserialize<List<ExportService.ExportEntry>>(json);
-        Assert.NotNull(deserialized);
-        Assert.Equal(2, deserialized.Count);
-        Assert.Equal("abc123", deserialized[0].VideoId);
-        Assert.Equal("Private", deserialized[1].RemovalReason);
+        await Assert.That(deserialized).IsNotNull();
+        await Assert.That(deserialized!.Count).IsEqualTo(2);
+        await Assert.That(deserialized[0].VideoId).IsEqualTo("abc123");
+        await Assert.That(deserialized[1].RemovalReason).IsEqualTo("Private");
     }
 
-    [Fact]
-    public void ToJson_EmptyList_ReturnsEmptyArray()
+    [Test]
+    public async Task ToJson_EmptyList_ReturnsEmptyArray()
     {
         var json = ExportService.ToJson([]);
-        Assert.Equal("[]", json);
+        await Assert.That(json).IsEqualTo("[]");
     }
 }

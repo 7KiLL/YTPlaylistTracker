@@ -58,6 +58,7 @@
 - U1: Proportional pane widths with minimum floor
 - Collapsible profile pane with auto-hide for single profile
 - V5: Replace ad-hoc input dialogs with `Prompt<T>` API
+- E1: E2E scenario test project with TUnit (20 tests: smoke, navigation, themes, features)
 
 </details>
 
@@ -144,15 +145,11 @@ Expose themes via `~/.tui/ytpt.config.json` for user customization without code 
 
 ## Testing
 
-> **Deferred**: E2E tests planned for full Terminal.Gui v2 release.
+### ~~E1. E2E scenario test project + harness~~ (done)
 
-### E1. E2E scenario test project + harness
-**See**: improvements.md T1
+Created `YTPlaylistTracker.E2ETests` with TUnit (source-gen, avoids xunit/NUnit Terminal.Gui module init crash on .NET 10). AppHarness + AppHarnessBuilder + MockFactory + MainScreen screen object + entity builders. 20 tests across smoke, navigation, data binding, themes, and features.
 
-Create `YTPlaylistTracker.ScenarioTests` with `TuiTestHarness` that initializes Terminal.Gui headlessly, mocks services via NSubstitute, and exposes helpers for seed data and key simulation.
-
-### E2. Scenario catalog
-**See**: improvements.md T2
+### E2. Scenario catalog (in progress)
 
 Comprehensive scenario tables covering: initialization, keyboard navigation, data binding, sync, themes, column layout, and dialogs. Full catalog in `improvements.md`.
 

@@ -1,9 +1,9 @@
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Microsoft.Extensions.Logging;
 using YTPlaylistTracker.Application.Services;
 using YTPlaylistTracker.Domain.Entities;
 using YTPlaylistTracker.Domain.Interfaces;
+using NSubstituteExceptions = NSubstitute.ExceptionExtensions.ExceptionExtensions;
 
 namespace YTPlaylistTracker.UnitTests.Services;
 
@@ -31,17 +31,18 @@ public class SyncServiceErrorTests
         _syncService = new SyncService(_playlistRepo, logger);
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylistAsync_WhenYouTubeApiThrows_PropagatesException()
     {
-        _youtubeApi.GetPlaylistVideosAsync("PLtest123")
-            .ThrowsAsync(new HttpRequestException("Network error"));
+        NSubstituteExceptions.ThrowsAsync(
+            _youtubeApi.GetPlaylistVideosAsync("PLtest123"),
+            new HttpRequestException("Network error"));
 
         await Assert.ThrowsAsync<HttpRequestException>(
             () => _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi));
     }
 
-    [Fact]
+    [Test]
     public async Task SyncAllTrackedAsync_WhenOnePlaylistFails_ContinuesWithOthers()
     {
         var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "P1", IsTracked = true, Profile = _testProfile };
@@ -50,8 +51,9 @@ public class SyncServiceErrorTests
         _playlistRepo.GetTrackedByProfileAsync(1).Returns(new List<Playlist> { playlist1, playlist2 });
 
         // First playlist throws
-        _youtubeApi.GetPlaylistVideosAsync("PL1")
-            .ThrowsAsync(new HttpRequestException("API error"));
+        NSubstituteExceptions.ThrowsAsync(
+            _youtubeApi.GetPlaylistVideosAsync("PL1"),
+            new HttpRequestException("API error"));
 
         // Second playlist succeeds
         _youtubeApi.GetPlaylistVideosAsync("PL2").Returns(new List<Domain.Models.YouTubeVideoSnapshot>());
@@ -60,26 +62,27 @@ public class SyncServiceErrorTests
 
         var results = await _syncService.SyncAllTrackedAsync(1, _youtubeApi);
 
-        Assert.Equal(2, results.Count);
-        Assert.Equal(0, results[1].Added); // Failed playlist gets zero result
-        Assert.Equal(0, results[2].Added); // Second playlist was synced
+        await Assert.That(results.Count).IsEqualTo(2);
+        await Assert.That(results[1].Added).IsEqualTo(0); // Failed playlist gets zero result
+        await Assert.That(results[2].Added).IsEqualTo(0); // Second playlist was synced
     }
 
-    [Fact]
+    [Test]
     public async Task SyncAllTrackedAsync_WhenAllPlaylistsFail_ReturnsZeroResults()
     {
         var playlist1 = new Playlist { Id = 1, ProfileId = 1, YouTubePlaylistId = "PL1", Title = "P1", IsTracked = true, Profile = _testProfile };
 
         _playlistRepo.GetTrackedByProfileAsync(1).Returns(new List<Playlist> { playlist1 });
 
-        _youtubeApi.GetPlaylistVideosAsync("PL1")
-            .ThrowsAsync(new InvalidOperationException("Auth failed"));
+        NSubstituteExceptions.ThrowsAsync(
+            _youtubeApi.GetPlaylistVideosAsync("PL1"),
+            new InvalidOperationException("Auth failed"));
 
         var results = await _syncService.SyncAllTrackedAsync(1, _youtubeApi);
 
-        Assert.Single(results);
-        Assert.Equal(0, results[1].Added);
-        Assert.Equal(0, results[1].Removed);
-        Assert.Equal(0, results[1].Updated);
+        await Assert.That(results).HasSingleItem();
+        await Assert.That(results[1].Added).IsEqualTo(0);
+        await Assert.That(results[1].Removed).IsEqualTo(0);
+        await Assert.That(results[1].Updated).IsEqualTo(0);
     }
 }

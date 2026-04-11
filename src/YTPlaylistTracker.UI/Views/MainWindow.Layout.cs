@@ -1,18 +1,17 @@
 using System.Data;
-using Terminal.Gui;
 
 namespace YTPlaylistTracker.UI.Views;
 
 public partial class MainWindow
 {
-    private FrameView _profileFrame = null!;
+    internal FrameView _profileFrame = null!;
     private FrameView _playlistFrame = null!;
     private Label _profileHeaderLabel = null!;
     private Label _playlistHeaderLabel = null!;
     private Label _videoStatusLabel = null!;
-    private Label _hintBar1 = null!;
-    private Label _hintBar2 = null!;
-    private bool _profilePaneVisible = true;
+    internal Label _hintBar1 = null!;
+    internal Label _hintBar2 = null!;
+    internal bool _profilePaneVisible = true;
 
     private void SetupUI()
     {
@@ -23,9 +22,9 @@ public partial class MainWindow
         _profileFrame = new FrameView()
         {
             X = 0, Y = 0,
-            Width = Dim.Func(() => Math.Max(18, Viewport.Width * 15 / 100)),
+            Width = Dim.Func(_ => Math.Max(18, Viewport.Width * 15 / 100)),
             Height = Dim.Fill(2),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
             BorderStyle = LineStyle.Rounded,
         };
         _profileHeaderLabel = new Label()
@@ -33,25 +32,25 @@ public partial class MainWindow
             Text = " Profiles",
             X = 0, Y = 0,
             Width = Dim.Fill(),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
         };
         _profileList = new ListView
         {
             X = 1, Y = 1,
             Width = Dim.Fill(1),
             Height = Dim.Fill(),
-            ColorScheme = Colors.ColorSchemes["Base"],
+            SchemeName = "Base",
         };
-        _profileList.SelectedItemChanged += OnProfileSelected;
+        _profileList.ValueChanged += OnProfileSelected;
         _profileFrame.Add(_profileHeaderLabel, _profileList);
 
         _playlistFrame = new FrameView()
         {
             X = Pos.Right(_profileFrame),
             Y = 0,
-            Width = Dim.Func(() => Math.Max(28, Viewport.Width * 25 / 100)),
+            Width = Dim.Func(_ => Math.Max(28, Viewport.Width * 25 / 100)),
             Height = Dim.Fill(2),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
             BorderStyle = LineStyle.Rounded,
         };
         _playlistHeaderLabel = new Label()
@@ -59,16 +58,16 @@ public partial class MainWindow
             Text = " Playlists",
             X = 0, Y = 0,
             Width = Dim.Fill(),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
         };
         _playlistList = new ListView
         {
             X = 1, Y = 1,
             Width = Dim.Fill(1),
             Height = Dim.Fill(),
-            ColorScheme = Colors.ColorSchemes["Base"],
+            SchemeName = "Base",
         };
-        _playlistList.SelectedItemChanged += OnPlaylistSelected;
+        _playlistList.ValueChanged += OnPlaylistSelected;
         _playlistFrame.Add(_playlistHeaderLabel, _playlistList);
 
         _videoFrame = new FrameView()
@@ -77,7 +76,7 @@ public partial class MainWindow
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(2),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
             BorderStyle = LineStyle.Rounded,
         };
         _videoStatusLabel = new Label()
@@ -85,7 +84,7 @@ public partial class MainWindow
             Text = " Videos",
             X = 0, Y = 0,
             Width = Dim.Fill(),
-            ColorScheme = Theme.Frame,
+            SchemeName = Theme.SchemeFrame,
         };
         _videoTable = new TableView
         {
@@ -93,7 +92,7 @@ public partial class MainWindow
             Width = Dim.Fill(1),
             Height = Dim.Fill(),
             FullRowSelect = true,
-            ColorScheme = Colors.ColorSchemes["Base"],
+            SchemeName = "Base",
             Style = new TableStyle
             {
                 ShowVerticalCellLines = false,
@@ -112,7 +111,7 @@ public partial class MainWindow
         _videoFrame.Add(_videoStatusLabel, _videoTable);
         _videoTable.DrawComplete += (sender, e) => OnVideoTableResized();
 
-        _playlistList.OpenSelectedItem += (sender, e) => ShowDetail();
+        _playlistList.Accepting += (sender, e) => ShowDetail();
 
         Add(_profileFrame, _playlistFrame, _videoFrame);
 
@@ -121,14 +120,14 @@ public partial class MainWindow
             Text = "",
             Y = Pos.AnchorEnd(2),
             Width = Dim.Fill(),
-            ColorScheme = Theme.HintKey,
+            SchemeName = Theme.SchemeHintKey,
         };
         _hintBar2 = new Label()
         {
             Text = " e F7 export │ H F11 hist │ F9 settings │ p profile │ ? F12 help │ q quit",
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
-            ColorScheme = Theme.HintKey,
+            SchemeName = Theme.SchemeHintKey,
         };
         _spinner = new SpinnerView
         {
@@ -145,7 +144,7 @@ public partial class MainWindow
             Y = Pos.AnchorEnd(3),
             Width = Dim.Fill(),
             Visible = false,
-            ColorScheme = Theme.HintKey,
+            SchemeName = Theme.SchemeHintKey,
         };
         Add(_spinner, _spinnerMessage, _hintBar1, _hintBar2);
         UpdateHintBar();
@@ -175,19 +174,19 @@ public partial class MainWindow
 
     internal void ReapplyTheme()
     {
-        _profileFrame.ColorScheme = Theme.Frame;
-        _playlistFrame.ColorScheme = Theme.Frame;
-        _videoFrame.ColorScheme = Theme.Frame;
-        _profileHeaderLabel.ColorScheme = Theme.Frame;
-        _playlistHeaderLabel.ColorScheme = Theme.Frame;
-        _videoStatusLabel.ColorScheme = Theme.Frame;
-        _profileList.ColorScheme = Colors.ColorSchemes["Base"];
-        _playlistList.ColorScheme = Colors.ColorSchemes["Base"];
-        _videoTable.ColorScheme = Colors.ColorSchemes["Base"];
-        _hintBar1.ColorScheme = Theme.HintKey;
-        _hintBar2.ColorScheme = Theme.HintKey;
-        _spinnerMessage.ColorScheme = Theme.HintKey;
-        ApplyDefaultColorScheme();
+        _profileFrame.SchemeName = Theme.SchemeFrame;
+        _playlistFrame.SchemeName = Theme.SchemeFrame;
+        _videoFrame.SchemeName = Theme.SchemeFrame;
+        _profileHeaderLabel.SchemeName = Theme.SchemeFrame;
+        _playlistHeaderLabel.SchemeName = Theme.SchemeFrame;
+        _videoStatusLabel.SchemeName = Theme.SchemeFrame;
+        _profileList.SchemeName = "Base";
+        _playlistList.SchemeName = "Base";
+        _videoTable.SchemeName = "Base";
+        _hintBar1.SchemeName = Theme.SchemeHintKey;
+        _hintBar2.SchemeName = Theme.SchemeHintKey;
+        _spinnerMessage.SchemeName = Theme.SchemeHintKey;
+        ApplyDefaultScheme();
         SetNeedsDraw();
     }
 
@@ -197,7 +196,7 @@ public partial class MainWindow
         _spinner.Visible = true;
         _spinnerMessage.Visible = true;
         _spinner.AutoSpin = true;
-        ColorScheme = Theme.Syncing;
+        SchemeName = Theme.SchemeSyncing;
         Title = " ytpt - syncing ";
     }
 
@@ -207,17 +206,17 @@ public partial class MainWindow
         _spinner.Visible = false;
         _spinnerMessage.Visible = false;
         Title = DefaultTitle;
-        ApplyDefaultColorScheme();
+        ApplyDefaultScheme();
         SetNeedsDraw();
     }
 
-    private void ApplyDefaultColorScheme()
+    private void ApplyDefaultScheme()
     {
         if (_updateInstalled)
-            ColorScheme = Theme.UpdateInstalled;
+            SchemeName = Theme.SchemeUpdateInstalled;
         else if (_latestUpdate is { IsUpdateAvailable: true })
-            ColorScheme = Theme.UpdateAvailable;
+            SchemeName = Theme.SchemeUpdateAvailable;
         else
-            ColorScheme = Colors.ColorSchemes["Base"];
+            SchemeName = "Base";
     }
 }

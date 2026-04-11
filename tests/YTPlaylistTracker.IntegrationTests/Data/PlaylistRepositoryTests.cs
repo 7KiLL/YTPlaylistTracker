@@ -7,13 +7,14 @@ using YTPlaylistTracker.Infrastructure.Data;
 
 namespace YTPlaylistTracker.IntegrationTests.Data;
 
-public class PlaylistRepositoryTests : IDisposable
+public class PlaylistRepositoryTests
 {
-    private readonly AppDbContext _db;
-    private readonly PlaylistRepository _repo;
-    private readonly Profile _profile;
+    private AppDbContext _db = null!;
+    private PlaylistRepository _repo = null!;
+    private Profile _profile = null!;
 
-    public PlaylistRepositoryTests()
+    [Before(Test)]
+    public void Setup()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite("Data Source=:memory:")
@@ -32,19 +33,19 @@ public class PlaylistRepositoryTests : IDisposable
         _db.SaveChanges();
     }
 
-    [Fact]
+    [Test]
     public async Task AddPlaylist_CanQueryBack()
     {
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PL123", Title = "Test Playlist", IsTracked = true };
         await _repo.AddAsync(playlist);
 
         var result = await _repo.GetByProfileAsync(1);
-        Assert.Single(result);
-        Assert.Equal("PL123", result[0].YouTubePlaylistId);
-        Assert.Equal("Test Playlist", result[0].Title);
+        await Assert.That(result).HasCount().EqualTo(1);
+        await Assert.That(result[0].YouTubePlaylistId).IsEqualTo("PL123");
+        await Assert.That(result[0].Title).IsEqualTo("Test Playlist");
     }
 
-    [Fact]
+    [Test]
     public async Task AddVideos_QueryByPlaylist()
     {
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PL456", IsTracked = true };
@@ -54,10 +55,10 @@ public class PlaylistRepositoryTests : IDisposable
         await _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "v2", Title = "Video 2" }]);
 
         var videos = await _repo.GetVideosAsync(playlist.Id);
-        Assert.Equal(2, videos.Count);
+        await Assert.That(videos.Count).IsEqualTo(2);
     }
 
-    [Fact]
+    [Test]
     public async Task SoftDeleteVideo_AppearsInDeleted()
     {
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PL789", IsTracked = true };
@@ -74,12 +75,12 @@ public class PlaylistRepositoryTests : IDisposable
         var active = all.Where(v => v.DeletedAt == null).ToList();
         var deleted = await _repo.GetDeletedVideosAsync(playlist.Id);
 
-        Assert.Empty(active);
-        Assert.Single(deleted);
-        Assert.Equal("Will Be Removed", deleted[0].Title);
+        await Assert.That(active).IsEmpty();
+        await Assert.That(deleted).HasCount().EqualTo(1);
+        await Assert.That(deleted[0].Title).IsEqualTo("Will Be Removed");
     }
 
-    [Fact]
+    [Test]
     public async Task UniqueConstraint_DuplicateVideoId_Throws()
     {
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLunique", IsTracked = true };
@@ -91,7 +92,7 @@ public class PlaylistRepositoryTests : IDisposable
             _repo.AddVideosAsync([new Video { PlaylistId = playlist.Id, Playlist = playlist, YouTubeVideoId = "dup1", Title = "Duplicate" }]));
     }
 
-    [Fact]
+    [Test]
     public async Task PurgeDeletedVideos_RemovesPermanently()
     {
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLpurge", IsTracked = true };
@@ -104,11 +105,11 @@ public class PlaylistRepositoryTests : IDisposable
         await _repo.PurgeDeletedVideosAsync(playlist.Id);
 
         var all = await _repo.GetVideosAsync(playlist.Id);
-        Assert.Single(all);
-        Assert.Equal("Active", all[0].Title);
+        await Assert.That(all).HasCount().EqualTo(1);
+        await Assert.That(all[0].Title).IsEqualTo("Active");
     }
 
-    [Fact]
+    [Test]
     public async Task GetTrackedByProfile_FiltersCorrectly()
     {
         await _repo.AddAsync(new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "tracked1", IsTracked = true });
@@ -116,11 +117,12 @@ public class PlaylistRepositoryTests : IDisposable
         await _repo.AddAsync(new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "tracked2", IsTracked = true });
 
         var tracked = await _repo.GetTrackedByProfileAsync(1);
-        Assert.Equal(2, tracked.Count);
-        Assert.All(tracked, p => Assert.True(p.IsTracked));
+        await Assert.That(tracked.Count).IsEqualTo(2);
+        foreach (var p in tracked)
+            await Assert.That(p.IsTracked).IsTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task GetAllDeletedVideosAsync_ReturnsAcrossPlaylists()
     {
         var playlist1 = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLcross1", Title = "Playlist A", IsTracked = true };
@@ -145,15 +147,15 @@ public class PlaylistRepositoryTests : IDisposable
 
         var results = await _repo.GetAllDeletedVideosAsync(1);
 
-        Assert.Equal(2, results.Count);
+        await Assert.That(results.Count).IsEqualTo(2);
         // Should be ordered by DeletedAt descending (most recent first)
-        Assert.Equal("Private In B", results[0].Video.Title);
-        Assert.Equal("Playlist B", results[0].Playlist.Title);
-        Assert.Equal("Deleted From A", results[1].Video.Title);
-        Assert.Equal("Playlist A", results[1].Playlist.Title);
+        await Assert.That(results[0].Video.Title).IsEqualTo("Private In B");
+        await Assert.That(results[0].Playlist.Title).IsEqualTo("Playlist B");
+        await Assert.That(results[1].Video.Title).IsEqualTo("Deleted From A");
+        await Assert.That(results[1].Playlist.Title).IsEqualTo("Playlist A");
     }
 
-    [Fact]
+    [Test]
     public async Task GetAllDeletedVideosAsync_FiltersOtherProfiles()
     {
         // Add a second profile
@@ -180,13 +182,13 @@ public class PlaylistRepositoryTests : IDisposable
         var profile1Results = await _repo.GetAllDeletedVideosAsync(1);
         var profile2Results = await _repo.GetAllDeletedVideosAsync(2);
 
-        Assert.Single(profile1Results);
-        Assert.Equal("Mine", profile1Results[0].Video.Title);
-        Assert.Single(profile2Results);
-        Assert.Equal("Not Mine", profile2Results[0].Video.Title);
+        await Assert.That(profile1Results).HasCount().EqualTo(1);
+        await Assert.That(profile1Results[0].Video.Title).IsEqualTo("Mine");
+        await Assert.That(profile2Results).HasCount().EqualTo(1);
+        await Assert.That(profile2Results[0].Video.Title).IsEqualTo("Not Mine");
     }
 
-    [Fact]
+    [Test]
     public async Task GetAllDeletedVideosAsync_EmptyWhenNoDeleted()
     {
         var playlist = new Playlist { ProfileId = 1, Profile = _profile, YouTubePlaylistId = "PLempty", IsTracked = true };
@@ -195,10 +197,11 @@ public class PlaylistRepositoryTests : IDisposable
 
         var results = await _repo.GetAllDeletedVideosAsync(1);
 
-        Assert.Empty(results);
+        await Assert.That(results).IsEmpty();
     }
 
-    public void Dispose()
+    [After(Test)]
+    public void Cleanup()
     {
         _db.Dispose();
     }

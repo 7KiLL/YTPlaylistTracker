@@ -32,7 +32,7 @@ public class SyncServiceTests
         _syncService = new SyncService(_playlistRepo, logger);
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_NewVideos_DetectedAsAdditions()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns([
@@ -43,13 +43,13 @@ public class SyncServiceTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(2, result.Added);
-        Assert.Equal(0, result.Removed);
-        Assert.Equal(0, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(2);
+        await Assert.That(result.Removed).IsEqualTo(0);
+        await Assert.That(result.Updated).IsEqualTo(0);
         await _playlistRepo.Received(1).AddVideosAsync(Arg.Is<IEnumerable<Video>>(v => v.Count() == 2));
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_MissingVideos_MarkedAsDeleted()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns(new List<YouTubeVideoSnapshot>());
@@ -61,13 +61,13 @@ public class SyncServiceTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Added);
-        Assert.Equal(1, result.Removed);
+        await Assert.That(result.Added).IsEqualTo(0);
+        await Assert.That(result.Removed).IsEqualTo(1);
         await _playlistRepo.Received(1).UpdateVideoAsync(Arg.Is<Video>(v =>
             v.YouTubeVideoId == "vid1" && v.DeletedAt != null && v.RemovalReason == RemovalReason.Deleted));
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_TitlePreservedOnDeletion()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns(new List<YouTubeVideoSnapshot>());
@@ -83,7 +83,7 @@ public class SyncServiceTests
             v.Title == "Important Title" && v.DeletedAt != null));
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_ReAddedVideo_ClearsDeletedAt()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns([
@@ -97,12 +97,12 @@ public class SyncServiceTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(1, result.Added); // Re-addition counts as added
+        await Assert.That(result.Added).IsEqualTo(1); // Re-addition counts as added
         await _playlistRepo.Received().UpdateVideoAsync(Arg.Is<Video>(v =>
             v.YouTubeVideoId == "vid1" && v.DeletedAt == null && v.RemovalReason == null));
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_ExistingVideo_UpdatesTitleAndChannel()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns([
@@ -115,14 +115,14 @@ public class SyncServiceTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Added);
-        Assert.Equal(0, result.Removed);
-        Assert.Equal(1, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(0);
+        await Assert.That(result.Removed).IsEqualTo(0);
+        await Assert.That(result.Updated).IsEqualTo(1);
         await _playlistRepo.Received().UpdateVideoAsync(Arg.Is<Video>(v =>
             v.Title == "New Title" && v.ChannelTitle == "New Channel"));
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_EmptyPlaylist_NoErrors()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns(new List<YouTubeVideoSnapshot>());
@@ -130,12 +130,12 @@ public class SyncServiceTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Added);
-        Assert.Equal(0, result.Removed);
-        Assert.Equal(0, result.Updated);
+        await Assert.That(result.Added).IsEqualTo(0);
+        await Assert.That(result.Removed).IsEqualTo(0);
+        await Assert.That(result.Updated).IsEqualTo(0);
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_RemovalReasonCorrectlyAssigned()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns(new List<YouTubeVideoSnapshot>());
@@ -155,7 +155,7 @@ public class SyncServiceTests
             v.YouTubeVideoId == "vid2" && v.RemovalReason == RemovalReason.Deleted));
     }
 
-    [Fact]
+    [Test]
     public async Task SyncPlaylist_UnchangedVideo_NotUpdated()
     {
         _youtubeApi.GetPlaylistVideosAsync("PLtest123").Returns([
@@ -168,6 +168,6 @@ public class SyncServiceTests
 
         var result = await _syncService.SyncPlaylistAsync(_testPlaylist, _youtubeApi);
 
-        Assert.Equal(0, result.Updated);
+        await Assert.That(result.Updated).IsEqualTo(0);
     }
 }

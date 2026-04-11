@@ -6,12 +6,13 @@ using YTPlaylistTracker.Infrastructure.Data;
 
 namespace YTPlaylistTracker.IntegrationTests.Data;
 
-public class ProfileRepositoryTests : IDisposable
+public class ProfileRepositoryTests
 {
-    private readonly AppDbContext _db;
-    private readonly ProfileRepository _repo;
+    private AppDbContext _db = null!;
+    private ProfileRepository _repo = null!;
 
-    public ProfileRepositoryTests()
+    [Before(Test)]
+    public void Setup()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite("Data Source=:memory:")
@@ -25,35 +26,36 @@ public class ProfileRepositoryTests : IDisposable
         _repo = new ProfileRepository(_db, logger);
     }
 
-    [Fact]
+    [Test]
     public async Task GetByNameAsync_ReturnsMatchingProfile()
     {
         await _repo.AddAsync(new Profile { Name = "Work", IsDefault = true });
 
         var result = await _repo.GetByNameAsync("Work");
 
-        Assert.NotNull(result);
-        Assert.Equal("Work", result.Name);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Name).IsEqualTo("Work");
     }
 
-    [Fact]
+    [Test]
     public async Task GetByNameAsync_ReturnsNull_WhenNotFound()
     {
         var result = await _repo.GetByNameAsync("NonExistent");
 
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
-    [Fact]
+    [Test]
     public async Task GetByNameAsync_IsCaseSensitive()
     {
         await _repo.AddAsync(new Profile { Name = "Work", IsDefault = true });
 
-        Assert.Null(await _repo.GetByNameAsync("work"));
-        Assert.NotNull(await _repo.GetByNameAsync("Work"));
+        await Assert.That(await _repo.GetByNameAsync("work")).IsNull();
+        await Assert.That(await _repo.GetByNameAsync("Work")).IsNotNull();
     }
 
-    public void Dispose()
+    [After(Test)]
+    public void Cleanup()
     {
         _db.Dispose();
     }

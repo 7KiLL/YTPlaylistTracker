@@ -3,11 +3,13 @@ using YTPlaylistTracker.Infrastructure.Configuration;
 
 namespace YTPlaylistTracker.IntegrationTests.Configuration;
 
-public class UserSettingsTests : IDisposable
+[NotInParallel(nameof(UserSettingsTests))]
+public class UserSettingsTests
 {
-    private readonly string _tempDir;
+    private string _tempDir = null!;
 
-    public UserSettingsTests()
+    [Before(Test)]
+    public void Setup()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), "ytpt-test-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_tempDir);
@@ -15,32 +17,32 @@ public class UserSettingsTests : IDisposable
         AppSettings.EnsureDirectories();
     }
 
-    [Fact]
-    public void DefaultSettings_AutoSyncIsTrue()
+    [Test]
+    public async Task DefaultSettings_AutoSyncIsTrue()
     {
         var settings = new UserSettings();
-        Assert.True(settings.AutoSyncOnStartup);
+        await Assert.That(settings.AutoSyncOnStartup).IsTrue();
     }
 
-    [Fact]
-    public void Save_And_Load_RoundTrips()
+    [Test]
+    public async Task Save_And_Load_RoundTrips()
     {
         var settings = new UserSettings { AutoSyncOnStartup = false };
         settings.Save();
 
         var loaded = UserSettings.Load();
-        Assert.False(loaded.AutoSyncOnStartup);
+        await Assert.That(loaded.AutoSyncOnStartup).IsFalse();
 
         // Restore default
         settings.AutoSyncOnStartup = true;
         settings.Save();
 
         var restored = UserSettings.Load();
-        Assert.True(restored.AutoSyncOnStartup);
+        await Assert.That(restored.AutoSyncOnStartup).IsTrue();
     }
 
-    [Fact]
-    public void Load_MissingFile_ReturnsDefaults()
+    [Test]
+    public async Task Load_MissingFile_ReturnsDefaults()
     {
         var settingsPath = Path.Combine(AppSettings.AppDataDir, "settings.json");
         var existed = File.Exists(settingsPath);
@@ -55,7 +57,7 @@ public class UserSettingsTests : IDisposable
         try
         {
             var loaded = UserSettings.Load();
-            Assert.True(loaded.AutoSyncOnStartup);
+            await Assert.That(loaded.AutoSyncOnStartup).IsTrue();
         }
         finally
         {
@@ -64,8 +66,8 @@ public class UserSettingsTests : IDisposable
         }
     }
 
-    [Fact]
-    public void Load_MalformedJson_ReturnsDefaults()
+    [Test]
+    public async Task Load_MalformedJson_ReturnsDefaults()
     {
         var settingsPath = Path.Combine(AppSettings.AppDataDir, "settings.json");
         var existed = File.Exists(settingsPath);
@@ -82,7 +84,7 @@ public class UserSettingsTests : IDisposable
             File.WriteAllText(settingsPath, "not valid json {{{");
 
             var loaded = UserSettings.Load();
-            Assert.True(loaded.AutoSyncOnStartup); // falls back to defaults
+            await Assert.That(loaded.AutoSyncOnStartup).IsTrue(); // falls back to defaults
         }
         finally
         {
@@ -93,22 +95,23 @@ public class UserSettingsTests : IDisposable
         }
     }
 
-    [Fact]
-    public void Save_Implements_IUserSettings()
+    [Test]
+    public async Task Save_Implements_IUserSettings()
     {
         IUserSettings settings = new UserSettings();
         settings.AutoSyncOnStartup = false;
         settings.Save();
 
         var loaded = UserSettings.Load();
-        Assert.False(loaded.AutoSyncOnStartup);
+        await Assert.That(loaded.AutoSyncOnStartup).IsFalse();
 
         // Restore
         settings.AutoSyncOnStartup = true;
         settings.Save();
     }
 
-    public void Dispose()
+    [After(Test)]
+    public void Cleanup()
     {
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, true);

@@ -4,78 +4,78 @@ namespace YTPlaylistTracker.UnitTests.Helpers;
 
 public class UnicodeWidthTests
 {
-    [Fact]
-    public void GetWidth_AsciiOnly_EqualsLength()
+    [Test]
+    public async Task GetWidth_AsciiOnly_EqualsLength()
     {
-        Assert.Equal(5, UnicodeWidth.GetWidth("hello"));
+        await Assert.That(UnicodeWidth.GetWidth("hello")).IsEqualTo(5);
     }
 
-    [Fact]
-    public void GetWidth_CjkCharacters_DoubleCounted()
+    [Test]
+    public async Task GetWidth_CjkCharacters_DoubleCounted()
     {
         // Each CJK char = 2 terminal columns
-        Assert.Equal(4, UnicodeWidth.GetWidth("夜窓"));
+        await Assert.That(UnicodeWidth.GetWidth("\u591c\u7a93")).IsEqualTo(4);
     }
 
-    [Fact]
-    public void GetWidth_MixedAsciiAndCjk()
+    [Test]
+    public async Task GetWidth_MixedAsciiAndCjk()
     {
-        // "cephalo - " = 10, "夜窓" = 4 → total 14
-        Assert.Equal(14, UnicodeWidth.GetWidth("cephalo - 夜窓"));
+        // "cephalo - " = 10, "\u591c\u7a93" = 4 -> total 14
+        await Assert.That(UnicodeWidth.GetWidth("cephalo - \u591c\u7a93")).IsEqualTo(14);
     }
 
-    [Fact]
-    public void GetWidth_EmptyString_ReturnsZero()
+    [Test]
+    public async Task GetWidth_EmptyString_ReturnsZero()
     {
-        Assert.Equal(0, UnicodeWidth.GetWidth(""));
+        await Assert.That(UnicodeWidth.GetWidth("")).IsEqualTo(0);
     }
 
-    [Fact]
-    public void Truncate_FitsWithinLimit_ReturnsOriginal()
+    [Test]
+    public async Task Truncate_FitsWithinLimit_ReturnsOriginal()
     {
-        Assert.Equal("hello", UnicodeWidth.Truncate("hello", 10));
+        await Assert.That(UnicodeWidth.Truncate("hello", 10)).IsEqualTo("hello");
     }
 
-    [Fact]
-    public void Truncate_CjkFitsExactly_ReturnsOriginal()
+    [Test]
+    public async Task Truncate_CjkFitsExactly_ReturnsOriginal()
     {
-        // "夜窓" = 4 display columns, limit 4
-        Assert.Equal("夜窓", UnicodeWidth.Truncate("夜窓", 4));
+        // "\u591c\u7a93" = 4 display columns, limit 4
+        await Assert.That(UnicodeWidth.Truncate("\u591c\u7a93", 4)).IsEqualTo("\u591c\u7a93");
     }
 
-    [Fact]
-    public void Truncate_CjkExceedsLimit_Truncates()
+    [Test]
+    public async Task Truncate_CjkExceedsLimit_Truncates()
     {
-        // "夜窓明" = 6 display columns, limit 5 → must truncate
-        var result = UnicodeWidth.Truncate("夜窓明", 5);
-        Assert.EndsWith("..", result);
-        Assert.True(UnicodeWidth.GetWidth(result) <= 5);
+        // "\u591c\u7a93\u660e" = 6 display columns, limit 5 -> must truncate
+        var result = UnicodeWidth.Truncate("\u591c\u7a93\u660e", 5);
+        await Assert.That(result).EndsWith("..");
+        await Assert.That(UnicodeWidth.GetWidth(result) <= 5).IsTrue();
     }
 
-    [Fact]
-    public void Truncate_MixedString_TruncatesCorrectly()
+    [Test]
+    public async Task Truncate_MixedString_TruncatesCorrectly()
     {
-        // "cephalo - 夜窓" = 14 display columns
-        var full = "cephalo - 夜窓";
-        Assert.Equal(full, UnicodeWidth.Truncate(full, 14));
+        // "cephalo - \u591c\u7a93" = 14 display columns
+        var full = "cephalo - \u591c\u7a93";
+        await Assert.That(UnicodeWidth.Truncate(full, 14)).IsEqualTo(full);
 
         var truncated = UnicodeWidth.Truncate(full, 13);
-        Assert.EndsWith("..", truncated);
-        Assert.True(UnicodeWidth.GetWidth(truncated) <= 13);
+        await Assert.That(truncated).EndsWith("..");
+        await Assert.That(UnicodeWidth.GetWidth(truncated) <= 13).IsTrue();
     }
 
-    [Fact]
-    public void Truncate_NullOrEmpty_ReturnsAsIs()
+    [Test]
+    public async Task Truncate_NullOrEmpty_ReturnsAsIs()
     {
-        Assert.Null(UnicodeWidth.Truncate(null!, 10));
-        Assert.Equal("", UnicodeWidth.Truncate("", 10));
+        await Assert.That(UnicodeWidth.Truncate(null!, 10)).IsNull();
+        await Assert.That(UnicodeWidth.Truncate("", 10)).IsEqualTo("");
     }
 
-    [Fact]
-    public void Truncate_AsciiExceedsLimit_Truncates()
+    [Test]
+    public async Task Truncate_AsciiExceedsLimit_Truncates()
     {
         var result = UnicodeWidth.Truncate("abcdefghij", 7);
-        Assert.EndsWith("..", result);
-        Assert.True(UnicodeWidth.GetWidth(result) <= 7);
+        await Assert.That(result).EndsWith("..");
+        await Assert.That(UnicodeWidth.GetWidth(result) <= 7).IsTrue();
     }
 }
