@@ -59,6 +59,12 @@ internal sealed class AppHarness : IAsyncDisposable
             Window.NewKeyDownEvent((Key)c);
     }
 
+    /// <summary>
+    /// Captures the current rendered screen as a plain text string.
+    /// Forces a layout+draw cycle before reading the buffer.
+    /// </summary>
+    public string CaptureScreen() => ScreenCapture.Capture();
+
     public async ValueTask DisposeAsync()
     {
         Window.Dispose();
