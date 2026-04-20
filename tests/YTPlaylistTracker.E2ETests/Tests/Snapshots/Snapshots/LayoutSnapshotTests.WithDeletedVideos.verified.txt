@@ -4,9 +4,9 @@
 ││ Playlists                 ││ Videos (Favorites) [3] | synced: never                                                ││
 ││ [x] Favorites             ││ #    Title                Channel                Added ▼      Status                  ││
 ││                           ││ ────────────────────────────────────────────────────────────────────────              ││
-││                           ││ 1    Private Now          Artist                 2026-04-04   X Private               ││
+││                           ││ 1    Still Here           Artist                 2026-04-04   Active                  ││
 ││                           ││ 2    Gone Video           Artist                 2026-04-04   X Deleted               ││
-││                           ││ 3    Still Here           Artist                 2026-04-04   Active                  ││
+││                           ││ 3    Private Now          Artist                 2026-04-04   X Private               ││
 ││                           ││                                                                                       ││
 ││                           ││                                                                                       ││
 ││                           ││                                                                                       ││

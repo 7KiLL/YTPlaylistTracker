@@ -21,8 +21,9 @@ internal sealed class AppHarness : IAsyncDisposable
     {
         TGuiApp.Init(driverName: DriverRegistry.Names.ANSI);
 
-        // Set deterministic terminal size for snapshot testing
-        TGuiApp.Driver!.GetOutputBuffer().SetSize(cols, rows);
+        // Set deterministic terminal size for snapshot testing.
+        // rc.1 replaced OutputBuffer.SetSize with Driver.SetScreenSize.
+        TGuiApp.Driver!.SetScreenSize(cols, rows);
 
         Theme.Apply(mocks.UserSettings.ThemeName);
 
