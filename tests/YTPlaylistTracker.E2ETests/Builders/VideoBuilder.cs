@@ -5,11 +5,15 @@ namespace YTPlaylistTracker.E2ETests.Builders;
 
 internal sealed class VideoBuilder
 {
+    // Fixed reference dates so snapshots stay stable over time (no wall-clock drift).
+    private static readonly DateTime DefaultAddedAt = new(2026, 4, 4, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime DefaultDeletedAt = new(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc);
+
     private int _id = 1;
     private string _youtubeId = "vid001";
     private string _title = "Test Video";
     private string? _channel = "Test Channel";
-    private DateTime? _addedAt = DateTime.UtcNow.AddDays(-7);
+    private DateTime? _addedAt = DefaultAddedAt;
     private DateTime? _deletedAt;
     private RemovalReason? _removalReason;
 
@@ -20,7 +24,7 @@ internal sealed class VideoBuilder
     public VideoBuilder WithAddedAt(DateTime addedAt) { _addedAt = addedAt; return this; }
     public VideoBuilder Deleted(RemovalReason reason = RemovalReason.Deleted)
     {
-        _deletedAt = DateTime.UtcNow.AddDays(-1);
+        _deletedAt = DefaultDeletedAt;
         _removalReason = reason;
         return this;
     }
