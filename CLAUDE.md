@@ -24,7 +24,10 @@ dotnet run --project src/YTPlaylistTracker.UI -- export        # Export removed 
 dotnet run --project src/YTPlaylistTracker.UI -- export --format json --output report.json  # Export as JSON to file
 dotnet run --project src/YTPlaylistTracker.UI -- ui            # Launch TUI (explicit)
 dotnet run --project src/YTPlaylistTracker.UI -- --verbose     # Verbose logging (any command)
-dotnet test --filter "FullyQualifiedName~SyncServiceTests"     # Run specific test class
+# Run a specific test class (TUnit uses --treenode-filter, NOT xUnit's --filter)
+cd tests/YTPlaylistTracker.UnitTests && dotnet run --no-build -- --treenode-filter "/*/*/*SyncServiceTests/*"
+# Run a single test method:
+cd tests/YTPlaylistTracker.UnitTests && dotnet run --no-build -- --treenode-filter "/*/*/*SyncServiceTests/MyMethodName"
 ```
 
 ### Build with OAuth credentials (for releases)
