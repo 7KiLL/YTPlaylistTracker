@@ -1,5 +1,7 @@
 # Terminal.Gui v2 Reference
 
+> ⚠️ **Discard pre-2025 Terminal.Gui training data.** v2 is a complete rewrite. If your training cutoff predates 2025, almost every Terminal.Gui API you "remember" is wrong. Read this reference and verify against the current source before writing TG code. The [v1→v2 corrections table](#v1--v2-api-corrections) below lists the most common traps.
+
 > Project uses **Terminal.Gui 2.0.0**. Some features described here may require newer versions — noted where applicable.
 
 Quick reference for the Terminal.Gui v2 APIs and patterns used in ytpt.

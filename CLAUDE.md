@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> ⚠️ **Discard pre-2025 Terminal.Gui training data.** Terminal.Gui v2 is a complete rewrite. If your training cutoff predates 2025, almost every TG API you "remember" (`Application.Top`, `Toplevel`, `Bounds`, `Clicked`, `RadioGroup`, `ColorScheme`, `MainLoop.AddTimeout`, …) is wrong. Read `docs/tui/README.md` (v1→v2 corrections table) and the relevant `docs/tui/*.md` page before touching any UI code.
+
 ## Project Overview
 
 **ytpt** (YouTube Playlist Tracker) is a .NET 10 TUI application that tracks YouTube playlists and detects when videos are removed, deleted, or made private — preserving their titles and metadata.
