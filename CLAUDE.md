@@ -26,11 +26,16 @@ dotnet run --project src/YTPlaylistTracker.UI -- export        # Export removed 
 dotnet run --project src/YTPlaylistTracker.UI -- export --format json --output report.json  # Export as JSON to file
 dotnet run --project src/YTPlaylistTracker.UI -- ui            # Launch TUI (explicit)
 dotnet run --project src/YTPlaylistTracker.UI -- --verbose     # Verbose logging (any command)
-# Run a specific test class (TUnit uses --treenode-filter, NOT xUnit's --filter)
-cd tests/YTPlaylistTracker.UnitTests && dotnet run --no-build -- --treenode-filter "/*/*/*SyncServiceTests/*"
-# Run a single test method:
-cd tests/YTPlaylistTracker.UnitTests && dotnet run --no-build -- --treenode-filter "/*/*/*SyncServiceTests/MyMethodName"
+# Run a specific test class or method (TUnit/MTP — see note below)
+dotnet run --project tests/YTPlaylistTracker.UnitTests --no-build -- --treenode-filter "/*/*/*SyncServiceTests/*"
+dotnet run --project tests/YTPlaylistTracker.UnitTests --no-build -- --treenode-filter "/*/*/*SyncServiceTests/MyMethodName"
+# Run only snapshot tests (Category-based filter):
+DiffEngine_Disabled=1 dotnet run --project tests/YTPlaylistTracker.E2ETests --no-build -- --treenode-filter "/*/*/*/*[Category=Snapshot]"
 ```
+
+**Test runner note:** Tests use **TUnit** on Microsoft Testing Platform (not xUnit/VSTest).
+- `dotnet test` works for "run all" — that's why CI uses it.
+- `dotnet test --filter "..."` is **silently ignored** (no error, runs everything). Use `dotnet run --project <test-proj> -- --treenode-filter "..."` instead. Pattern: `/<Asm>/<Ns>/<Class>/<Test>` with `*` wildcards and `[Property=Value]` for categories.
 
 ### Build with OAuth credentials (for releases)
 ```bash
