@@ -107,7 +107,7 @@ public partial class MainWindow
         // Remove arrow key bindings so they propagate to MainWindow for pane switching
         _videoTable.KeyBindings.Remove(Key.CursorLeft);
         _videoTable.KeyBindings.Remove(Key.CursorRight);
-        _videoTable.CellActivated += (sender, e) => ShowDetail();
+        _videoTable.Accepting += (sender, e) => ShowDetail();
         _videoFrame.Add(_videoStatusLabel, _videoTable);
         _videoTable.DrawComplete += (sender, e) => OnVideoTableResized();
 

@@ -86,7 +86,7 @@ public sealed class RemovalHistoryDialog : Dialog
             },
         };
 
-        table.CellActivated += (sender, e) => ShowVideoDetail(table.SelectedRow);
+        table.Accepting += (sender, e) => ShowVideoDetail(table.Value?.Cursor.Y ?? -1);
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
         closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();

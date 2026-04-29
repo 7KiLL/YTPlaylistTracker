@@ -157,9 +157,9 @@ public partial class MainWindow
                 var dialog = DetailDialog.ForPlaylist(_selectedPlaylist, active, removed, browser);
                 TGuiApp.Run(dialog);
             }
-            else if (_videoTable.HasFocus && _videoTable.SelectedRow >= 0 && _videoTable.SelectedRow < _filteredVideos.Count)
+            else if (_videoTable.HasFocus && _videoTable.Value?.Cursor.Y is int row && row >= 0 && row < _filteredVideos.Count)
             {
-                var video = _filteredVideos[_videoTable.SelectedRow];
+                var video = _filteredVideos[row];
                 var dialog = DetailDialog.ForVideo(video, browser);
                 TGuiApp.Run(dialog);
             }
