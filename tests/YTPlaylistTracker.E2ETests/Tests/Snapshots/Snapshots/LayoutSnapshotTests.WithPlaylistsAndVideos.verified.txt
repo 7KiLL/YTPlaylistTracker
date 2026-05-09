@@ -4,7 +4,7 @@
 ││ Playlists                 ││ Videos (Favorites) [3] | synced: never                                                ││
 ││ [x] Favorites             ││ #    Title                Channel                Added ▼      Status                  ││
 ││ [x] Music                 ││ ────────────────────────────────────────────────────────────────────────              ││
-││                           ││ 1    Never Gonna Give You Rick Astley            2024-03-01   Active                  ││
+││                           ││ 1    Never Gonna Give Yo… Rick Astley            2024-03-01   Active                  ││
 ││                           ││ 2    Bohemian Rhapsody    Queen                  2024-02-01   Active                  ││
 ││                           ││ 3    Imagine              John Lennon            2024-01-01   Active                  ││
 ││                           ││                                                                                       ││
