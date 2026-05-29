@@ -18,11 +18,11 @@ public class AppBootTests
 
     [Test]
     [Category("Smoke")]
-    public async Task App_Init_StaticApi_Works()
+    public async Task App_Init_InstanceApi_Works()
     {
-        TGuiApp.Init(driverName: DriverRegistry.Names.ANSI);
-        await Assert.That(TGuiApp.Initialized).IsTrue();
-        TGuiApp.Shutdown();
+        using IApplication app = TGuiApp.Create();
+        app.Init(DriverRegistry.Names.ANSI);
+        await Assert.That(app.Initialized).IsTrue();
     }
 
     [Test]

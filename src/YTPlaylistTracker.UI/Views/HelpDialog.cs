@@ -55,7 +55,7 @@ public sealed class HelpDialog : Dialog
             ("q F10", "Quit"));
 
         var closeBtn = new Button { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
+        closeBtn.Accepting += (sender, e) => App!.RequestStop();
         AddButton(closeBtn);
     }
 

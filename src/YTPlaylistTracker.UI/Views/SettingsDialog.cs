@@ -14,6 +14,7 @@ public sealed partial class SettingsDialog : Dialog
     private readonly List<Label> _tabLabels = [];
     private readonly List<View> _tabPages = [];
     private int _selectedTab;
+    private IApplication? _app;
 
     public SettingsDialog(IPlaylistRepository playlistRepo, Playlist? selectedPlaylist,
         IUserSettings userSettings, IUpdateService updateService, ISystemLauncher? launcher = null,
@@ -81,19 +82,22 @@ public sealed partial class SettingsDialog : Dialog
         SelectTab(0);
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
+        closeBtn.Accepting += (sender, e) => App!.RequestStop();
         AddButton(closeBtn);
 
-        // Application.KeyDown fires before any view — needed because
-        // OptionSelector consumes Left/Right before OnKeyDown fires.
-        TGuiApp.KeyDown += OnSettingsKeyDown;
-        Disposing += (_, _) => TGuiApp.KeyDown -= OnSettingsKeyDown;
+        // App-level KeyDown fires before any view — needed because OptionSelector
+        // consumes Left/Right before OnKeyDown fires. Wire once App is available
+        // (Initialized); capture the app so we can reliably unsubscribe on dispose.
+        Initialized += (_, _) => { _app = App; if (_app is not null) _app.Keyboard.KeyDown += OnSettingsKeyDown; };
+        Disposing += (_, _) => { if (_app is not null) _app.Keyboard.KeyDown -= OnSettingsKeyDown; };
     }
 
     private void OnSettingsKeyDown(object? sender, Key key)
     {
         if (!IsCurrentTop) return;
-        if (TGuiApp.Navigation?.GetFocused() is TextField or TextView) return;
+#pragma warning disable CS0618 // TextView deprecated in 2.4.3; still detected for focus-skip
+        if (_app?.Navigation?.GetFocused() is TextField or TextView) return;
+#pragma warning restore CS0618
 
         if (key.KeyCode == KeyCode.CursorLeft && _selectedTab > 0)
             { SelectTab(_selectedTab - 1); key.Handled = true; }

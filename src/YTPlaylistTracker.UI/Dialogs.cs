@@ -6,7 +6,7 @@ namespace YTPlaylistTracker.UI;
 /// </summary>
 internal static class Dialogs
 {
-    internal static int Query(string title, string message, params string[] buttons)
+    internal static int Query(IApplication app, string title, string message, params string[] buttons)
     {
         int result = -1;
         var lines = message.Split('\n');
@@ -40,12 +40,12 @@ internal static class Dialogs
             btn.Accepting += (s, e) =>
             {
                 result = idx;
-                TGuiApp.RequestStop();
+                app.RequestStop();
             };
             dialog.AddButton(btn);
         }
 
-        TGuiApp.Run(dialog);
+        app.Run(dialog);
         return result;
     }
 

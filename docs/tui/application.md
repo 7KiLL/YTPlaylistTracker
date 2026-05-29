@@ -19,7 +19,13 @@ Key concepts:
 
 ## Current ytpt Pattern
 
-ytpt still uses the static pattern (`Application.Init()` / `Application.Run()` / `Application.Shutdown()`). The instance-based pattern improves testability and enables multiple application contexts.
+As of Terminal.Gui 2.4.3, ytpt uses the **instance** pattern. `CliCommands.RunUi` creates
+`using IApplication app = Application.Create()`, calls `app.Init()`, passes `app` into
+`MainWindow.InitializeAsync(app)` (which stores it as `_app`), runs `app.Run(window)`, and
+disposes via `using`. The static `Application.*` API is `[Obsolete]` and CS0618 is no longer
+suppressed in the UI project, so re-introducing it is a build error. See
+[MIGRATION-2.4.3.md](MIGRATION-2.4.3.md) for the full old→new mapping and the App-reference
+threading rules.
 
 ## IRunnable Architecture
 

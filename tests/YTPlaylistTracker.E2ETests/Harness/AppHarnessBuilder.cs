@@ -59,7 +59,13 @@ internal sealed class AppHarnessBuilder
             _mocks.PlaylistRepo.GetByProfileAsync(profileId).Returns(playlists.AsReadOnly());
 
         foreach (var (playlistId, videos) in _videosByPlaylist)
+        {
             _mocks.PlaylistRepo.GetVideosAsync(playlistId).Returns(videos.AsReadOnly());
+            // Mock the deleted-only path consistently with the videos provided, so the
+            // F8 "show removed" view is deterministic (the default mock returns empty).
+            var deleted = videos.Where(v => v.DeletedAt != null).ToList();
+            _mocks.PlaylistRepo.GetDeletedVideosAsync(playlistId).Returns(deleted.AsReadOnly());
+        }
 
         _mocks.UserSettings.ThemeName.Returns(_themeName);
         _mocks.UserSettings.AutoSyncOnStartup.Returns(_autoSync);

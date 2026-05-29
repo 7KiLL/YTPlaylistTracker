@@ -210,7 +210,7 @@ public partial class MainWindow
                     ? await bgRepo.GetDeletedVideosAsync(playlist.Id)
 .ConfigureAwait(false) : await bgRepo.GetVideosAsync(playlist.Id).ConfigureAwait(false)).ToList();
 
-                TGuiApp.Invoke(() =>
+                _app.Invoke(() =>
                 {
                     if (_selectedPlaylist?.Id != playlist.Id) return;
                     _videos = videos;

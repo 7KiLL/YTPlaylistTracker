@@ -1,12 +1,12 @@
 ﻿ ╭─────────────────────────────────╮
 ╭╯ ytpt - YouTube Playlist Tracker ╰───────────────────────────────────────────────────────────────────────────────────╮
 │╭───────────────────────────╮╭───────────────────────────────────────────────────────────────────────────────────────╮│
-││ Playlists                 ││ Videos (Favorites) [3] | synced: never                                                ││
-││ [x] Favorites             ││ #    Title                Channel                Added ▼      Status                  ││
-││                           ││ ────────────────────────────────────────────────────────────────────────              ││
-││                           ││ 1    Still Here           Artist                 2026-04-04   Active                  ││
-││                           ││ 2    Gone Video           Artist                 2026-04-04   X Deleted               ││
-││                           ││ 3    Private Now          Artist                 2026-04-04   X Private               ││
+││ Playlists                 ││ Removed (Favorites) [2] | synced: never                                               ││
+││ [x] Favorites             ││ #    Title                         Channel                Added ▼      Status         ││
+││                           ││ ─────────────────────────────────────────────────────────────────────────────────     ││
+││                           ││ 1    Gone Video                    Artist                 2026-04-04   X Deleted      ││
+││                           ││ 2    Private Now                   Artist                 2026-04-04   X Private      ││
+││                           ││                                                                                       ││
 ││                           ││                                                                                       ││
 ││                           ││                                                                                       ││
 ││                           ││                                                                                       ││

@@ -26,14 +26,14 @@ public sealed class WelcomeDialog : Dialog
         signInBtn.Accepting += (sender, e) =>
         {
             Choice = WelcomeChoice.SignIn;
-            TGuiApp.RequestStop();
+            App!.RequestStop();
         };
 
         var offlineBtn = new Button() { Text = "Start offline", X = 26, Y = 5 };
         offlineBtn.Accepting += (sender, e) =>
         {
             Choice = WelcomeChoice.Offline;
-            TGuiApp.RequestStop();
+            App!.RequestStop();
         };
 
         Add(signInBtn, offlineBtn);

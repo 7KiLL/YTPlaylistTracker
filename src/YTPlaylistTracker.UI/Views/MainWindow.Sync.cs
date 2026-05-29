@@ -95,17 +95,17 @@ public partial class MainWindow
     {
         if (_isSyncing)
         {
-            Dialogs.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
+            Dialogs.Query(_app, "Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
             return;
         }
         if (_youtubeApi is null)
         {
-            Dialogs.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
+            Dialogs.Query(_app, "Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
             return;
         }
         if (_selectedPlaylist is null)
         {
-            Dialogs.Query("Info", "Select a playlist first.", "OK");
+            Dialogs.Query(_app, "Info", "Select a playlist first.", "OK");
             return;
         }
         var remaining = SyncService.GetRemainingCooldown(_selectedPlaylist);
@@ -114,7 +114,7 @@ public partial class MainWindow
             var r = remaining.Value;
             var timeLeft = r.TotalHours >= 1 ? $"{(int)r.TotalHours}h {r.Minutes}m" : $"{r.Minutes}m";
             var title = _selectedPlaylist.Title ?? _selectedPlaylist.YouTubePlaylistId;
-            Dialogs.Query("Cooldown",
+            Dialogs.Query(_app, "Cooldown",
                 $"{title} can only be synced once per day.\n" +
                 $"Last synced: {SyncService.FormatLastSynced(_selectedPlaylist)}\n" +
                 $"Next sync available in {timeLeft}.", "OK");
@@ -135,9 +135,9 @@ public partial class MainWindow
                 var bgPlaylistRepo = bgScope.ServiceProvider.GetRequiredService<IPlaylistRepository>();
                 // Re-load playlist in background DbContext to avoid cross-context tracking conflicts
                 var bgPlaylist = await bgPlaylistRepo.GetByIdAsync(playlist.Id).ConfigureAwait(false);
-                if (bgPlaylist is null) { InvokeUI(() => { HideSpinner(); Dialogs.Query("Error", "Playlist not found.", "OK"); }); return; }
+                if (bgPlaylist is null) { InvokeUI(() => { HideSpinner(); Dialogs.Query(_app, "Error", "Playlist not found.", "OK"); }); return; }
                 var syncProgress = new Progress<string>(msg =>
-                    TGuiApp.Invoke(() => ShowSpinner(msg)));
+                    _app.Invoke(() => ShowSpinner(msg)));
                 var result = await bgSync.SyncPlaylistAsync(bgPlaylist, youtube, syncProgress).ConfigureAwait(false);
                 InvokeUI(() =>
                 {
@@ -145,7 +145,7 @@ public partial class MainWindow
                     // Update UI-side playlist with new LastSyncedAt
                     playlist.LastSyncedAt = bgPlaylist.LastSyncedAt;
                     RefreshVideosAsync().GetAwaiter().GetResult();
-                    Dialogs.Query("Sync Complete",
+                    Dialogs.Query(_app, "Sync Complete",
                         "+" + result.Added + " added, -" + result.Removed + " removed, ~" + result.Updated + " updated", "OK");
                 });
             }
@@ -155,7 +155,7 @@ public partial class MainWindow
                 InvokeUI(() =>
                 {
                     HideSpinner();
-                    Dialogs.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
+                    Dialogs.Query(_app, "Sync Error", "Sync failed: " + ex.Message, "OK");
                 });
             }
             finally { _isSyncing = false; }
@@ -166,13 +166,13 @@ public partial class MainWindow
     {
         if (_isSyncing)
         {
-            Dialogs.Query("Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
+            Dialogs.Query(_app, "Sync in Progress", "A sync is already running.\nWait for it to finish first.", "OK");
             return;
         }
         if (_selectedProfile is null) return;
         if (_youtubeApi is null)
         {
-            Dialogs.Query("Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
+            Dialogs.Query(_app, "Not Logged In", "This profile is not authenticated.\nPress L to login first.", "OK");
             return;
         }
 
@@ -188,7 +188,7 @@ public partial class MainWindow
                 await using var bgScope = scopeFactory.CreateAsyncScope();
                 var bgSync = bgScope.ServiceProvider.GetRequiredService<ISyncService>();
                 var syncProgress = new Progress<string>(msg =>
-                    TGuiApp.Invoke(() => ShowSpinner(msg)));
+                    _app.Invoke(() => ShowSpinner(msg)));
                 var results = await bgSync.SyncAllTrackedAsync(profileId, youtube, syncProgress).ConfigureAwait(false);
                 int totalAdded = results.Values.Sum(r => r.Added);
                 int totalRemoved = results.Values.Sum(r => r.Removed);
@@ -198,7 +198,7 @@ public partial class MainWindow
                     RefreshPlaylistsAsync().GetAwaiter().GetResult();
                     RefreshVideosAsync().GetAwaiter().GetResult();
                     SetNeedsDraw();
-                    Dialogs.Query("Sync All Complete",
+                    Dialogs.Query(_app, "Sync All Complete",
                         results.Count + " playlists synced\n+" + totalAdded + " added, -" + totalRemoved + " removed", "OK");
                 });
             }
@@ -208,7 +208,7 @@ public partial class MainWindow
                 InvokeUI(() =>
                 {
                     HideSpinner();
-                    Dialogs.Query("Sync Error", "Sync failed: " + ex.Message, "OK");
+                    Dialogs.Query(_app, "Sync Error", "Sync failed: " + ex.Message, "OK");
                 });
             }
             finally { _isSyncing = false; }

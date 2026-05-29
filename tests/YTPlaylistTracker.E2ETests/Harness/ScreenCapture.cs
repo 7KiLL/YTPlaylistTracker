@@ -6,11 +6,11 @@ internal static class ScreenCapture
     /// Forces a layout+draw cycle and captures the rendered screen buffer as plain text.
     /// Trailing whitespace per line is trimmed to avoid diff noise.
     /// </summary>
-    public static string Capture()
+    public static string Capture(IApplication app)
     {
-        TGuiApp.LayoutAndDraw();
+        app.LayoutAndDraw(true); // forceRedraw: deterministic full draw for snapshot capture
 
-        var raw = TGuiApp.Driver!.ToString();
+        var raw = app.Driver!.ToString();
 
         var lines = raw.Split('\n')
             .Select(l => l.TrimEnd())
