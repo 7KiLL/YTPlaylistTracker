@@ -19,6 +19,7 @@ public partial class MainWindow(
     IServiceScopeFactory scopeFactory,
     ILogger<MainWindow> logger) : Window()
 {
+    private IApplication _app = null!;
     private IYouTubeApiService? _youtubeApi;
     private UpdateInfo? _latestUpdate;
     private bool _updateInstalled;
@@ -68,8 +69,9 @@ public partial class MainWindow(
         base.Dispose(disposing);
     }
 
-    public async Task InitializeAsync()
+    public async Task InitializeAsync(IApplication app)
     {
+        _app = app;
         SetupUI();
         RegisterCommands();
         _profiles = (await profileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
@@ -77,10 +79,10 @@ public partial class MainWindow(
         // First-run: show welcome dialog
         if (_profiles.Count == 0)
         {
-            TGuiApp.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
+            _app.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
             {
                 var welcome = new WelcomeDialog();
-                TGuiApp.Run(welcome);
+                _app.Run(welcome);
                 HandleWelcomeChoice(welcome.Choice);
                 return false;
             });
@@ -119,7 +121,7 @@ public partial class MainWindow(
     private void StartBackgroundWork()
     {
         var capturedProfile = _selectedProfile;
-        TGuiApp.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
+        _app.AddTimeout(TimeSpan.FromMilliseconds(100), () =>
         {
             ShowSpinner("Fetching playlists...");
             _ = Task.Run(async () =>
@@ -150,7 +152,7 @@ public partial class MainWindow(
                             capturedProfile.ChannelTitle = channel.Title;
                             capturedProfile.ChannelThumbnailUrl = channel.ThumbnailUrl;
                             await bgProfileRepo.UpdateAsync(capturedProfile).ConfigureAwait(false);
-                            TGuiApp.Invoke(() => RefreshProfileList());
+                            _app.Invoke(() => RefreshProfileList());
                         }
                     }
                     catch (Exception ex) { logger.LogWarning(ex, "Failed to fetch channel info"); }
@@ -182,7 +184,7 @@ public partial class MainWindow(
                 try
                 {
                     await updateService.ApplyUpdateAsync(updateResult).ConfigureAwait(false);
-                    TGuiApp.Invoke(() =>
+                    _app.Invoke(() =>
                     {
                         _latestUpdate = updateResult;
                         _updateInstalled = true;
@@ -194,7 +196,7 @@ public partial class MainWindow(
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "[Update] Auto-install failed, showing notification only");
-                    TGuiApp.Invoke(() =>
+                    _app.Invoke(() =>
                     {
                         _latestUpdate = updateResult;
                         Title = DefaultTitle;
@@ -205,7 +207,7 @@ public partial class MainWindow(
             }
             else
             {
-                TGuiApp.Invoke(() =>
+                _app.Invoke(() =>
                 {
                     _latestUpdate = updateResult;
                     if (updateResult.IsUpdateAvailable)
@@ -224,11 +226,11 @@ public partial class MainWindow(
     {
         if (_youtubeApi is null) return;
         _isSyncing = true;
-        TGuiApp.Invoke(() => ShowSpinner("Auto-syncing all playlists..."));
+        _app.Invoke(() => ShowSpinner("Auto-syncing all playlists..."));
         try
         {
             var syncProgress = new Progress<string>(msg =>
-                TGuiApp.Invoke(() => ShowSpinner(msg)));
+                _app.Invoke(() => ShowSpinner(msg)));
             var results = await bgSyncService.SyncAllTrackedAsync(profile.Id, _youtubeApi, syncProgress).ConfigureAwait(false);
             int totalAdded = results.Values.Sum(r => r.Added);
             int totalRemoved = results.Values.Sum(r => r.Removed);
@@ -241,7 +243,7 @@ public partial class MainWindow(
                 RefreshVideosAsync().GetAwaiter().GetResult();
                 Title = $" ytpt - Synced {results.Count} playlists (+{totalAdded} -{totalRemoved}) ";
                 SetNeedsDraw();
-                TGuiApp.AddTimeout(TimeSpan.FromSeconds(5), () =>
+                _app.AddTimeout(TimeSpan.FromSeconds(5), () =>
                 {
                     Title = DefaultTitle;
                     SetNeedsDraw();
@@ -252,7 +254,7 @@ public partial class MainWindow(
         catch (Exception ex)
         {
             logger.LogError(ex, "Auto-sync failed");
-            TGuiApp.Invoke(() => HideSpinner());
+            _app.Invoke(() => HideSpinner());
         }
         finally
         {
@@ -261,13 +263,13 @@ public partial class MainWindow(
     }
 
     private void InvokeUI(Action action) =>
-        TGuiApp.Invoke(() =>
+        _app.Invoke(() =>
         {
             try { action(); }
             catch (Exception ex)
             {
                 logger.LogError(ex, "UI callback failed");
-                try { Dialogs.Query("Error", ex.Message, "OK"); } catch { /* last resort */ }
+                try { Dialogs.Query(_app, "Error", ex.Message, "OK"); } catch { /* last resort */ }
             }
         });
 

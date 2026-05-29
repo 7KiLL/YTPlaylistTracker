@@ -16,12 +16,12 @@ public partial class MainWindow
         {
             var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id).ConfigureAwait(false);
             var dialog = new RemovalHistoryDialog(removedVideos, browser);
-            TGuiApp.Run(dialog);
+            _app.Run(dialog);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to show removal history");
-            Dialogs.Query("Error", "Failed to load history: " + ex.Message, "OK");
+            Dialogs.Query(_app, "Error", "Failed to load history: " + ex.Message, "OK");
         }
     }
 
@@ -34,7 +34,7 @@ public partial class MainWindow
             var removedVideos = await playlistRepo.GetAllDeletedVideosAsync(_selectedProfile.Id).ConfigureAwait(false);
             if (removedVideos.Count == 0)
             {
-                Dialogs.Query("Export", "No removed videos to export.", "OK");
+                Dialogs.Query(_app, "Export", "No removed videos to export.", "OK");
                 return;
             }
 
@@ -58,13 +58,13 @@ public partial class MainWindow
 
             string? resultPath = null;
             int selectedFormat = 0;
-            okBtn.Accepting += (sender, e) => { resultPath = pathField.Text; selectedFormat = (int)(formatSelector.Value ?? 0); TGuiApp.RequestStop(); };
-            cancelBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
+            okBtn.Accepting += (sender, e) => { resultPath = pathField.Text; selectedFormat = (int)(formatSelector.Value ?? 0); _app.RequestStop(); };
+            cancelBtn.Accepting += (sender, e) => _app.RequestStop();
 
             dialog.Add(formatLabel, formatSelector, pathLabel, pathField);
             dialog.AddButton(okBtn);
             dialog.AddButton(cancelBtn);
-            TGuiApp.Run(dialog);
+            _app.Run(dialog);
 
             if (resultPath is null) return;
 
@@ -78,23 +78,30 @@ public partial class MainWindow
                 : ExportService.ToCsv(entries);
 
             await File.WriteAllTextAsync(resultPath, content).ConfigureAwait(false);
-            Dialogs.Query("Export Complete", $"Exported {entries.Count} removed videos to:\n{resultPath}", "OK");
+            Dialogs.Query(_app, "Export Complete", $"Exported {entries.Count} removed videos to:\n{resultPath}", "OK");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Export failed");
-            Dialogs.Query("Error", "Export failed: " + ex.Message, "OK");
+            Dialogs.Query(_app, "Error", "Export failed: " + ex.Message, "OK");
         }
     }
 
     private async void OnSettings()
     {
         var settingsDialog = new SettingsDialog(playlistRepo, _selectedPlaylist, userSettings, updateService, browser, this);
-        TGuiApp.Run(settingsDialog);
+        _app.Run(settingsDialog);
 
-        if (settingsDialog is { UpdateRequested: true, UpdateInfo: not null })
+        // Capture results, then dispose on the UI thread (Run is synchronous) so the
+        // dialog's Disposing handler fires and unsubscribes its app-level KeyDown hook.
+        // Must happen before the ConfigureAwait(false) await below to avoid touching
+        // Terminal.Gui from a background thread.
+        var updateInfo = settingsDialog.UpdateRequested ? settingsDialog.UpdateInfo : null;
+        settingsDialog.Dispose();
+
+        if (updateInfo is not null)
         {
-            PerformUpdateAndRestart(settingsDialog.UpdateInfo);
+            PerformUpdateAndRestart(updateInfo);
             return;
         }
 
@@ -113,7 +120,7 @@ public partial class MainWindow
 
         if (_latestUpdate is { IsUpdateAvailable: true })
         {
-            var confirm = Dialogs.Query("Update Available",
+            var confirm = Dialogs.Query(_app, "Update Available",
                 $"Update to v{_latestUpdate.LatestVersion}?\nThe app will need to restart after updating.",
                 "Update", "Cancel");
 
@@ -123,7 +130,7 @@ public partial class MainWindow
         else
         {
             var currentVersion = UpdateService.GetCurrentVersion();
-            Dialogs.Query("Up to Date", $"You're on the latest version (v{currentVersion}).", "OK");
+            Dialogs.Query(_app, "Up to Date", $"You're on the latest version (v{currentVersion}).", "OK");
         }
     }
 
@@ -135,7 +142,7 @@ public partial class MainWindow
             try
             {
                 await updateService.ApplyUpdateAsync(update).ConfigureAwait(false);
-                TGuiApp.Invoke(() =>
+                _app.Invoke(() =>
                 {
                     HideSpinner();
                     SchemeName = Theme.SchemeUpdateInstalled;
@@ -145,19 +152,19 @@ public partial class MainWindow
             }
             catch (UpdateException ex)
             {
-                TGuiApp.Invoke(() =>
+                _app.Invoke(() =>
                 {
                     HideSpinner();
                     var msg = ex.ManualDownloadUrl is not null
                         ? $"{ex.Message}\n\nDownload manually:\n{ex.ManualDownloadUrl}"
                         : ex.Message;
-                    Dialogs.Query("Update Failed", msg, "OK");
+                    Dialogs.Query(_app, "Update Failed", msg, "OK");
                 });
             }
         });
     }
 
-    private static void RestartApp()
+    private void RestartApp()
     {
         var binaryPath = Environment.ProcessPath;
         if (binaryPath is not null)
@@ -169,6 +176,6 @@ public partial class MainWindow
             });
         }
 
-        TGuiApp.RequestStop();
+        _app.RequestStop();
     }
 }

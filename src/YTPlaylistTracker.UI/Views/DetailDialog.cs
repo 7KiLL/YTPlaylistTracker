@@ -59,6 +59,7 @@ public sealed class DetailDialog : Dialog
             y++;
             Add(new Label() { Text = "Description:", X = 1, Y = y, SchemeName = "Menu" });
             y++;
+#pragma warning disable CS0618 // TextView deprecated in 2.4.3; read-only display, gui-cs/Editor migration out of scope
             var descView = new TextView()
             {
                 Text = description!,
@@ -71,6 +72,7 @@ public sealed class DetailDialog : Dialog
                 TabKeyAddsTab = false,
                 SchemeName = "Base",
             };
+#pragma warning restore CS0618
             Add(descView);
         }
 
@@ -83,7 +85,7 @@ public sealed class DetailDialog : Dialog
         }
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
+        closeBtn.Accepting += (sender, e) => App!.RequestStop();
         AddButton(closeBtn);
     }
 

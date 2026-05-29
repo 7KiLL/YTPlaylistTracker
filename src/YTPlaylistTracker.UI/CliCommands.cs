@@ -9,7 +9,7 @@ using YTPlaylistTracker.Infrastructure.Platform;
 using YTPlaylistTracker.Infrastructure.Update;
 using YTPlaylistTracker.Infrastructure.YouTube;
 using YTPlaylistTracker.UI.Views;
-using App = Terminal.Gui.App.Application; // alias for static API
+using App = Terminal.Gui.App.Application; // alias for the Application.Create() factory
 
 namespace YTPlaylistTracker.UI;
 
@@ -21,27 +21,21 @@ internal static class CliCommands
         await using (scope.ConfigureAwait(false))
         {
             var s = scope.ServiceProvider;
-            App.Init();
+            using IApplication app = App.Create();
+            app.Init();
             Theme.Apply(sp.GetRequiredService<IUserSettings>().ThemeName);
-            try
-            {
-                var mainWindow = new MainWindow(
-                    s.GetRequiredService<IPlaylistRepository>(),
-                    s.GetRequiredService<IProfileRepository>(),
-                    sp.GetRequiredService<IYouTubeApiServiceFactory>(),
-                    sp.GetRequiredService<ISystemLauncher>(),
-                    sp.GetRequiredService<IUserSettings>(),
-                    sp.GetRequiredService<IUpdateService>(),
-                    sp.GetRequiredService<IServiceScopeFactory>(),
-                    s.GetRequiredService<ILogger<MainWindow>>());
-                await mainWindow.InitializeAsync().ConfigureAwait(false);
-                App.Run(mainWindow);
-                mainWindow.Dispose();
-            }
-            finally
-            {
-                App.Shutdown();
-            }
+            var mainWindow = new MainWindow(
+                s.GetRequiredService<IPlaylistRepository>(),
+                s.GetRequiredService<IProfileRepository>(),
+                sp.GetRequiredService<IYouTubeApiServiceFactory>(),
+                sp.GetRequiredService<ISystemLauncher>(),
+                sp.GetRequiredService<IUserSettings>(),
+                sp.GetRequiredService<IUpdateService>(),
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                s.GetRequiredService<ILogger<MainWindow>>());
+            await mainWindow.InitializeAsync(app).ConfigureAwait(false);
+            app.Run(mainWindow);
+            mainWindow.Dispose();
         }
     }
 

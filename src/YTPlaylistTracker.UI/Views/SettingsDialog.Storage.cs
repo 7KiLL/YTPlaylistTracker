@@ -7,7 +7,7 @@ namespace YTPlaylistTracker.UI.Views;
 
 public sealed partial class SettingsDialog
 {
-    private static View BuildStorageTab(IPlaylistRepository playlistRepo,
+    private View BuildStorageTab(IPlaylistRepository playlistRepo,
         Playlist? selectedPlaylist, ISystemLauncher? launcher)
     {
         var view = new View() { Width = Dim.Fill(), Height = Dim.Fill(), CanFocus = true };
@@ -35,10 +35,10 @@ public sealed partial class SettingsDialog
         {
             if (selectedPlaylist is null)
             {
-                Dialogs.Query("Info", "Select a playlist first.", "OK");
+                Dialogs.Query(_app!, "Info", "Select a playlist first.", "OK");
                 return;
             }
-            var confirm = Dialogs.Query("Confirm Purge",
+            var confirm = Dialogs.Query(_app!, "Confirm Purge",
                 $"Permanently delete all removed videos from\n\"{selectedPlaylist.Title ?? selectedPlaylist.YouTubePlaylistId}\"?\n\nThis cannot be undone.",
                 "Purge", "Cancel");
             if (confirm == 0)
@@ -46,11 +46,11 @@ public sealed partial class SettingsDialog
                 try
                 {
                     playlistRepo.PurgeDeletedVideosAsync(selectedPlaylist.Id).GetAwaiter().GetResult();
-                    Dialogs.Query("Done", "Deleted videos purged.", "OK");
+                    Dialogs.Query(_app!, "Done", "Deleted videos purged.", "OK");
                 }
                 catch (Exception ex)
                 {
-                    Dialogs.Query("Error", "Purge failed: " + ex.Message, "OK");
+                    Dialogs.Query(_app!, "Error", "Purge failed: " + ex.Message, "OK");
                 }
             }
         };
@@ -58,7 +58,7 @@ public sealed partial class SettingsDialog
         var resetBtn = new Button() { Text = "Reset Database", X = 26, Y = y, SchemeName = Theme.SchemeDanger };
         resetBtn.Accepting += (sender, e) =>
         {
-            var confirm = Dialogs.Query("Reset Database",
+            var confirm = Dialogs.Query(_app!, "Reset Database",
                 "Delete the entire database and restart?\nAll playlists and tracking data will be lost.\n\n" + AppSettings.DbPath,
                 "Reset", "Cancel");
             if (confirm == 0)
@@ -66,12 +66,12 @@ public sealed partial class SettingsDialog
                 try
                 {
                     File.Delete(AppSettings.DbPath);
-                    Dialogs.Query("Done", "Database deleted. The app will now quit.\nRestart to create a fresh database.", "OK");
-                    TGuiApp.RequestStop();
+                    Dialogs.Query(_app!, "Done", "Database deleted. The app will now quit.\nRestart to create a fresh database.", "OK");
+                    _app!.RequestStop();
                 }
                 catch (Exception ex)
                 {
-                    Dialogs.Query("Error", "Failed to delete database: " + ex.Message, "OK");
+                    Dialogs.Query(_app!, "Error", "Failed to delete database: " + ex.Message, "OK");
                 }
             }
         };

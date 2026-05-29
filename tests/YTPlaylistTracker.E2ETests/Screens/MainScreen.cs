@@ -21,7 +21,7 @@ internal sealed class MainScreen
     public int PlaylistCount => _window._playlistList.Source?.Count ?? 0;
     public int? SelectedPlaylistIndex => _window._playlistList.SelectedItem;
     public int VideoRowCount => _window._videoTable.Table?.Rows ?? 0;
-    public int SelectedVideoRow => _window._videoTable.Value?.Cursor.Y ?? -1;
+    public int SelectedVideoRow => _window._videoTable.Value?.SelectedCell.Y ?? -1;
     public string Title => _window.Title ?? "";
     public bool IsSpinnerVisible => _window._spinner.Visible;
     public string SpinnerMessage => _window._spinnerMessage.Text ?? "";

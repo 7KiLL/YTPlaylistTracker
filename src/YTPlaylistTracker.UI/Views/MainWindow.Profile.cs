@@ -48,7 +48,7 @@ public partial class MainWindow
             new("Set _default (d)", "", () => OnSetDefaultProfile()),
             new("Delete (x)", "", () => OnDeleteProfile()),
         });
-        TGuiApp.Popovers?.Register(popover);
+        _app.Popovers?.Register(popover);
         popover.MakeVisible();
     }
 
@@ -66,7 +66,7 @@ public partial class MainWindow
             await bgProfileRepo.AddAsync(profile).ConfigureAwait(false);
             _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
 
-            TGuiApp.Invoke(() =>
+            _app.Invoke(() =>
             {
                 RefreshProfileList();
                 // Select the new profile
@@ -95,7 +95,7 @@ public partial class MainWindow
         if (_selectedProfile is null) return;
 
         if (string.IsNullOrWhiteSpace(AppSettings.OAuthClientId) || string.IsNullOrWhiteSpace(AppSettings.OAuthClientSecret))
-        { Dialogs.Query("OAuth Not Configured", "OAuth credentials not configured.\nSet YTPT_CLIENT_ID and YTPT_CLIENT_SECRET env vars.", "OK"); return; }
+        { Dialogs.Query(_app, "OAuth Not Configured", "OAuth credentials not configured.\nSet YTPT_CLIENT_ID and YTPT_CLIENT_SECRET env vars.", "OK"); return; }
 
         var profile = _selectedProfile;
         Dialog? urlDialog = null;
@@ -106,7 +106,7 @@ public partial class MainWindow
             {
                 var service = await youtubeApiFactory.LoginAsync(profile, authUrl =>
                 {
-                    TGuiApp.Invoke(() =>
+                    _app.Invoke(() =>
                     {
                         urlDialog = new Dialog() { Title = "", Width = Dim.Percent(80), Height = 11 };
                         urlDialog.Border!.Settings &= ~BorderSettings.Title;
@@ -118,13 +118,13 @@ public partial class MainWindow
                         copyBtn.Accepting += (sender, e) =>
                         {
                             if (browser.TryCopyToClipboard(authUrl, out var err)) copyBtn.Text = "Copied!";
-                            else Dialogs.Query("Copy Failed", err!);
+                            else Dialogs.Query(_app, "Copy Failed", err!);
                         };
                         var openBtn = new Button() { Text = "Open in Browser", X = 16, Y = 5 };
                         openBtn.Accepting += (sender, e) => browser.OpenUrl(authUrl);
                         urlDialog.Add(copyBtn, openBtn);
                         urlDialog.Add(new Label() { Text = "Waiting for sign-in...", X = 38, Y = 5, SchemeName = "Menu" });
-                        TGuiApp.Run(urlDialog);
+                        _app.Run(urlDialog);
                     });
                 }).ConfigureAwait(false);
 
@@ -132,7 +132,7 @@ public partial class MainWindow
 
                 InvokeUI(() =>
                 {
-                    if (urlDialog is not null) TGuiApp.RequestStop();
+                    if (urlDialog is not null) _app.RequestStop();
                     _youtubeApi = service;
                     profile.IsOffline = false;
                     if (channel is not null)
@@ -155,9 +155,9 @@ public partial class MainWindow
                 logger.LogError(ex, "Login failed for profile {Profile}", profile.Name);
                 InvokeUI(() =>
                 {
-                    if (urlDialog is not null) TGuiApp.RequestStop();
+                    if (urlDialog is not null) _app.RequestStop();
                     Title = DefaultTitle;
-                    Dialogs.Query("Login Failed", ex.Message, "OK");
+                    Dialogs.Query(_app, "Login Failed", ex.Message, "OK");
                 });
             }
         });
@@ -167,7 +167,7 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
 
-        var confirm = Dialogs.Query("Logout",
+        var confirm = Dialogs.Query(_app, "Logout",
             $"Remove OAuth tokens for \"{_selectedProfile.ChannelTitle ?? _selectedProfile.Name}\"?\n\nThe profile will switch to offline mode.",
             "Logout", "Cancel");
         if (confirm != 0) return;
@@ -179,7 +179,7 @@ public partial class MainWindow
         _ = Task.Run(async () =>
         {
             _youtubeApi = await youtubeApiFactory.CreateForProfileAsync(_selectedProfile).ConfigureAwait(false);
-            TGuiApp.Invoke(() => RefreshProfileList());
+            _app.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -197,7 +197,7 @@ public partial class MainWindow
             var bgProfileRepo = bgScope.ServiceProvider.GetRequiredService<IProfileRepository>();
             await bgProfileRepo.UpdateAsync(_selectedProfile).ConfigureAwait(false);
             _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
-            TGuiApp.Invoke(() => RefreshProfileList());
+            _app.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -211,7 +211,7 @@ public partial class MainWindow
             await bgProfileRepo.SetDefaultAsync(_selectedProfile.Id).ConfigureAwait(false);
             _profiles = (await bgProfileRepo.GetAllAsync().ConfigureAwait(false)).ToList();
             _selectedProfile = _profiles.FirstOrDefault(p => p.Id == _selectedProfile.Id) ?? _selectedProfile;
-            TGuiApp.Invoke(() => RefreshProfileList());
+            _app.Invoke(() => RefreshProfileList());
         });
     }
 
@@ -219,9 +219,9 @@ public partial class MainWindow
     {
         if (_selectedProfile is null) return;
         if (_profiles.Count <= 1)
-        { Dialogs.Query("Cannot Delete", "You must have at least one profile.", "OK"); return; }
+        { Dialogs.Query(_app, "Cannot Delete", "You must have at least one profile.", "OK"); return; }
 
-        var confirm = Dialogs.Query("Delete Profile",
+        var confirm = Dialogs.Query(_app, "Delete Profile",
             $"Delete \"{_selectedProfile.ChannelTitle ?? _selectedProfile.Name}\" and all its playlists?\n\nThis cannot be undone.",
             "Delete", "Cancel");
         if (confirm != 0) return;
@@ -241,7 +241,7 @@ public partial class MainWindow
             _selectedProfile = newDefault;
             _youtubeApi = await youtubeApiFactory.CreateForProfileAsync(newDefault).ConfigureAwait(false);
 
-            TGuiApp.Invoke(() =>
+            _app.Invoke(() =>
             {
                 RefreshProfileList();
                 RefreshPlaylistsAsync().GetAwaiter().GetResult();

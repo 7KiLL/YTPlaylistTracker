@@ -99,8 +99,8 @@ public partial class MainWindow
             [AppCommand.ToggleDeleted] = () => { OnToggleDeleted(); return true; },
             [AppCommand.Settings] = () => { OnSettings(); return true; },
             [AppCommand.UpdateCheck] = () => { OnUpdateCheck(); return true; },
-            [AppCommand.Help] = () => { TGuiApp.Run(new HelpDialog()); return true; },
-            [AppCommand.Quit] = () => { TGuiApp.RequestStop(); return true; },
+            [AppCommand.Help] = () => { _app.Run(new HelpDialog()); return true; },
+            [AppCommand.Quit] = () => { _app.RequestStop(); return true; },
             [AppCommand.ToggleProfilePane] = () => { ToggleProfilePane(); return true; },
 
             // Profile-specific
@@ -111,15 +111,16 @@ public partial class MainWindow
             [AppCommand.DeleteProfile] = () => { OnDeleteProfile(); return true; },
             [AppCommand.ProfileMenu] = () => { ShowProfileContextMenu(); return true; },
         };
-        // Application.KeyDown fires BEFORE the view hierarchy, so letter
+        // App-level KeyDown fires BEFORE the view hierarchy, so letter
         // keys are intercepted before ListView's collection navigator eats them.
-        // OnKeyDown (below) is the fallback for anything Application.KeyDown misses.
-        TGuiApp.KeyDown += OnApplicationKeyDown;
+        // OnKeyDown (below) is the fallback for anything KeyDown misses.
+        // _app is set at the start of InitializeAsync, before RegisterCommands runs.
+        _app.Keyboard.KeyDown += OnApplicationKeyDown;
     }
 
     private void CleanupCommands()
     {
-        TGuiApp.KeyDown -= OnApplicationKeyDown;
+        if (_app is not null) _app.Keyboard.KeyDown -= OnApplicationKeyDown;
     }
 
     /// <summary>
@@ -133,7 +134,9 @@ public partial class MainWindow
     internal bool DispatchKey(Key key)
     {
         // Skip when text input has focus
-        if (TGuiApp.Navigation?.GetFocused() is TextField or TextView) return false;
+#pragma warning disable CS0618 // TextView deprecated in 2.4.3; still detected for focus-skip
+        if (_app.Navigation?.GetFocused() is TextField or TextView) return false;
+#pragma warning restore CS0618
 
         // Profile-specific bindings (only when profile pane focused)
         if (_profileList.HasFocus)
@@ -174,13 +177,13 @@ public partial class MainWindow
         var now = DateTime.UtcNow;
         if ((now - _lastCtrlC).TotalMilliseconds < 1000)
         {
-            TGuiApp.RequestStop();
+            _app.RequestStop();
             return true;
         }
         _lastCtrlC = now;
         Title = "ytpt - Press Ctrl+C again to quit";
         SetNeedsDraw();
-        TGuiApp.AddTimeout(TimeSpan.FromSeconds(2), () =>
+        _app.AddTimeout(TimeSpan.FromSeconds(2), () =>
         {
             Title = DefaultTitle;
             SetNeedsDraw();

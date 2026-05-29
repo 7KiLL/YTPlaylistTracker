@@ -86,10 +86,10 @@ public sealed class RemovalHistoryDialog : Dialog
             },
         };
 
-        table.Accepting += (sender, e) => ShowVideoDetail(table.Value?.Cursor.Y ?? -1);
+        table.Accepting += (sender, e) => ShowVideoDetail(table.Value?.SelectedCell.Y ?? -1);
 
         var closeBtn = new Button() { Text = "Close", IsDefault = true };
-        closeBtn.Accepting += (sender, e) => TGuiApp.RequestStop();
+        closeBtn.Accepting += (sender, e) => App!.RequestStop();
 
         Add(countLabel, table);
         AddButton(closeBtn);
@@ -100,6 +100,6 @@ public sealed class RemovalHistoryDialog : Dialog
         if (row < 0 || row >= _removedVideos.Count) return;
         var (_, video) = _removedVideos[row];
         var dialog = DetailDialog.ForVideo(video, _browser);
-        TGuiApp.Run(dialog);
+        App!.Run(dialog);
     }
 }

@@ -46,22 +46,22 @@ public partial class MainWindow
 
             await playlistRepo.AddAsync(playlist).ConfigureAwait(false);
             await RefreshPlaylistsAsync().ConfigureAwait(false);
-            Dialogs.Query("Success", "Added playlist: " + (playlist.Title ?? playlistId), "OK");
+            Dialogs.Query(_app, "Success", "Added playlist: " + (playlist.Title ?? playlistId), "OK");
         }
         catch (GoogleApiException ex)
         {
             logger.LogError(ex, "YouTube API error adding playlist");
-            Dialogs.Query("YouTube Error", "Could not fetch playlist: " + ex.Message, "OK");
+            Dialogs.Query(_app, "YouTube Error", "Could not fetch playlist: " + ex.Message, "OK");
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Network error adding playlist");
-            Dialogs.Query("Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
+            Dialogs.Query(_app, "Network Error", "Could not connect to YouTube. Check your internet connection.", "OK");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to add playlist");
-            Dialogs.Query("Error", "Failed to add playlist: " + ex.Message, "OK");
+            Dialogs.Query(_app, "Error", "Failed to add playlist: " + ex.Message, "OK");
         }
     }
 
@@ -85,12 +85,12 @@ public partial class MainWindow
                 Height = 4,
             });
             var yesBtn = new Button() { Text = "Enable Tracking", IsDefault = true };
-            yesBtn.Accepting += (s, e) => { confirmed = true; TGuiApp.RequestStop(); };
+            yesBtn.Accepting += (s, e) => { confirmed = true; _app.RequestStop(); };
             var cancelBtn = new Button() { Text = "Cancel" };
-            cancelBtn.Accepting += (s, e) => TGuiApp.RequestStop();
+            cancelBtn.Accepting += (s, e) => _app.RequestStop();
             dialog.AddButton(yesBtn);
             dialog.AddButton(cancelBtn);
-            TGuiApp.Run(dialog);
+            _app.Run(dialog);
             if (!confirmed) return;
         }
 
@@ -104,7 +104,7 @@ public partial class MainWindow
         {
             _selectedPlaylist.IsTracked = !_selectedPlaylist.IsTracked; // revert
             logger.LogError(ex, "Failed to toggle tracking");
-            Dialogs.Query("Error", "Failed to update: " + ex.Message, "OK");
+            Dialogs.Query(_app, "Error", "Failed to update: " + ex.Message, "OK");
         }
     }
 
@@ -127,7 +127,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to toggle all tracking");
-            Dialogs.Query("Error", "Failed to update: " + ex.Message, "OK");
+            Dialogs.Query(_app, "Error", "Failed to update: " + ex.Message, "OK");
         }
     }
 
@@ -147,7 +147,7 @@ public partial class MainWindow
                 var playlists = await playlistRepo.GetByProfileAsync(_selectedProfile.Id).ConfigureAwait(false);
                 var tracked = playlists.Count(p => p.IsTracked);
                 var dialog = DetailDialog.ForProfile(_selectedProfile, playlists.Count, tracked, browser);
-                TGuiApp.Run(dialog);
+                _app.Run(dialog);
             }
             else if (_playlistList.HasFocus && _selectedPlaylist is not null)
             {
@@ -155,13 +155,13 @@ public partial class MainWindow
                 var active = videos.Count(v => v.DeletedAt == null);
                 var removed = videos.Count(v => v.DeletedAt != null);
                 var dialog = DetailDialog.ForPlaylist(_selectedPlaylist, active, removed, browser);
-                TGuiApp.Run(dialog);
+                _app.Run(dialog);
             }
-            else if (_videoTable.HasFocus && _videoTable.Value?.Cursor.Y is int row && row >= 0 && row < _filteredVideos.Count)
+            else if (_videoTable.HasFocus && _videoTable.Value?.SelectedCell.Y is int row && row >= 0 && row < _filteredVideos.Count)
             {
                 var video = _filteredVideos[row];
                 var dialog = DetailDialog.ForVideo(video, browser);
-                TGuiApp.Run(dialog);
+                _app.Run(dialog);
             }
         }
         catch (Exception ex)
@@ -191,13 +191,13 @@ public partial class MainWindow
                 _sortColumn = selected;
                 _sortAscending = true;
             }
-            TGuiApp.RequestStop();
+            _app.RequestStop();
         };
         dialog.Add(list);
         var cancelBtn2 = new Button() { Text = "Cancel" };
-        cancelBtn2.Accepting += (sender, e) => TGuiApp.RequestStop();
+        cancelBtn2.Accepting += (sender, e) => _app.RequestStop();
         dialog.AddButton(cancelBtn2);
-        TGuiApp.Run(dialog);
+        _app.Run(dialog);
         ApplyFilterAndSort();
     }
 
@@ -216,9 +216,9 @@ public partial class MainWindow
             _searchQuery = _searchField.Text ?? "";
 
             if (_searchDebounceTimer is not null)
-                TGuiApp.RemoveTimeout(_searchDebounceTimer);
+                _app.RemoveTimeout(_searchDebounceTimer);
 
-            _searchDebounceTimer = TGuiApp.AddTimeout(
+            _searchDebounceTimer = _app.AddTimeout(
                 TimeSpan.FromMilliseconds(150), () =>
                 {
                     ApplyFilterAndSort();
@@ -266,7 +266,7 @@ public partial class MainWindow
 
         if (_searchDebounceTimer is not null)
         {
-            TGuiApp.RemoveTimeout(_searchDebounceTimer);
+            _app.RemoveTimeout(_searchDebounceTimer);
             _searchDebounceTimer = null;
         }
 

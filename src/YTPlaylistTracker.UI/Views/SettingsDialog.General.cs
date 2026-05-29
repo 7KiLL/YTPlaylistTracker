@@ -66,24 +66,24 @@ public sealed partial class SettingsDialog
                 try
                 {
                     var update = await updateService.CheckForUpdateAsync().ConfigureAwait(false);
-                    TGuiApp.Invoke(() =>
+                    _app!.Invoke(() =>
                     {
                         if (update.IsUpdateAvailable)
                         {
                             UpdateRequested = true;
                             UpdateInfo = update;
-                            TGuiApp.RequestStop();
+                            _app!.RequestStop();
                         }
                         else
                         {
-                            Dialogs.Query("Up to Date", $"You're on the latest version ({update.CurrentVersion}).", "OK");
+                            Dialogs.Query(_app!, "Up to Date", $"You're on the latest version ({update.CurrentVersion}).", "OK");
                         }
                     });
                 }
                 catch (Exception ex)
                 {
-                    TGuiApp.Invoke(() =>
-                        Dialogs.Query("Error", $"Update check failed: {ex.Message}", "OK"));
+                    _app!.Invoke(() =>
+                        Dialogs.Query(_app!, "Error", $"Update check failed: {ex.Message}", "OK"));
                 }
             });
         };
